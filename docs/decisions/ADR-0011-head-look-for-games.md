@@ -13,6 +13,8 @@ Inject relative mouse movement with `SendInput` (`Host.Gaming.MouseInjector`). T
 - **Look**: mouse counts per degree of head rotation (1:1 camera). It uses the absolute world orientation, so the workspace auto-center does not leak in. A rate deadband (default 0.5 °/s, ramping to 1 at 2×) removes jitter and the slow fusion corrections. Sub-count remainders are kept.
 - **Stick**: the head's offset from center sets a turn speed (dead zone 5°, full speed at 25°, 1500 counts/s). Toggling on or Ctrl+Alt+C recenters.
 
+**Game on the glasses:** games, and every exclusive-fullscreen game, open on the Windows primary monitor (the one at (0,0)). While head look runs, the layout is shifted so the glasses are at (0,0) (`Display.GameDisplay.GlassesPrimary`, `Host.Gaming.GlassesPrimarySession`). The old layout goes to the workspace snapshot file, so app start and `xrs recover` restore it after a crash; exit restores it. Not while a workspace runs (same snapshot). Windowed/borderless games can also be moved with Ctrl+Alt+G (`WindowMover.MoveForegroundWindow`: a window covering its monitor fills the glasses, others are centered).
+
 First delivery is `xrs imu mouse` (Ctrl+Alt+H toggles, starts off). The glasses are a plain monitor while gaming: OSD **Follow**, UltraWide **Off**, no XrealScreen workspace running.
 
 ## Consequences
@@ -20,6 +22,7 @@ First delivery is `xrs imu mouse` (Ctrl+Alt+H toggles, starts off). The glasses 
 - + The real mouse still works at the same time (head look adds to it).
 - − Games with mouse smoothing or acceleration change the feel; sensitivity must be tuned per game (`--sens` until a 90° head turn is 90° in game).
 - − Games that read only XInput (no mouse) are not covered; a virtual gamepad stays a later option behind the same mapper.
+- − While the glasses are primary, the taskbar and new windows go there too.
 - Follow-up: an app page (enable, mode, sensitivity, hotkey) that runs the mapper on the app's IMU stream.
 
 ## Alternatives

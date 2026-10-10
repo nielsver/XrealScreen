@@ -4,6 +4,7 @@ using System.Globalization;
 using XrealScreen.Core.Gaming;
 using XrealScreen.Core.Tracking;
 using XrealScreen.Device.XrealOne;
+using XrealScreen.Display;
 using XrealScreen.Host.Gaming;
 
 namespace XrealScreen.Cli;
@@ -15,6 +16,7 @@ internal static class HeadMouseCommands
     private const int VkMenu = 0x12; // Alt
     private const int VkH = 0x48;
     private const int VkC = 0x43;
+    private const int VkG = 0x47;
     private static readonly long MinSendIntervalTicks = Stopwatch.Frequency / 500; // ≤ 500 SendInput calls/s
 
     public static Command Create()
@@ -27,10 +29,11 @@ internal static class HeadMouseCommands
         var deadZone = new Option<float>("--stick-deadzone") { Description = "Stick: degrees from center that do nothing.", DefaultValueFactory = _ => 5f };
         var full = new Option<float>("--stick-full") { Description = "Stick: degrees from center for full speed.", DefaultValueFactory = _ => 25f };
         var speed = new Option<float>("--stick-speed") { Description = "Stick: mouse counts per second at full speed.", DefaultValueFactory = _ => 1500f };
+        var keepPrimary = new Option<bool>("--keep-primary") { Description = "Do not make the glasses the primary monitor (games open on the primary monitor)." };
         var host = new Option<string>("--host") { DefaultValueFactory = _ => OneEndpoints.Default.Host };
-        var command = new Command("mouse", "Head look for games: glasses rotation → mouse movement. Ctrl+Alt+H toggles on/off (starts off), Ctrl+Alt+C recenters; Ctrl+C quits.")
+        var command = new Command("mouse", "Head look for games: glasses rotation → mouse movement. Makes the glasses the primary monitor until exit. Ctrl+Alt+H toggles on/off (starts off), Ctrl+Alt+C recenters, Ctrl+Alt+G moves the active window to the glasses; Ctrl+C quits.")
         {
-            mode, sens, vertical, invertY, deadband, deadZone, full, speed, host,
+            mode, sens, vertical, invertY, deadband, deadZone, full, speed, keepPrimary, host,
         };
         command.SetAction(async (parse, ct) =>
         {
@@ -46,7 +49,32 @@ internal static class HeadMouseCommands
                 StickMaxCountsPerSecond = parse.GetValue(speed),
             };
             var source = new XrealOneImuSource(new XrealOneImuOptions { Endpoints = OneEndpoints.Default with { Host = parse.GetValue(host)! } });
-            return await RunAsync(source, settings, ct).ConfigureAwait(false);
+            GlassesPrimarySession? primary = null;
+            if (!parse.GetValue(keepPrimary))
+            {
+                try
+                {
+                    primary = await GlassesPrimarySession.StartAsync(ct).ConfigureAwait(false);
+                    Console.WriteLine(primary is null ? "The glasses are already the primary monitor." : "The glasses are now the primary monitor (restored when xrs exits; after a crash: xrs recover).");
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+                {
+                    Console.Error.WriteLine($"Primary monitor not changed: {ex.Message}");
+                }
+            }
+
+            try
+            {
+                return await RunAsync(source, settings, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                if (primary is not null)
+                {
+                    await primary.DisposeAsync().ConfigureAwait(false);
+                    Console.WriteLine("Monitor layout restored.");
+                }
+            }
         });
         return command;
     }
@@ -58,11 +86,12 @@ internal static class HeadMouseCommands
         bool enabled = false;
         bool toggleWasDown = false;
         bool recenterWasDown = false;
+        bool moveWasDown = false;
         int pendingX = 0, pendingY = 0;
         long lastSend = 0, nextKeyPoll = 0, nextStatus = 0, sent = 0, rejected = 0;
 
         Console.WriteLine($"Source: {source.Name}  mode={settings.Mode}");
-        Console.WriteLine("Switch to the game, then press Ctrl+Alt+H to start head look (again to pause). Ctrl+Alt+C recenters. Ctrl+C quits.");
+        Console.WriteLine("Switch to the game, then press Ctrl+Alt+H to start head look (again to pause). Ctrl+Alt+C recenters. Ctrl+Alt+G moves the active (windowed/borderless) game to the glasses. Ctrl+C quits.");
         try
         {
             await foreach (var sample in source.ReadAsync(ct).ConfigureAwait(false))
@@ -76,6 +105,13 @@ internal static class HeadMouseCommands
                     bool chord = MouseInjector.IsKeyDown(VkControl) && MouseInjector.IsKeyDown(VkMenu);
                     bool toggleDown = chord && MouseInjector.IsKeyDown(VkH);
                     bool recenterDown = chord && MouseInjector.IsKeyDown(VkC);
+                    bool moveDown = chord && MouseInjector.IsKeyDown(VkG);
+                    if (moveDown && !moveWasDown)
+                    {
+                        MoveActiveWindowToGlasses();
+                    }
+
+                    moveWasDown = moveDown;
                     if (toggleDown && !toggleWasDown)
                     {
                         enabled = !enabled;
@@ -140,5 +176,20 @@ internal static class HeadMouseCommands
         }
 
         return 0;
+    }
+
+    private static void MoveActiveWindowToGlasses()
+    {
+        var glasses = GlassesDisplayLocator.FindGlasses(new CcdDisplayTopology().GetActiveMonitors());
+        if (glasses is null)
+        {
+            Console.WriteLine("glasses display not found");
+            return;
+        }
+
+        string? title = WindowMover.MoveForegroundWindow(new System.Drawing.Rectangle(glasses.X, glasses.Y, glasses.Resolution.Width, glasses.Resolution.Height));
+        Console.WriteLine(title is null
+            ? "could not move the active window (exclusive fullscreen, elevated, or no app window)"
+            : $"moved to the glasses: {title}");
     }
 }

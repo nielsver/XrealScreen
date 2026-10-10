@@ -55,6 +55,52 @@ public static partial class WindowMover
         return moved;
     }
 
+    /// <summary>Moves the foreground window onto <paramref name="to"/> (see <see cref="GameDisplay.FitOnto"/>); maximized windows stay maximized.</summary>
+    /// <returns>The moved window's title, or null when there is no movable foreground window.</returns>
+    public static unsafe string? MoveForegroundWindow(Rectangle to)
+    {
+        nint hwnd = GetForegroundWindow();
+        if (hwnd == 0 || !IsAppWindow(hwnd))
+        {
+            return null;
+        }
+
+        var placement = new WINDOWPLACEMENT { Length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
+        var info = new MONITORINFO { Size = (uint)Marshal.SizeOf<MONITORINFO>() };
+        if (!GetWindowPlacement(hwnd, ref placement) || !GetWindowRect(hwnd, out var rect)
+            || !GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ref info))
+        {
+            return null;
+        }
+
+        var window = Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        var monitor = Rectangle.FromLTRB(info.Monitor.Left, info.Monitor.Top, info.Monitor.Right, info.Monitor.Bottom);
+        bool moved;
+        if (placement.ShowCmd == SW_SHOWMAXIMIZED)
+        {
+            // Placement coordinates are workspace coordinates; equal to screen coordinates with the taskbar at the bottom.
+            var r = placement.NormalPosition;
+            var target = GameDisplay.CenterOnto(Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom), to);
+            placement.NormalPosition = new RECT(target.Left, target.Top, target.Right, target.Bottom);
+            moved = SetWindowPlacement(hwnd, ref placement);
+        }
+        else
+        {
+            var target = GameDisplay.FitOnto(window, monitor, to);
+            moved = SetWindowPos(hwnd, 0, target.X, target.Y, target.Width, target.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+
+        if (!moved)
+        {
+            return null; // elevated window (UIPI)
+        }
+
+        int length = GetWindowTextLengthW(hwnd);
+        char* title = stackalloc char[Math.Min(length + 1, 256)];
+        int copied = GetWindowTextW(hwnd, title, Math.Min(length + 1, 256));
+        return new string(title, 0, Math.Max(0, copied));
+    }
+
     /// <summary>Same offset inside <paramref name="to"/> as inside <paramref name="from"/>, shrunk and shifted to fit.</summary>
     public static Rectangle Relocate(Rectangle window, Rectangle from, Rectangle to)
     {
@@ -129,12 +175,23 @@ public static partial class WindowMover
     private const uint SW_SHOWNOACTIVATE = 4;
     private const uint SW_MINIMIZE = 6;
     private const uint SW_SHOWMINNOACTIVE = 7;
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_NOACTIVATE = 0x0010;
 
     [StructLayout(LayoutKind.Sequential)]
     private readonly record struct POINT(int X, int Y);
 
     [StructLayout(LayoutKind.Sequential)]
     private readonly record struct RECT(int Left, int Top, int Right, int Bottom);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO
+    {
+        public uint Size;
+        public RECT Monitor;
+        public RECT Work;
+        public uint Flags;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct WINDOWPLACEMENT
@@ -182,4 +239,22 @@ public static partial class WindowMover
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetWindowPlacement(nint hwnd, ref WINDOWPLACEMENT placement);
+
+    [LibraryImport("user32.dll")]
+    private static partial nint GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetWindowRect(nint hwnd, out RECT rect);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetMonitorInfoW(nint monitor, ref MONITORINFO info);
+
+    [LibraryImport("user32.dll")]
+    private static unsafe partial int GetWindowTextW(nint hwnd, char* text, int maxCount);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
 }
