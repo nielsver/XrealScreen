@@ -15,6 +15,7 @@ One file per decision: `ADR-NNNN-short-title.md`. Never rewrite an accepted ADR'
 | [0009](ADR-0009-presenter-pacing.md) | Presenter: DWM-composed window paced by the glasses' vblank | Accepted |
 | [0010](ADR-0010-glasses-anchor-workspace.md) | Glasses-anchor workspace: glasses hold the image, app splits it into screens | Accepted |
 | [0011](ADR-0011-head-look-for-games.md) | Head look for games via relative mouse input (no driver) | Accepted |
+| [0012](ADR-0012-developer-sdk-and-local-api.md) | Developer SDK (NuGet) and local API (JSON-RPC over a named pipe) | Accepted |
 
 ## Template
 ```markdown

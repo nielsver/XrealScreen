@@ -25,7 +25,11 @@ Projects are created when their milestone starts (no empty shells).
 | `src/XrealScreen.Display` | **exists** | CCD topology read (`CcdDisplayTopology`), EDID glasses detection (`GlassesDisplayLocator`), `VirtualDisplayRsProvider` (ADR-0008); topology snapshot/restore next |
 | `src/XrealScreen.Render` | **exists** (capture done; render M3) | `GraphicsDevice`, `MonitorCapture` (WGC); next: D3D11 flip-model swapchain, compositor, late pose latch, stats |
 | `src/XrealScreen.Host` | **exists** | `WorkspaceEngine` (one session: virtual monitors → desktop order → refresh sync → capture → tracking → presenter; always restores the desktop), `WorkspaceOptions`, `WorkspaceSettingsStore` (%LOCALAPPDATA%\XrealScreen\settings.json), `WorkspaceLibrary` (named workspaces in `workspaces\`, export/import bundle). Used by the app and `xrs render`. |
-| `src/XrealScreen.Contracts` | M6 | IPC DTOs, named-pipe framing, System.Text.Json source-gen |
+| `src/XrealScreen.Host` (`Api/`) | **exists** | `LocalApiServer`: local API (JSON-RPC 2.0 over `\\.\pipe\XrealScreen.Api`, ADR-0012); the app implements `ILocalApiHandler` (`App/Api/AppApiHandler`) |
+| `src/XrealScreen.Sdk` | **exists** (NuGet) | Public .NET SDK (ADR-0012): `XrealGlasses` pose stream, `HeadLookEngine` + `MouseInjector` (ADR-0011), `GlassesDisplay`. Used by the app and `xrs`. Docs: `docs/sdk/dotnet-sdk.md` |
+| `src/XrealScreen.Contracts` | **exists** (NuGet, net10.0) | Local API methods, error codes, DTOs, line framing (`JsonLineChannel`), System.Text.Json source-gen. Docs: `docs/sdk/local-api.md` |
+| `src/XrealScreen.Sdk.Client` | **exists** (NuGet, net10.0) | `XrealScreenClient`: typed .NET client of the local API |
+| `samples/` | **exists** | `HeadPose.Console` (SDK), `AppClient.Console` (client), Python and PowerShell API clients |
 | `src/XrealScreen.Service` | M6 | Elevated helper Windows service (ADR-0004) |
 | Packaging / bootstrapper | M7 | Single-project MSIX lives in the App today; bootstrapper installs VDD (ADR-0005) |
 

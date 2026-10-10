@@ -14,6 +14,7 @@ dotnet test --solution XrealScreen.slnx            # xUnit v3 on Microsoft.Testi
 dotnet build src/XrealScreen.App -p:Platform=x64         # build the APP PROJECT before running it: the solution build writes bin\Debug\…, but
 dotnet run --project src/XrealScreen.App -p:Platform=x64   # `dotnet run -p:Platform=x64` launches bin\x64\Debug\… (stale app otherwise!)
 .\installer\Build-Package.ps1                        # signed self-contained MSIX + install scripts -> artifacts\installer\
+.\tools\Pack-Sdk.ps1                                 # SDK NuGet packages -> artifacts\nuget\ (docs/sdk)
 dotnet run --project tools/XrealScreen.Cli -- --help       # xrs: devices | probe | imu … | display … | vdd … | capture test | render
 ```
 WinUI templates: `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates`.
@@ -27,14 +28,17 @@ WinUI templates: `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templa
 | `src/XrealScreen.Display` | CCD topology, glasses EDID detection, layout snapshot/restore, virtual-display-rs provider (ADR-0008) |
 | `src/XrealScreen.Render` | D3D11 (Vortice): WGC capture, workspace scene, glasses presenter (ADR-0009) |
 | `src/XrealScreen.Host` | `WorkspaceEngine` — one workspace session end to end; settings store |
-| `src/XrealScreen.App` | WinUI 3 packaged app (MVVM with CommunityToolkit.Mvvm); Home starts/stops the workspace |
+| `src/XrealScreen.App` | WinUI 3 packaged app (MVVM with CommunityToolkit.Mvvm); Home starts/stops the workspace; Games = head look; serves the local API |
+| `src/XrealScreen.Sdk` | Public .NET SDK (NuGet): `XrealGlasses`, `HeadLookEngine`, `GlassesDisplay` (ADR-0011/0012) |
+| `src/XrealScreen.Contracts`, `src/XrealScreen.Sdk.Client` | Local API protocol (JSON-RPC over `\\.\pipe\XrealScreen.Api`) and its .NET client (ADR-0012) |
+| `samples/` | SDK and local API samples (.NET, Python, PowerShell) |
 | `tools/XrealScreen.Cli` | `xrs` hardware/dev tool |
-| `tests/` | `XrealScreen.Core.Tests`, `XrealScreen.Device.Tests`, `fixtures/` |
-| `docs/` | STATUS, ROADMAP, ARCHITECTURE, `decisions/` (ADRs), `findings/`, `legal/SOURCES.md`, `testing/` |
+| `tests/` | `XrealScreen.Core.Tests`, `.Device.Tests`, `.Display.Tests`, `.Host.Tests`, `.Render.Tests`, `.Sdk.Tests`, `.Api.Tests`, `fixtures/` |
+| `docs/` | STATUS, ROADMAP, ARCHITECTURE, `decisions/` (ADRs), `findings/`, `legal/SOURCES.md`, `testing/`, `sdk/` (developer docs) |
 | `.claude/agents/` | Role subagents (architect, winui-dev, device-protocol, graphics-engineer, display-driver-engineer, qa-engineer, tech-writer, legal-security-reviewer) |
 | `.claude/skills/` | winui-app, csharp-async, csharp-developer, csharp-xunit, docs-handoff, xreal-protocol, windows-display-ccd, d3d11-vortice, msix-packaging |
 
-Planned projects (Contracts/Service M6) are created when their milestone starts — see `docs/ARCHITECTURE.md`.
+Planned projects (Service M6) are created when their milestone starts — see `docs/ARCHITECTURE.md`.
 
 Glasses setup depends on the workspace type (ADR-0010): **Glasses anchor** = OSD **Anchor** + UltraWide 32:9/16:18/21:9; **App head tracking** = UltraWide **Off**, **Follow**, **Stabilizer off** (see `docs/findings/xreal-1s-hardware.md`).
 The packaged app appears in the Start menu as **XrealScreen** after `dotnet run`; starting `XrealScreen.App.exe` directly crashes (no package identity).

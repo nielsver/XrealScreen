@@ -63,7 +63,7 @@
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         TextWrapping="Wrap"
-                        Text="Programs you run can read the head pose, start and stop workspaces and head look, and take screenshots through the named pipe \.\pipe\XrealScreen.Api (JSON-RPC). Only your Windows account can connect; web pages cannot. See docs/sdk in the XrealScreen repository." />
+                        Text="Programs you run can read the head pose, start and stop workspaces and head look, and take screenshots through the named pipe \\.\pipe\XrealScreen.Api (JSON-RPC). Only your Windows account can connect; web pages cannot. See docs/sdk in the XrealScreen repository." />
                 </StackPanel>
             </Border>
 

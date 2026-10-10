@@ -16,6 +16,7 @@ A Windows 11 app that turns **XREAL 1S** (also One / One Pro) AR glasses into a 
 - **Primary monitor**: make any virtual screen the Windows primary monitor while the workspace runs; windows left on the glasses display are moved onto the workspace.
 - **Screenshots of the glasses**: Home **Screenshot** button, tray menu or **Ctrl+Alt+P** save exactly what the glasses show to `Pictures\XrealScreen`.
 - **Head look for games** (Games page): steer games like Skyrim with your head. Head movement becomes mouse movement (no driver), as **Look** (1:1 camera) or **Joystick** (turn your head to keep turning). The glasses become the primary monitor while it runs, so games open there; Ctrl+Alt+H on/off, Ctrl+Alt+C recenter, Ctrl+Alt+G moves a windowed game to the glasses.
+- **For developers**: a .NET SDK (`XrealScreen.Sdk`) for head tracking from the glasses, and a local API (JSON-RPC over a named pipe) to control the running app from any language. See [For developers](#for-developers).
 - **Tray and hotkeys**: runs in the tray; Ctrl+Alt+W starts/stops the workspace, Ctrl+Alt+P takes a screenshot; start with Windows; **Exit** quits for real.
 - Modern WinUI 3 UI (Fluent, Mica, light/dark), .NET 10.
 
@@ -59,6 +60,17 @@ dotnet build src/XrealScreen.App -p:Platform=x64
 dotnet run --project src/XrealScreen.App -p:Platform=x64
 ```
 The app is packaged (MSIX): run it from Visual Studio with the **XrealScreen.App (Package)** profile, `dotnet run`, or the Start menu — starting the .exe directly fails. Don't build the app project while it runs a workspace (Windows closes the app; `xrs recover` restores the monitors).
+
+## For developers
+- **[.NET SDK](docs/sdk/dotnet-sdk.md)** (`XrealScreen.Sdk`): read the head pose straight from the glasses (~1000 Hz, auto-reconnect), head-to-mouse for games, glasses monitor helpers. The XrealScreen app is not needed.
+- **[Local API](docs/sdk/local-api.md)**: control the running app from any language with JSON-RPC 2.0 over `\\.\pipe\XrealScreen.Api`. You get the pose stream, workspaces, head look and screenshots. There is a .NET client (`XrealScreen.Sdk.Client`) plus Python and PowerShell samples.
+- Overview, packages and quick start: [docs/sdk/README.md](docs/sdk/README.md). Samples are in [`samples/`](samples/). Build the NuGet packages with `.\tools\Pack-Sdk.ps1`.
+
+```csharp
+var glasses = new XrealGlasses();
+await foreach (var pose in glasses.ReadPosesAsync(ct))
+    Console.WriteLine($"yaw {pose.Yaw:F1}  pitch {pose.Pitch:F1}");
+```
 
 ## Developer tool (`xrs`)
 ```powershell
