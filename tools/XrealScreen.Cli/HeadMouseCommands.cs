@@ -92,82 +92,115 @@ internal static class HeadMouseCommands
 
         Console.WriteLine($"Source: {source.Name}  mode={settings.Mode}");
         Console.WriteLine("Switch to the game, then press Ctrl+Alt+H to start head look (again to pause). Ctrl+Alt+C recenters. Ctrl+Alt+G moves the active (windowed/borderless) game to the glasses. Ctrl+C quits.");
-        try
+        bool connected = false;
+        bool waiting = false;
+        while (!ct.IsCancellationRequested)
         {
-            await foreach (var sample in source.ReadAsync(ct).ConfigureAwait(false))
+            try
             {
-                var pose = tracker.Update(sample);
-                long now = Stopwatch.GetTimestamp();
-
-                if (now >= nextKeyPoll)
+                await foreach (var sample in source.ReadAsync(ct).ConfigureAwait(false))
                 {
-                    nextKeyPoll = now + Stopwatch.Frequency / 50;
-                    bool chord = MouseInjector.IsKeyDown(VkControl) && MouseInjector.IsKeyDown(VkMenu);
-                    bool toggleDown = chord && MouseInjector.IsKeyDown(VkH);
-                    bool recenterDown = chord && MouseInjector.IsKeyDown(VkC);
-                    bool moveDown = chord && MouseInjector.IsKeyDown(VkG);
-                    if (moveDown && !moveWasDown)
+                    if (!connected)
                     {
-                        MoveActiveWindowToGlasses();
+                        connected = true;
+                        waiting = false;
+                        Console.WriteLine("IMU connected.");
                     }
 
-                    moveWasDown = moveDown;
-                    if (toggleDown && !toggleWasDown)
+                    var pose = tracker.Update(sample);
+                    long now = Stopwatch.GetTimestamp();
+
+                    if (now >= nextKeyPoll)
                     {
-                        enabled = !enabled;
-                        mapper.Reset();
+                        nextKeyPoll = now + Stopwatch.Frequency / 50;
+                        bool chord = MouseInjector.IsKeyDown(VkControl) && MouseInjector.IsKeyDown(VkMenu);
+                        bool toggleDown = chord && MouseInjector.IsKeyDown(VkH);
+                        bool recenterDown = chord && MouseInjector.IsKeyDown(VkC);
+                        bool moveDown = chord && MouseInjector.IsKeyDown(VkG);
+                        if (moveDown && !moveWasDown)
+                        {
+                            MoveActiveWindowToGlasses();
+                        }
+
+                        moveWasDown = moveDown;
+                        if (toggleDown && !toggleWasDown)
+                        {
+                            enabled = !enabled;
+                            mapper.Reset();
+                            pendingX = pendingY = 0;
+                            Console.WriteLine(enabled ? "head look ON" : "head look OFF");
+                        }
+
+                        if (recenterDown && !recenterWasDown)
+                        {
+                            mapper.Reset();
+                            Console.WriteLine("recentered");
+                        }
+
+                        toggleWasDown = toggleDown;
+                        recenterWasDown = recenterDown;
+                    }
+
+                    if (!enabled)
+                    {
+                        continue;
+                    }
+
+                    var delta = mapper.Update(pose);
+                    pendingX += delta.X;
+                    pendingY += delta.Y;
+                    if ((pendingX != 0 || pendingY != 0) && now - lastSend >= MinSendIntervalTicks)
+                    {
+                        if (MouseInjector.Move(new MouseDelta(pendingX, pendingY)))
+                        {
+                            sent++;
+                        }
+                        else
+                        {
+                            rejected++;
+                        }
+
                         pendingX = pendingY = 0;
-                        Console.WriteLine(enabled ? "head look ON" : "head look OFF");
+                        lastSend = now;
                     }
 
-                    if (recenterDown && !recenterWasDown)
+                    if (now >= nextStatus)
                     {
-                        mapper.Reset();
-                        Console.WriteLine("recentered");
+                        nextStatus = now + Stopwatch.Frequency;
+                        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                            $"yaw={pose.YawDegrees,7:F1} pitch={pose.PitchDegrees,7:F1} sends={sent} rejected={rejected}"));
                     }
-
-                    toggleWasDown = toggleDown;
-                    recenterWasDown = recenterDown;
                 }
 
-                if (!enabled)
-                {
-                    continue;
-                }
-
-                var delta = mapper.Update(pose);
-                pendingX += delta.X;
-                pendingY += delta.Y;
-                if ((pendingX != 0 || pendingY != 0) && now - lastSend >= MinSendIntervalTicks)
-                {
-                    if (MouseInjector.Move(new MouseDelta(pendingX, pendingY)))
-                    {
-                        sent++;
-                    }
-                    else
-                    {
-                        rejected++;
-                    }
-
-                    pendingX = pendingY = 0;
-                    lastSend = now;
-                }
-
-                if (now >= nextStatus)
-                {
-                    nextStatus = now + Stopwatch.Frequency;
-                    Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                        $"yaw={pose.YawDegrees,7:F1} pitch={pose.PitchDegrees,7:F1} sends={sent} rejected={rejected}"));
-                }
+                Console.WriteLine("IMU stream ended; reconnecting...");
             }
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-        }
-        catch (IOException ex)
-        {
-            Console.Error.WriteLine(ex.Message);
-            return 2;
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (IOException ex)
+            {
+                // Right after plugging in, the glasses' USB network is not up yet ([verified-hw] 2026-10-10:
+                // connect timed out, worked a minute later); unplug/replug during a game lands here too.
+                if (!waiting)
+                {
+                    Console.WriteLine($"{ex.Message.TrimEnd('.')} - waiting for the glasses (retrying every 2 s)...");
+                }
+
+                waiting = true;
+                connected = false;
+            }
+
+            mapper.Reset();
+            pendingX = pendingY = 0;
+            try
+            {
+                await Task.Delay(2000, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
 
         if (rejected > 0)
