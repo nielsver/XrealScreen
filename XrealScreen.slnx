@@ -10,6 +10,9 @@
     <Project Path="src/XrealScreen.Display/XrealScreen.Display.csproj" />
     <Project Path="src/XrealScreen.Render/XrealScreen.Render.csproj" />
     <Project Path="src/XrealScreen.Host/XrealScreen.Host.csproj" />
+    <Project Path="src/XrealScreen.Sdk/XrealScreen.Sdk.csproj" />
+    <Project Path="src/XrealScreen.Contracts/XrealScreen.Contracts.csproj" />
+    <Project Path="src/XrealScreen.Sdk.Client/XrealScreen.Sdk.Client.csproj" />
     <Project Path="src/XrealScreen.App/XrealScreen.App.csproj">
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|ARM64" Project="ARM64" />
@@ -25,5 +28,7 @@
     <Project Path="tests/XrealScreen.Display.Tests/XrealScreen.Display.Tests.csproj" />
     <Project Path="tests/XrealScreen.Host.Tests/XrealScreen.Host.Tests.csproj" />
     <Project Path="tests/XrealScreen.Render.Tests/XrealScreen.Render.Tests.csproj" />
+    <Project Path="tests/XrealScreen.Sdk.Tests/XrealScreen.Sdk.Tests.csproj" />
+    <Project Path="tests/XrealScreen.Api.Tests/XrealScreen.Api.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Local API protocol (ADR-0012): JSON-RPC 2.0 over a per-user named pipe, one JSON object per line. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>XrealScreen.Contracts</PackageId>
+    <Description>Message types and framing of the XrealScreen local API (JSON-RPC 2.0 over a named pipe). Used by XrealScreen.Sdk.Client.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="XrealScreen.Api.Tests" />
+  </ItemGroup>
+</Project>

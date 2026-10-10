@@ -49,6 +49,7 @@
     <ProjectReference Include="..\XrealScreen.Device.XrealOne\XrealScreen.Device.XrealOne.csproj" />
     <ProjectReference Include="..\XrealScreen.Device.Simulated\XrealScreen.Device.Simulated.csproj" />
     <ProjectReference Include="..\XrealScreen.Host\XrealScreen.Host.csproj" />
+    <ProjectReference Include="..\XrealScreen.Sdk\XrealScreen.Sdk.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">

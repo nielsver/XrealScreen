@@ -30,6 +30,9 @@ public sealed class AppPreferences
     /// <summary>Games page: make the glasses the primary monitor while head look runs.</summary>
     public bool HeadLookGlassesPrimary { get; set; } = true;
 
+    /// <summary>Local API for developers (ADR-0012): named pipe <c>\\.\pipe\XrealScreen.Api</c> for the current user.</summary>
+    public bool EnableLocalApi { get; set; } = true;
+
     /// <summary>0 = system, 1 = light, 2 = dark.</summary>
     public int Theme { get; set; }
 

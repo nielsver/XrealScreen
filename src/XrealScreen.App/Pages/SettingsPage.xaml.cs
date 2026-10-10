@@ -20,6 +20,7 @@ public sealed partial class SettingsPage : Page
         TrayToggle.IsOn = App.Preferences.KeepRunningInTray;
         StartWorkspaceToggle.IsOn = App.Preferences.StartWorkspaceOnLaunch;
         GlassesConnectToggle.IsOn = App.Preferences.StartWorkspaceWhenGlassesConnect;
+        LocalApiToggle.IsOn = App.Preferences.EnableLocalApi;
         LoadAutoStartWorkspaces();
         Loaded += async (_, _) =>
         {
@@ -75,6 +76,18 @@ public sealed partial class SettingsPage : Page
         };
         StartupHint.Text = hint ?? string.Empty;
         StartupHint.Visibility = hint is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private async void LocalApi_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (App.Preferences.EnableLocalApi == LocalApiToggle.IsOn)
+        {
+            return;
+        }
+
+        App.Preferences.EnableLocalApi = LocalApiToggle.IsOn;
+        App.Preferences.Save();
+        await App.Current.SetLocalApiEnabledAsync(LocalApiToggle.IsOn).ConfigureAwait(true);
     }
 
     private void Tray_Toggled(object sender, RoutedEventArgs e)

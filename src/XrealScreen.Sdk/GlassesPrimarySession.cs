@@ -1,6 +1,6 @@
 using XrealScreen.Display;
 
-namespace XrealScreen.Host.Gaming;
+namespace XrealScreen.Sdk;
 
 /// <summary>
 /// Makes the glasses the Windows primary monitor while a game runs, so games open on them (ADR-0011).
@@ -18,7 +18,7 @@ public sealed class GlassesPrimarySession : IAsyncDisposable
         _store = store;
     }
 
-    /// <summary>Returns null when nothing had to change (the glasses are already primary).</summary>
+    /// <summary>Use <see cref="GlassesDisplay.MakePrimaryAsync"/>. Returns null when the glasses already are primary.</summary>
     /// <exception cref="InvalidOperationException">No glasses, or a workspace (or crashed session) owns the snapshot.</exception>
     public static async Task<GlassesPrimarySession?> StartAsync(CancellationToken cancellationToken)
     {
@@ -50,6 +50,7 @@ public sealed class GlassesPrimarySession : IAsyncDisposable
         return new GlassesPrimarySession(topology, store);
     }
 
+    /// <summary>Restores the monitor layout from before <see cref="StartAsync"/>.</summary>
     public async ValueTask DisposeAsync()
     {
         var saved = await _store.LoadAsync(CancellationToken.None).ConfigureAwait(false);

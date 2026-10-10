@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- .NET client of the XrealScreen app's local API (ADR-0012). -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>XrealScreen.Sdk.Client</PackageId>
+    <Description>Control the running XrealScreen app from your program: head pose stream, workspaces, head look for games, glasses screenshots. Talks to the app's local API (JSON-RPC over a per-user named pipe).</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XrealScreen.Contracts\XrealScreen.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\docs\sdk\local-api.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+</Project>

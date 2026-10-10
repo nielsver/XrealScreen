@@ -1,20 +1,37 @@
 using System.Runtime.InteropServices;
 using XrealScreen.Core.Gaming;
 
-namespace XrealScreen.Host.Gaming;
+namespace XrealScreen.Sdk;
+
+/// <summary>Where <see cref="HeadLookEngine"/> sends mouse movement. Implement it to test or redirect the output.</summary>
+public interface IMouseOutput
+{
+    /// <summary>Moves the mouse by <paramref name="delta"/>; returns false when the move was refused.</summary>
+    bool Move(MouseDelta delta);
+}
 
 /// <summary>
 /// Sends relative mouse movement with Win32 <c>SendInput</c> (ADR-0011). Games that read the mouse
 /// through raw input or DirectInput (e.g. Skyrim) see it like a real mouse; no driver needed.
-/// Windows blocks injection into elevated windows unless this process is elevated too (UIPI).
 /// </summary>
-public static partial class MouseInjector
+/// <remarks>
+/// Windows blocks input into windows of programs running as administrator unless this process is
+/// elevated too (UIPI); <see cref="Move"/> then returns false.
+/// </remarks>
+public sealed partial class MouseInjector : IMouseOutput
 {
     private const uint InputMouse = 0;
     private const uint MouseEventFMove = 0x0001;
 
-    /// <summary>Sends <paramref name="delta"/>; returns false when Windows rejected it (e.g. UIPI, secure desktop).</summary>
-    public static bool Move(MouseDelta delta)
+    private MouseInjector()
+    {
+    }
+
+    /// <summary>The system mouse.</summary>
+    public static MouseInjector Instance { get; } = new();
+
+    /// <inheritdoc />
+    public bool Move(MouseDelta delta)
     {
         if (delta.IsZero)
         {
@@ -25,7 +42,8 @@ public static partial class MouseInjector
         return SendInput(1, input, Marshal.SizeOf<Input>()) == 1;
     }
 
-    /// <summary>True while the virtual key is held down (works when another app has focus).</summary>
+    /// <summary>True while the virtual key is held down; works while another program (a game) has focus.</summary>
+    /// <param name="virtualKey">A Win32 virtual-key code, e.g. <c>0x48</c> for H.</param>
     public static bool IsKeyDown(int virtualKey) => (GetAsyncKeyState(virtualKey) & 0x8000) != 0;
 
     [StructLayout(LayoutKind.Sequential)]

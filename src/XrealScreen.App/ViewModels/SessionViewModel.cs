@@ -226,6 +226,39 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<string> Log { get; } = [];
 
+    // ---- local API (ADR-0012) -------------------------------------------------------------------
+
+    /// <summary>Pose of the running workspace, or null. Thread-safe (read by the local API).</summary>
+    public XrealScreen.Core.Tracking.HeadPose? LivePose => _engine.State == WorkspaceState.Running ? _engine.CurrentPose : null;
+
+    /// <summary>Saved workspace names (local API).</summary>
+    public IReadOnlyList<string> SavedWorkspaceNames => _library.List();
+
+    /// <summary>Writes a line to the Home page log (local API connections).</summary>
+    public void LogMessage(string message) => AddLog(message);
+
+    /// <summary>Local API: loads the saved workspace <paramref name="name"/> (if given) and starts. UI thread.</summary>
+    public async Task StartForApiAsync(string? name)
+    {
+        if (!IsIdle || _starting)
+        {
+            throw new XrealScreen.Contracts.XrealScreenApiException(XrealScreen.Contracts.ApiErrorCodes.Conflict, "A workspace is already running or starting.");
+        }
+
+        if (name is not null)
+        {
+            var options = _library.Load(name)
+                ?? throw new XrealScreen.Contracts.XrealScreenApiException(XrealScreen.Contracts.ApiErrorCodes.Unavailable, $"No saved workspace \"{name}\".");
+            ApplySettings(options);
+            SaveIfChanged();
+            _workspace.RefreshGlassesSignal();
+            RememberWorkspace(name);
+            AddLog($"local API: start \"{name}\"");
+        }
+
+        await StartAsync().ConfigureAwait(true);
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsRunning), nameof(IsIdle))]
     [NotifyCanExecuteChangedFor(nameof(StartCommand), nameof(StopCommand), nameof(RecenterCommand), nameof(TakeScreenshotCommand))]

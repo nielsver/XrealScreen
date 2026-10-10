@@ -15,5 +15,6 @@
     <ProjectReference Include="..\..\src\XrealScreen.Display\XrealScreen.Display.csproj" />
     <ProjectReference Include="..\..\src\XrealScreen.Render\XrealScreen.Render.csproj" />
     <ProjectReference Include="..\..\src\XrealScreen.Host\XrealScreen.Host.csproj" />
+    <ProjectReference Include="..\..\src\XrealScreen.Sdk\XrealScreen.Sdk.csproj" />
   </ItemGroup>
 </Project>

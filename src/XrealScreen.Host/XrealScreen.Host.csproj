@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\XrealScreen.Core\XrealScreen.Core.csproj" />
+    <ProjectReference Include="..\XrealScreen.Contracts\XrealScreen.Contracts.csproj" />
     <ProjectReference Include="..\XrealScreen.Device.XrealOne\XrealScreen.Device.XrealOne.csproj" />
     <ProjectReference Include="..\XrealScreen.Device.Simulated\XrealScreen.Device.Simulated.csproj" />
     <ProjectReference Include="..\XrealScreen.Display\XrealScreen.Display.csproj" />
@@ -12,5 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="XrealScreen.Host.Tests" />
+    <InternalsVisibleTo Include="XrealScreen.Api.Tests" />
   </ItemGroup>
 </Project>

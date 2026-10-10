@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.Globalization;
 using XrealScreen.Core.Gaming;
 using XrealScreen.Device.XrealOne;
-using XrealScreen.Host.Gaming;
+using XrealScreen.Sdk;
 
 namespace XrealScreen.Cli;
 
@@ -38,7 +38,7 @@ internal static class HeadMouseCommands
                 StickFullDegrees = parse.GetValue(full),
                 StickMaxCountsPerSecond = parse.GetValue(speed),
             };
-            var source = new XrealOneImuSource(new XrealOneImuOptions { Endpoints = OneEndpoints.Default with { Host = parse.GetValue(host)! } });
+            var glasses = new XrealGlasses(new XrealGlassesOptions { Host = parse.GetValue(host)! });
             GlassesPrimarySession? primary = null;
             if (!parse.GetValue(keepPrimary))
             {
@@ -55,7 +55,7 @@ internal static class HeadMouseCommands
 
             try
             {
-                return await RunAsync(source, settings, ct).ConfigureAwait(false);
+                return await RunAsync(glasses, settings, ct).ConfigureAwait(false);
             }
             finally
             {
@@ -69,11 +69,11 @@ internal static class HeadMouseCommands
         return command;
     }
 
-    private static async Task<int> RunAsync(XrealOneImuSource source, HeadMouseSettings settings, CancellationToken ct)
+    private static async Task<int> RunAsync(XrealGlasses glasses, HeadMouseSettings settings, CancellationToken ct)
     {
-        var engine = new HeadLookEngine(source) { Settings = settings };
+        var engine = new HeadLookEngine(glasses) { Settings = settings };
         engine.Message += Console.WriteLine;
-        Console.WriteLine($"Source: {engine.SourceName}  mode={settings.Mode}");
+        Console.WriteLine($"Source: {glasses.SourceName}  mode={settings.Mode}");
         Console.WriteLine("Switch to the game, then press Ctrl+Alt+H to start head look (again to pause). Ctrl+Alt+C recenters. Ctrl+Alt+G moves the active (windowed/borderless) game to the glasses. Ctrl+C quits.");
         var run = engine.RunAsync(ct);
         try
@@ -81,10 +81,10 @@ internal static class HeadMouseCommands
             while (!run.IsCompleted)
             {
                 await Task.WhenAny(run, Task.Delay(1000, ct)).ConfigureAwait(false);
-                if (engine.Enabled && engine.IsConnected)
+                if (engine.Enabled && glasses.LatestPose is { } pose)
                 {
                     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                        $"yaw={engine.YawDegrees,7:F1} pitch={engine.PitchDegrees,7:F1} sends={engine.Sends} rejected={engine.Rejected}"));
+                        $"yaw={pose.Yaw,7:F1} pitch={pose.Pitch,7:F1} sends={engine.Sends} rejected={engine.Rejected}"));
                 }
             }
         }

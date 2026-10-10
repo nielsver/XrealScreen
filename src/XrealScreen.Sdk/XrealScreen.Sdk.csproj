@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Public .NET SDK (ADR-0012): head pose from the glasses, head look for games, display helpers. -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <PackageId>XrealScreen.Sdk</PackageId>
+    <Description>Read head tracking from XREAL One / One Pro / 1S glasses on Windows, turn head movement into mouse movement for games, and find or move the glasses monitor.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XrealScreen.Core\XrealScreen.Core.csproj" />
+    <ProjectReference Include="..\XrealScreen.Device.XrealOne\XrealScreen.Device.XrealOne.csproj" />
+    <ProjectReference Include="..\XrealScreen.Display\XrealScreen.Display.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\docs\sdk\dotnet-sdk.md" Pack="true" PackagePath="README.md" />
+    <InternalsVisibleTo Include="XrealScreen.Sdk.Tests" />
+  </ItemGroup>
+</Project>

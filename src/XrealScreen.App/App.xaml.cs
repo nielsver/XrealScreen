@@ -2,9 +2,11 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using XrealScreen.App.Api;
 using XrealScreen.App.Tray;
 using XrealScreen.App.ViewModels;
 using XrealScreen.Host;
+using XrealScreen.Host.Api;
 
 namespace XrealScreen.App;
 
@@ -15,6 +17,8 @@ public partial class App : Application
     public const string StartupTaskId = "XrealScreenStartup";
 
     private TrayIcon? _tray;
+    private AppApiHandler? _apiHandler;
+    private LocalApiServer? _apiServer;
     private bool _exiting;
 
     public App()
@@ -78,6 +82,11 @@ public partial class App : Application
             }
         };
 
+        if (Preferences.EnableLocalApi)
+        {
+            _ = SetLocalApiEnabledAsync(true);
+        }
+
         // Started by Windows at sign-in: stay in the tray.
         bool startedByWindows = AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.StartupTask;
         if (!startedByWindows)
@@ -88,6 +97,25 @@ public partial class App : Application
         if (Preferences.StartWorkspaceOnLaunch)
         {
             _ = Session.StartOnLaunchAsync();
+        }
+    }
+
+    /// <summary>Starts or stops the local API (ADR-0012; Settings → Developers).</summary>
+    public async Task SetLocalApiEnabledAsync(bool enabled)
+    {
+        if (enabled && _apiServer is null)
+        {
+            _apiHandler = new AppApiHandler(DispatcherQueue.GetForCurrentThread());
+            _apiServer = new LocalApiServer(_apiHandler);
+            _apiServer.Log += message => MainWindow.DispatcherQueue.TryEnqueue(() => Session.LogMessage(message));
+            _apiServer.Start();
+        }
+        else if (!enabled && _apiServer is { } server)
+        {
+            _apiServer = null;
+            await server.DisposeAsync().ConfigureAwait(true);
+            _apiHandler?.Dispose();
+            _apiHandler = null;
         }
     }
 
@@ -191,6 +219,14 @@ public partial class App : Application
 
         _shutDown = true;
         // Always hand the desktop back (virtual monitors, layout, refresh rates).
+        // Disconnect API clients first so no command arrives while the session shuts down.
+        if (_apiServer is { } server)
+        {
+            _apiServer = null;
+            server.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(3));
+            _apiHandler?.Dispose();
+        }
+
         HeadLook.Dispose();
         Session.Dispose();
         Tracking.Dispose();

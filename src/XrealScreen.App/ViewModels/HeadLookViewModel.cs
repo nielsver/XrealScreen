@@ -3,8 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using XrealScreen.Core.Gaming;
-using XrealScreen.Device.XrealOne;
-using XrealScreen.Host.Gaming;
+using XrealScreen.Sdk;
 
 namespace XrealScreen.App.ViewModels;
 
@@ -23,6 +22,7 @@ public sealed partial class HeadLookViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private Task? _run;
     private bool _loading;
+    private volatile XrealGlasses? _activeGlasses;
 
     public HeadLookViewModel(DispatcherQueue dispatcher)
     {
@@ -174,10 +174,11 @@ public sealed partial class HeadLookViewModel : ObservableObject, IDisposable
             }
         }
 
-        var engine = new HeadLookEngine(new XrealOneImuSource()) { Settings = CurrentSettings() };
+        var engine = new HeadLookEngine(new XrealGlasses()) { Settings = CurrentSettings() };
         engine.Message += message => _dispatcher.TryEnqueue(() => LastMessage = message);
         engine.EnabledChanged += on => _dispatcher.TryEnqueue(() => IsOn = on);
         _engine = engine;
+        _activeGlasses = engine.Glasses;
         _cts = new CancellationTokenSource();
         var token = _cts.Token;
         _run = Task.Run(() => engine.RunAsync(token), token);
@@ -209,6 +210,7 @@ public sealed partial class HeadLookViewModel : ObservableObject, IDisposable
         _cts = null;
         _run = null;
         _engine = null;
+        _activeGlasses = null;
         LastMessage = string.Empty;
         await RestorePrimaryAsync().ConfigureAwait(true);
         IsOn = false;
@@ -258,9 +260,89 @@ public sealed partial class HeadLookViewModel : ObservableObject, IDisposable
             : engine.Enabled
                 ? $"Head look is ON. Mouse moves sent: {engine.Sends}{(engine.Rejected > 0 ? $", refused: {engine.Rejected} (is the game running as administrator?)" : string.Empty)}"
                 : "Connected. Head look is off: press Ctrl+Alt+H in the game.";
-        Pose = engine.IsConnected
-            ? string.Create(CultureInfo.CurrentCulture, $"Yaw {engine.YawDegrees:+0.0;-0.0;0.0}°   Pitch {engine.PitchDegrees:+0.0;-0.0;0.0}°")
+        Pose = engine.IsConnected && engine.Glasses.LatestPose is { } pose
+            ? string.Create(CultureInfo.CurrentCulture, $"Yaw {pose.Yaw:+0.0;-0.0;0.0}°   Pitch {pose.Pitch:+0.0;-0.0;0.0}°")
             : string.Empty;
+    }
+
+    // ---- local API (ADR-0012) -------------------------------------------------------------------
+
+    /// <summary>Glasses of the running head look, or null. Thread-safe (the local API reads poses from it).</summary>
+    public XrealGlasses? ActiveGlasses => _activeGlasses;
+
+    /// <summary>Mouse output on/off for the local API. UI thread.</summary>
+    public void SetEnabled(bool enabled)
+    {
+        if (_engine is not { } engine)
+        {
+            throw new XrealScreen.Contracts.XrealScreenApiException(XrealScreen.Contracts.ApiErrorCodes.Conflict, "Head look is not started.");
+        }
+
+        engine.Enabled = enabled;
+    }
+
+    /// <summary>All settings in API form. UI thread.</summary>
+    public XrealScreen.Contracts.HeadLookSettings GetApiSettings() => new()
+    {
+        Mode = IsStick ? XrealScreen.Contracts.HeadLookModes.Joystick : XrealScreen.Contracts.HeadLookModes.Look,
+        Sensitivity = (float)Sensitivity,
+        VerticalScale = (float)VerticalScale,
+        InvertY = InvertY,
+        Deadband = (float)Deadband,
+        StickDeadZone = (float)StickDeadZone,
+        StickFull = (float)StickFull,
+        StickSpeed = (float)StickSpeed,
+        GlassesPrimary = GlassesPrimary,
+    };
+
+    /// <summary>Applies the non-null members (clamped to the page's slider ranges), like moving the sliders. UI thread.</summary>
+    public void ApplyApiSettings(XrealScreen.Contracts.HeadLookSettings changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        if (changes.Mode is { } mode)
+        {
+            ModeIndex = mode == XrealScreen.Contracts.HeadLookModes.Joystick ? 1 : 0;
+        }
+
+        if (changes.Sensitivity is { } sensitivity)
+        {
+            Sensitivity = Math.Clamp(sensitivity, 1, 100);
+        }
+
+        if (changes.VerticalScale is { } vertical)
+        {
+            VerticalScale = Math.Clamp(vertical, 0, 2);
+        }
+
+        if (changes.InvertY is { } invert)
+        {
+            InvertY = invert;
+        }
+
+        if (changes.Deadband is { } deadband)
+        {
+            Deadband = Math.Clamp(deadband, 0, 3);
+        }
+
+        if (changes.StickDeadZone is { } deadZone)
+        {
+            StickDeadZone = Math.Clamp(deadZone, 0, 30);
+        }
+
+        if (changes.StickFull is { } full)
+        {
+            StickFull = Math.Clamp(full, 5, 60);
+        }
+
+        if (changes.StickSpeed is { } speed)
+        {
+            StickSpeed = Math.Clamp(speed, 100, 5000);
+        }
+
+        if (changes.GlassesPrimary is { } primary)
+        {
+            GlassesPrimary = primary;
+        }
     }
 
     /// <summary>App exit: stop the IMU loop and hand the monitor layout back synchronously.</summary>

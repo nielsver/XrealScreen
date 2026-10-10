@@ -12,4 +12,15 @@
     <Product>XrealScreen</Product>
     <Copyright>Copyright (c) 2026 Niklas Rydén</Copyright>
   </PropertyGroup>
+  <!-- NuGet: only the SDK projects opt in with <IsPackable>true</IsPackable> (ADR-0012, docs/sdk). -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <Version>0.1.0</Version>
+    <Authors>Niklas Rydén</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/nikryden/Screen-XREAL-1S</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nikryden/Screen-XREAL-1S</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>xreal;ar-glasses;head-tracking;imu;windows</PackageTags>
+  </PropertyGroup>
 </Project>
