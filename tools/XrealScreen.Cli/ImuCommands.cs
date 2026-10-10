@@ -19,6 +19,7 @@ internal static class ImuCommands
         imu.Subcommands.Add(CreateLive());
         imu.Subcommands.Add(CreateReplay());
         imu.Subcommands.Add(CreateSynth());
+        imu.Subcommands.Add(HeadMouseCommands.Create());
         return imu;
     }
 

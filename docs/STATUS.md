@@ -3,7 +3,7 @@
 > Read this first. Update it at the end of every task (see skill `docs-handoff`).
 
 ## Current
-- **Milestone:** M4/M5 (workspace in the app) — **mostly done**; M6 started (crash-safe restore). Last updated 2026-09-29.
+- **Milestone:** M4/M5 (workspace in the app) — **mostly done**; M6 started (crash-safe restore). Last updated 2026-10-10.
 - The app is usable end to end: Start menu → **XrealScreen** → Home → **Start workspace**.
 
 ## Done
@@ -20,13 +20,15 @@
 - **Glasses connect / primary / windows (M6, 2026-09-29, not yet tested on hardware)**: Settings "Workspace to start automatically" (latest settings or a saved workspace; `AppPreferences.AutoStartWorkspaceName`) used by "Start it when XrealScreen starts" and "Start it when the glasses are connected" (app polls the glasses monitor every 2 s); Screens "Primary monitor while the workspace runs" (`WorkspaceOptions.PrimaryScreen`, layout shifted so that virtual screen is at 0,0; original layout restored on stop); "Move windows from the glasses display" (`WindowMover`, default on; elevated apps' windows cannot be moved).
 - **UltraWide guard (2026-09-29, not yet tested on hardware)**: Glasses anchor with UltraWide Off does not start; Home shows a warning, the tray shows a balloon, and the app starts the workspace once the glasses report an UltraWide signal (2 s poll + 2.5 s settle); Stop cancels the wait.
 - **Glasses screenshots (2026-09-29)**: Home **Screenshot** button, tray item and **Ctrl+Alt+P** save what the glasses show to `Pictures\XrealScreen\XrealScreen <date time>.png` (`GlassesScreenshot` → `ScreenCapture`: GDI BitBlt of the glasses monitor after DWM composition + WinRT PNG encoder); also `xrs capture glasses [--out <folder>]`. [verified-local] with the CLI on the 1S (3840×1080 PNG); app button/hotkey not yet tested. Repo screenshots in `images/` (all pages, `glasses-anchor.png`, README hero `glasses-workspace.png`); README rewritten with the current features.
+- **Head look for games (2026-10-10, ADR-0011, not yet tested in game)**: `xrs imu mouse` turns glasses rotation into relative mouse movement (`SendInput`, no driver) for games like Skyrim. Modes **Look** (1:1, `--sens` counts/°) and **Stick** (head offset = turn speed); Ctrl+Alt+H toggles (starts off), Ctrl+Alt+C recenters. Glasses: OSD Follow, UltraWide Off, no workspace running. Mapping in `Core.Gaming.HeadMouseMapper` (tests), injection in `Host.Gaming.MouseInjector`.
 - Pitfall: building `src/XrealScreen.App` while the app runs re-registers the dev package and kills the app without cleanup (leftover virtual monitors) — run `xrs recover`.
-- 102/102 tests.
+- 111/111 tests.
 
-## Next 3 steps
-1. M6: user test of tray icon / start with Windows / Ctrl+Alt+W (2026-09-27) and of saved workspaces / import-export / start latest workspace / Exit / start on glasses connect / primary screen / window move (2026-09-29).
-2. M7: clean-PC install test in Windows Sandbox (`installer\test\Start-SandboxTest.ps1` -> `artifacts\sandbox\results\report.txt`). **First run 2026-09-27 stalled** right after "PASS no driver before install", inside `Install-XrealScreen.ps1 -Yes` (no output for 9 min) - probably a dialog in the Sandbox (driver install prompt or Add-AppxPackage). Next: look at the Sandbox window, log each install step separately with timeouts in `Run-InSandbox.ps1`, rerun. Then trusted signing for a public release.
-3. App head tracking: glasses A/B of prediction 20 vs 26 ms (measured latch→scan-out ≈ 22 ms, ADR-0009); optional Strong vs Balanced for the last nod bob. Removing DWM (always composed here) needs exclusive fullscreen or DirectComposition — deferred.
+## Next steps
+1. User test of `xrs imu mouse` in Skyrim: Look and Stick, find `--sens` for a 1:1 turn; then an app page for head look (ADR-0011 follow-up).
+2. M6: user test of tray icon / start with Windows / Ctrl+Alt+W (2026-09-27) and of saved workspaces / import-export / start latest workspace / Exit / start on glasses connect / primary screen / window move (2026-09-29).
+3. M7: clean-PC install test in Windows Sandbox (`installer\test\Start-SandboxTest.ps1` -> `artifacts\sandbox\results\report.txt`). **First run 2026-09-27 stalled** right after "PASS no driver before install", inside `Install-XrealScreen.ps1 -Yes` (no output for 9 min) - probably a dialog in the Sandbox (driver install prompt or Add-AppxPackage). Next: look at the Sandbox window, log each install step separately with timeouts in `Run-InSandbox.ps1`, rerun. Then trusted signing for a public release.
+4. App head tracking: glasses A/B of prediction 20 vs 26 ms (measured latch→scan-out ≈ 22 ms, ADR-0009); optional Strong vs Balanced for the last nod bob. Removing DWM (always composed here) needs exclusive fullscreen or DirectComposition — deferred.
 
 ## Blockers
 - None.
@@ -59,3 +61,4 @@
 | 2026-09-27 | Claude | Latency measurement in presenter stats (latch→scan-out ≈ 22 ms, always DWM-composed); late latch default back to 0 (no gain while composed). |
 | 2026-09-27 | Claude | M7 phase 2: driver built from source (rustup, WDK, LLVM 18), separate driver cert, Install-Driver.ps1 (SetupAPI root device), package bundles the driver. |
 | 2026-09-29 | Claude | M6: autosave of all settings, saved workspaces with import/export, start latest workspace at launch, Exit in the window; Host.Tests project; start on glasses connect, primary virtual screen, move windows off the glasses. |
+| 2026-10-10 | Claude | Head look for games (ADR-0011): HeadMouseMapper (Look/Stick) + SendInput injector + `xrs imu mouse`. |

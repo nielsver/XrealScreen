@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- User-session engine: wires device, display, capture and rendering into one workspace session (ADR-0004). -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\XrealScreen.Core\XrealScreen.Core.csproj" />
     <ProjectReference Include="..\XrealScreen.Device.XrealOne\XrealScreen.Device.XrealOne.csproj" />
