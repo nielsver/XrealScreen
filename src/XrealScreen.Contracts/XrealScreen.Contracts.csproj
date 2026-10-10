@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Local API protocol (ADR-0012): JSON-RPC 2.0 over a per-user named pipe, one JSON object per line. -->
   <PropertyGroup>
+    <!-- Plain net10.0: only named pipes and JSON, so any .NET 10 app can reference it. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetPlatformMinVersion></TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion></SupportedOSPlatformVersion>
     <IsPackable>true</IsPackable>
     <PackageId>XrealScreen.Contracts</PackageId>
     <Description>Message types and framing of the XrealScreen local API (JSON-RPC 2.0 over a named pipe). Used by XrealScreen.Sdk.Client.</Description>

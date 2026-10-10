@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- .NET client of the XrealScreen app's local API (ADR-0012). -->
   <PropertyGroup>
+    <!-- Plain net10.0: only named pipes and JSON, so any .NET 10 app can reference it. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetPlatformMinVersion></TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion></SupportedOSPlatformVersion>
     <IsPackable>true</IsPackable>
     <PackageId>XrealScreen.Sdk.Client</PackageId>
     <Description>Control the running XrealScreen app from your program: head pose stream, workspaces, head look for games, glasses screenshots. Talks to the app's local API (JSON-RPC over a per-user named pipe).</Description>

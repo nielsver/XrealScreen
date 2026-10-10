@@ -22,6 +22,10 @@
   <Folder Name="/tools/">
     <Project Path="tools/XrealScreen.Cli/XrealScreen.Cli.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/HeadPose.Console/HeadPose.Console.csproj" />
+    <Project Path="samples/AppClient.Console/AppClient.Console.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/XrealScreen.Core.Tests/XrealScreen.Core.Tests.csproj" />
     <Project Path="tests/XrealScreen.Device.Tests/XrealScreen.Device.Tests.csproj" />

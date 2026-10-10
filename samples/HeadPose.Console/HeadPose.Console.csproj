@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Sample: read head poses straight from the glasses with XrealScreen.Sdk (docs/sdk/dotnet-sdk.md). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- In your own project: <PackageReference Include="XrealScreen.Sdk" /> -->
+    <ProjectReference Include="..\..\src\XrealScreen.Sdk\XrealScreen.Sdk.csproj" />
+    <ProjectReference Include="..\..\src\XrealScreen.Device.Simulated\XrealScreen.Device.Simulated.csproj" />
+  </ItemGroup>
+</Project>

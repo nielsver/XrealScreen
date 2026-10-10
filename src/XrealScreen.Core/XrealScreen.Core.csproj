@@ -1,4 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- NuGet dependency of XrealScreen.Sdk (ADR-0012). Public API documented where it is SDK-facing. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>XrealScreen.Core</PackageId>
+    <Description>Head tracking for XREAL glasses: IMU fusion (Madgwick, gyro bias, prediction), recenter, head-to-mouse mapping, .xrimu recordings. Used by XrealScreen.Sdk.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
   <!-- Pure model/math library: no WinUI, no device I/O. -->
   <ItemGroup>
     <InternalsVisibleTo Include="XrealScreen.Core.Tests" />

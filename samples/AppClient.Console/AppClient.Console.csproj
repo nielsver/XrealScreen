@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Sample: control the running XrealScreen app with XrealScreen.Sdk.Client (docs/sdk/local-api.md). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- In your own project: <PackageReference Include="XrealScreen.Sdk.Client" /> -->
+    <ProjectReference Include="..\..\src\XrealScreen.Sdk.Client\XrealScreen.Sdk.Client.csproj" />
+  </ItemGroup>
+</Project>

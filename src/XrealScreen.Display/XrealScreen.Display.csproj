@@ -1,4 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- NuGet dependency of XrealScreen.Sdk (ADR-0012). Public API documented where it is SDK-facing. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>XrealScreen.Display</PackageId>
+    <Description>Windows display helpers for XREAL glasses: monitor topology (CCD), glasses EDID detection, layout snapshot/restore, window moving. Used by XrealScreen.Sdk.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
   <!-- Windows display topology (CCD), glasses detection, virtual display providers (M2). -->
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
