@@ -5,7 +5,7 @@
 
 ## Context
 The user wants to steer the camera and character in games such as Skyrim with head movement from the glasses ("head as a joystick"). Skyrim has no head-tracking (TrackIR/FreeTrack) support. It reads the mouse through DirectInput, and gamepad input through XInput. There are two ways to send input to a game:
-- **Relative mouse movement** with Win32 `SendInput`. Raw input and DirectInput consumers see it like real hardware; no driver is needed. [hypothesis] Skyrim accepts it (needs the user's test in game).
+- **Relative mouse movement** with Win32 `SendInput`. Raw input and DirectInput consumers see it like real hardware; no driver is needed. [verified-hw] Skyrim accepts it (user, 2026-10-10).
 - **Virtual gamepad** (XInput right stick). This needs a kernel bus driver: ViGEmBus is retired (archived 2023), and our own driver needs EV and attestation signing (same blocker as the own IddCx driver, ROADMAP "Later").
 
 ## Decision
