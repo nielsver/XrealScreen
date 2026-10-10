@@ -53,6 +53,7 @@ public sealed partial class MainWindow : Window
             "home" => typeof(HomePage),
             "screens" => typeof(ScreensPage),
             "tracking" => typeof(TrackingPage),
+            "games" => typeof(GamesPage),
             "device" => typeof(DevicePage),
             "about" => typeof(AboutPage),
             _ => throw new InvalidOperationException($"Unknown navigation item tag: {item.Tag}"),

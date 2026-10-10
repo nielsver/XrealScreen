@@ -322,6 +322,12 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
             await _tracking.StopCommand.ExecuteAsync(null).ConfigureAwait(true);
         }
 
+        // Head look (Games page) uses the IMU and may have made the glasses primary: hand both back first.
+        if (App.HeadLook.IsRunning)
+        {
+            await App.HeadLook.StopCommand.ExecuteAsync(null).ConfigureAwait(true);
+        }
+
         var options = SaveIfChanged();
         _workspace.MarkScreenSettingsApplied();
         StatusTitle = "Starting…";

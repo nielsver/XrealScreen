@@ -1,10 +1,7 @@
 using System.CommandLine;
-using System.Diagnostics;
 using System.Globalization;
 using XrealScreen.Core.Gaming;
-using XrealScreen.Core.Tracking;
 using XrealScreen.Device.XrealOne;
-using XrealScreen.Display;
 using XrealScreen.Host.Gaming;
 
 namespace XrealScreen.Cli;
@@ -12,13 +9,6 @@ namespace XrealScreen.Cli;
 /// <summary><c>xrs imu mouse</c>: head look for games via relative mouse input (ADR-0011).</summary>
 internal static class HeadMouseCommands
 {
-    private const int VkControl = 0x11;
-    private const int VkMenu = 0x12; // Alt
-    private const int VkH = 0x48;
-    private const int VkC = 0x43;
-    private const int VkG = 0x47;
-    private static readonly long MinSendIntervalTicks = Stopwatch.Frequency / 500; // ≤ 500 SendInput calls/s
-
     public static Command Create()
     {
         var mode = new Option<HeadMouseMode>("--mode") { Description = "Look = head turns the camera 1:1; Stick = head offset sets a turn speed (joystick).", DefaultValueFactory = _ => HeadMouseMode.Look };
@@ -81,148 +71,33 @@ internal static class HeadMouseCommands
 
     private static async Task<int> RunAsync(XrealOneImuSource source, HeadMouseSettings settings, CancellationToken ct)
     {
-        var tracker = new HeadTracker();
-        var mapper = new HeadMouseMapper { Settings = settings };
-        bool enabled = false;
-        bool toggleWasDown = false;
-        bool recenterWasDown = false;
-        bool moveWasDown = false;
-        int pendingX = 0, pendingY = 0;
-        long lastSend = 0, nextKeyPoll = 0, nextStatus = 0, sent = 0, rejected = 0;
-
-        Console.WriteLine($"Source: {source.Name}  mode={settings.Mode}");
+        var engine = new HeadLookEngine(source) { Settings = settings };
+        engine.Message += Console.WriteLine;
+        Console.WriteLine($"Source: {engine.SourceName}  mode={settings.Mode}");
         Console.WriteLine("Switch to the game, then press Ctrl+Alt+H to start head look (again to pause). Ctrl+Alt+C recenters. Ctrl+Alt+G moves the active (windowed/borderless) game to the glasses. Ctrl+C quits.");
-        bool connected = false;
-        bool waiting = false;
-        while (!ct.IsCancellationRequested)
+        var run = engine.RunAsync(ct);
+        try
         {
-            try
+            while (!run.IsCompleted)
             {
-                await foreach (var sample in source.ReadAsync(ct).ConfigureAwait(false))
+                await Task.WhenAny(run, Task.Delay(1000, ct)).ConfigureAwait(false);
+                if (engine.Enabled && engine.IsConnected)
                 {
-                    if (!connected)
-                    {
-                        connected = true;
-                        waiting = false;
-                        Console.WriteLine("IMU connected.");
-                    }
-
-                    var pose = tracker.Update(sample);
-                    long now = Stopwatch.GetTimestamp();
-
-                    if (now >= nextKeyPoll)
-                    {
-                        nextKeyPoll = now + Stopwatch.Frequency / 50;
-                        bool chord = MouseInjector.IsKeyDown(VkControl) && MouseInjector.IsKeyDown(VkMenu);
-                        bool toggleDown = chord && MouseInjector.IsKeyDown(VkH);
-                        bool recenterDown = chord && MouseInjector.IsKeyDown(VkC);
-                        bool moveDown = chord && MouseInjector.IsKeyDown(VkG);
-                        if (moveDown && !moveWasDown)
-                        {
-                            MoveActiveWindowToGlasses();
-                        }
-
-                        moveWasDown = moveDown;
-                        if (toggleDown && !toggleWasDown)
-                        {
-                            enabled = !enabled;
-                            mapper.Reset();
-                            pendingX = pendingY = 0;
-                            Console.WriteLine(enabled ? "head look ON" : "head look OFF");
-                        }
-
-                        if (recenterDown && !recenterWasDown)
-                        {
-                            mapper.Reset();
-                            Console.WriteLine("recentered");
-                        }
-
-                        toggleWasDown = toggleDown;
-                        recenterWasDown = recenterDown;
-                    }
-
-                    if (!enabled)
-                    {
-                        continue;
-                    }
-
-                    var delta = mapper.Update(pose);
-                    pendingX += delta.X;
-                    pendingY += delta.Y;
-                    if ((pendingX != 0 || pendingY != 0) && now - lastSend >= MinSendIntervalTicks)
-                    {
-                        if (MouseInjector.Move(new MouseDelta(pendingX, pendingY)))
-                        {
-                            sent++;
-                        }
-                        else
-                        {
-                            rejected++;
-                        }
-
-                        pendingX = pendingY = 0;
-                        lastSend = now;
-                    }
-
-                    if (now >= nextStatus)
-                    {
-                        nextStatus = now + Stopwatch.Frequency;
-                        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                            $"yaw={pose.YawDegrees,7:F1} pitch={pose.PitchDegrees,7:F1} sends={sent} rejected={rejected}"));
-                    }
+                    Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                        $"yaw={engine.YawDegrees,7:F1} pitch={engine.PitchDegrees,7:F1} sends={engine.Sends} rejected={engine.Rejected}"));
                 }
-
-                Console.WriteLine("IMU stream ended; reconnecting...");
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (IOException ex)
-            {
-                // Right after plugging in, the glasses' USB network is not up yet ([verified-hw] 2026-10-10:
-                // connect timed out, worked a minute later); unplug/replug during a game lands here too.
-                if (!waiting)
-                {
-                    Console.WriteLine($"{ex.Message.TrimEnd('.')} - waiting for the glasses (retrying every 2 s)...");
-                }
-
-                waiting = true;
-                connected = false;
-            }
-
-            mapper.Reset();
-            pendingX = pendingY = 0;
-            try
-            {
-                await Task.Delay(2000, ct).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
             }
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+        }
 
-        if (rejected > 0)
+        await run.ConfigureAwait(false);
+        if (engine.Rejected > 0)
         {
             Console.WriteLine("Some mouse moves were rejected: is the game running as administrator? Then run xrs as administrator too.");
         }
 
         return 0;
-    }
-
-    private static void MoveActiveWindowToGlasses()
-    {
-        var glasses = GlassesDisplayLocator.FindGlasses(new CcdDisplayTopology().GetActiveMonitors());
-        if (glasses is null)
-        {
-            Console.WriteLine("glasses display not found");
-            return;
-        }
-
-        string? title = WindowMover.MoveForegroundWindow(new System.Drawing.Rectangle(glasses.X, glasses.Y, glasses.Resolution.Width, glasses.Resolution.Height));
-        Console.WriteLine(title is null
-            ? "could not move the active window (exclusive fullscreen, elevated, or no app window)"
-            : $"moved to the glasses: {title}");
     }
 }

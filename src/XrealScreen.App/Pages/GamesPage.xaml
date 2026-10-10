@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="XrealScreen.App.Pages.GamesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <StackPanel Padding="24,16,24,24" Spacing="16" MaxWidth="1100">
+            <TextBlock Style="{StaticResource PageTitleStyle}" Text="Games" />
+
+            <InfoBar
+                IsClosable="True"
+                IsOpen="True"
+                Severity="Informational"
+                Title="Head look: steer games like Skyrim with your head"
+                Message="Your head movement becomes mouse movement, so it works in any game with mouse look; your real mouse keeps working. Set the glasses to Follow with UltraWide Off. A workspace cannot run at the same time." />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Command="{x:Bind HeadLook.StartCommand}" Content="Start head look" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Command="{x:Bind HeadLook.StopCommand}" Content="Stop" />
+                        <Button Command="{x:Bind HeadLook.ToggleCommand}" Content="{x:Bind HeadLook.ToggleText, Mode=OneWay}" />
+                        <Button Command="{x:Bind HeadLook.RecenterCommand}" Content="Recenter" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind HeadLook.Status, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock Text="{x:Bind HeadLook.Pose, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{x:Bind HeadLook.LastMessage, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <ToggleSwitch
+                        Header="Make the glasses the primary monitor while head look runs (games open there)"
+                        IsEnabled="{x:Bind HeadLook.IsStopped, Mode=OneWay}"
+                        IsOn="{x:Bind HeadLook.GlassesPrimary, Mode=TwoWay}" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                        <Run FontWeight="SemiBold" Text="In the game:" />
+                        <Run Text="Ctrl+Alt+H turns head look on or off · Ctrl+Alt+C recenters · Ctrl+Alt+G moves a windowed or borderless game to the glasses. Start head look before the game, so the game opens on the glasses. Your monitor layout comes back when you stop." />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="How your head moves the camera" />
+                    <RadioButtons ItemsSource="{x:Bind HeadLook.ModeNames}" SelectedIndex="{x:Bind HeadLook.ModeIndex, Mode=TwoWay}" />
+
+                    <Slider
+                        Header="Sensitivity (mouse steps per degree) — adjust until a 90° head turn is 90° in the game"
+                        MaxWidth="560"
+                        MinWidth="320"
+                        HorizontalAlignment="Left"
+                        IsEnabled="{x:Bind HeadLook.IsLook, Mode=OneWay}"
+                        Maximum="100"
+                        Minimum="1"
+                        StepFrequency="1"
+                        Value="{x:Bind HeadLook.Sensitivity, Mode=TwoWay}" />
+                    <Slider
+                        Header="Ignore tiny movements below (degrees/second)"
+                        MaxWidth="560"
+                        MinWidth="320"
+                        HorizontalAlignment="Left"
+                        IsEnabled="{x:Bind HeadLook.IsLook, Mode=OneWay}"
+                        Maximum="3"
+                        Minimum="0"
+                        StepFrequency="0.1"
+                        Value="{x:Bind HeadLook.Deadband, Mode=TwoWay}" />
+
+                    <Slider
+                        Header="Joystick: center zone that does nothing (degrees)"
+                        MaxWidth="560"
+                        MinWidth="320"
+                        HorizontalAlignment="Left"
+                        IsEnabled="{x:Bind HeadLook.IsStick, Mode=OneWay}"
+                        Maximum="30"
+                        Minimum="0"
+                        StepFrequency="1"
+                        Value="{x:Bind HeadLook.StickDeadZone, Mode=TwoWay}" />
+                    <Slider
+                        Header="Joystick: full speed at (degrees from center)"
+                        MaxWidth="560"
+                        MinWidth="320"
+                        HorizontalAlignment="Left"
+                        IsEnabled="{x:Bind HeadLook.IsStick, Mode=OneWay}"
+                        Maximum="60"
+                        Minimum="5"
+                        StepFrequency="1"
+                        Value="{x:Bind HeadLook.StickFull, Mode=TwoWay}" />
+                    <Slider
+                        Header="Joystick: top speed (mouse steps per second)"
+                        MaxWidth="560"
+                        MinWidth="320"
+                        HorizontalAlignment="Left"
+                        IsEnabled="{x:Bind HeadLook.IsStick, Mode=OneWay}"
+                        Maximum="5000"
+                        Minimum="100"
+                        StepFrequency="50"
+                        Value="{x:Bind HeadLook.StickSpeed, Mode=TwoWay}" />
+
+                    <Slider
+                        Header="Up/down strength (0 = left/right only)"
+                        MaxWidth="560"
+                        MinWidth="320"
+                        HorizontalAlignment="Left"
+                        Maximum="2"
+                        Minimum="0"
+                        StepFrequency="0.1"
+                        Value="{x:Bind HeadLook.VerticalScale, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Invert up/down" IsOn="{x:Bind HeadLook.InvertY, Mode=TwoWay}" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Changes apply immediately, also while you play. Turning off mouse acceleration and mouse smoothing in the game makes head look feel more direct." />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

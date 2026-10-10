@@ -42,6 +42,8 @@ public partial class App : Application
 
     public static SessionViewModel Session { get; private set; } = null!;
 
+    public static HeadLookViewModel HeadLook { get; private set; } = null!;
+
     public static MainWindow MainWindow { get; private set; } = null!;
 
     public static AppPreferences Preferences { get; private set; } = null!;
@@ -56,6 +58,7 @@ public partial class App : Application
         Tracking = new TrackingViewModel(dispatcher);
         Device = new DeviceViewModel();
         Session = new SessionViewModel(dispatcher, Workspace, Tracking);
+        HeadLook = new HeadLookViewModel(dispatcher);
 
         MainWindow = new MainWindow();
         MainWindow.SetTheme(ThemeFromIndex(Preferences.Theme));
@@ -188,6 +191,7 @@ public partial class App : Application
 
         _shutDown = true;
         // Always hand the desktop back (virtual monitors, layout, refresh rates).
+        HeadLook.Dispose();
         Session.Dispose();
         Tracking.Dispose();
     }

@@ -15,7 +15,7 @@ Inject relative mouse movement with `SendInput` (`Host.Gaming.MouseInjector`). T
 
 **Game on the glasses:** games, and every exclusive-fullscreen game, open on the Windows primary monitor (the one at (0,0)). While head look runs, the layout is shifted so the glasses are at (0,0) (`Display.GameDisplay.GlassesPrimary`, `Host.Gaming.GlassesPrimarySession`). The old layout goes to the workspace snapshot file, so app start and `xrs recover` restore it after a crash; exit restores it. Not while a workspace runs (same snapshot). Windowed/borderless games can also be moved with Ctrl+Alt+G (`WindowMover.MoveForegroundWindow`: a window covering its monitor fills the glasses, others are centered).
 
-First delivery is `xrs imu mouse` (Ctrl+Alt+H toggles, starts off). The glasses are a plain monitor while gaming: OSD **Follow**, UltraWide **Off**, no XrealScreen workspace running.
+The loop (IMU retry, hotkeys polled with GetAsyncKeyState so they work in game and are not taken from other apps) is `Host.Gaming.HeadLookEngine`, used by the app's **Games** page (settings in `app.json`, applied live) and by `xrs imu mouse`. Head look starts off; Ctrl+Alt+H toggles. Starting a workspace stops head look first; head look does not start while a workspace runs. The glasses are a plain monitor while gaming: OSD **Follow**, UltraWide **Off**, no XrealScreen workspace running.
 
 ## Consequences
 - + Works in any game with mouse look; no driver, no signing, no admin (unless the game runs elevated, then UIPI blocks injection and xrs must be elevated too).
@@ -23,7 +23,6 @@ First delivery is `xrs imu mouse` (Ctrl+Alt+H toggles, starts off). The glasses 
 - − Games with mouse smoothing or acceleration change the feel; sensitivity must be tuned per game (`--sens` until a 90° head turn is 90° in game).
 - − Games that read only XInput (no mouse) are not covered; a virtual gamepad stays a later option behind the same mapper.
 - − While the glasses are primary, the taskbar and new windows go there too.
-- Follow-up: an app page (enable, mode, sensitivity, hotkey) that runs the mapper on the app's IMU stream.
 
 ## Alternatives
 - ViGEmBus virtual Xbox pad: retired, needs a separately installed kernel driver.

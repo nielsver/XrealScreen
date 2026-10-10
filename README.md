@@ -15,6 +15,7 @@ A Windows 11 app that turns **XREAL 1S** (also One / One Pro) AR glasses into a 
 - **Automatic start**: start a chosen workspace when XrealScreen starts and/or **when the glasses are connected**. A Glasses anchor workspace waits (with a message on the Home page and in the tray) until the glasses are in UltraWide mode, then starts by itself.
 - **Primary monitor**: make any virtual screen the Windows primary monitor while the workspace runs; windows left on the glasses display are moved onto the workspace.
 - **Screenshots of the glasses**: Home **Screenshot** button, tray menu or **Ctrl+Alt+P** save exactly what the glasses show to `Pictures\XrealScreen`.
+- **Head look for games** (Games page): steer games like Skyrim with your head. Head movement becomes mouse movement (no driver), as **Look** (1:1 camera) or **Joystick** (turn your head to keep turning). The glasses become the primary monitor while it runs, so games open there; Ctrl+Alt+H on/off, Ctrl+Alt+C recenter, Ctrl+Alt+G moves a windowed game to the glasses.
 - **Tray and hotkeys**: runs in the tray; Ctrl+Alt+W starts/stops the workspace, Ctrl+Alt+P takes a screenshot; start with Windows; **Exit** quits for real.
 - Modern WinUI 3 UI (Fluent, Mica, light/dark), .NET 10.
 

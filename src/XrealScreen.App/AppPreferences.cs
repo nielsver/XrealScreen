@@ -24,6 +24,12 @@ public sealed class AppPreferences
     /// <summary>Saved workspace last saved or loaded (preselected on the Home page).</summary>
     public string? LastWorkspaceName { get; set; }
 
+    /// <summary>Games page: head look mapping (ADR-0011).</summary>
+    public XrealScreen.Core.Gaming.HeadMouseSettings HeadLook { get; set; } = new();
+
+    /// <summary>Games page: make the glasses the primary monitor while head look runs.</summary>
+    public bool HeadLookGlassesPrimary { get; set; } = true;
+
     /// <summary>0 = system, 1 = light, 2 = dark.</summary>
     public int Theme { get; set; }
 
