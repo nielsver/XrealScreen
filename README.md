@@ -30,9 +30,9 @@ A Windows 11 app that turns **XREAL 1S** (also One / One Pro) AR glasses into a 
 |----------|----------|
 | ![Tracking page: axes, stabilizer, neck model, auto center](images/tracking.png) | ![Settings page: automatic start, tray, theme](images/settings.png) |
 
-| Games | Device |
-|-------|--------|
-| ![Games page: head look for games — start/stop, glasses as primary monitor, Look or Joystick mode, sensitivity](images/games.png) | ![Device page: connected glasses and IMU](images/device.png) |
+**Games**
+
+<img src="images/games.png" width="49%" alt="Games page: head look for games — start/stop, glasses as primary monitor, Look or Joystick mode, sensitivity">
 
 ## Setting up the glasses
 | Workspace type | Glasses menu |
