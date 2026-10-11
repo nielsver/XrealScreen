@@ -30,7 +30,9 @@
 ## Next steps
 1. MSI install test (admin): `msiexec /i artifacts\msi\XrealScreen-0.1.0-x64.msi /l*v install.log` → Start menu entry (two "XrealScreen" entries while the dev MSIX is registered), app starts, tray icon, Settings → Start with Windows (HKCU Run value + sign-in start in tray), workspace in the glasses, Repair, uninstall (Run value gone). Then the driver page in Windows Sandbox or a spare PC (fresh install: certificate + device + driver; uninstall removes them). Payload trimming (Windows App SDK AI components). Signing later (ADR-0013).
 2. Store: reserve the name in Partner Center, fill `installer\store\StoreIdentity.json`, run `Build-StorePackage.ps1 -RunWack` (admin), privacy policy URL, submit. Driver for Store users: EV certificate + attestation signing, then a GitHub release with `XrealScreen-Driver.zip` (the app links to releases/latest). Check the driver-missing banner on a PC without the driver (Sandbox).
-3. With the glasses: `dotnet run --project samples/AppClient.Console -- poses` and `samples/HeadPose.Console` (pose stream over the API and the SDK); publish the packages (nuget.org) when the API settles.
+3. **Publish the SDK to nuget.org (user, in progress 2026-10-11):** metadata ready (MIT, authors, repo URL, tags, READMEs with absolute GitHub links); all six IDs free on nuget.org (checked 2026-10-11). User steps: nuget.org API key (Push, glob `XrealScreen.*`) → `Remove-Item artifacts
+uget\*.nupkg; .	ools\Pack-Sdk.ps1 -Version 0.1.0` (or `0.1.0-preview.1`) → `dotnet nuget push "artifacts
+uget\*.nupkg" --api-key $key --source https://api.nuget.org/v3/index.json --skip-duplicate`. Open: version choice (0.1.0 vs preview), "unofficial, not affiliated with XREAL" disclaimer in package README/Description, reserve the `XrealScreen.` prefix (account@nuget.org), optional push from `release.yml` with a `NUGET_API_KEY` secret. Then update `docs/sdk/README.md` ("not on nuget.org yet"). Before/after: test the pose stream with the glasses (`samples/AppClient.Console -- poses`, `samples/HeadPose.Console`).
 4. M6: user test of tray icon / start with Windows / Ctrl+Alt+W (2026-09-27) and of saved workspaces / import-export / start latest workspace / Exit / start on glasses connect / primary screen / window move (2026-09-29).
 5. M7: clean-PC install test in Windows Sandbox (`installer\test\Start-SandboxTest.ps1` -> `artifacts\sandbox\results\report.txt`). **First run 2026-09-27 stalled** right after "PASS no driver before install", inside `Install-XrealScreen.ps1 -Yes` (no output for 9 min) - probably a dialog in the Sandbox (driver install prompt or Add-AppxPackage). Next: look at the Sandbox window, log each install step separately with timeouts in `Run-InSandbox.ps1`, rerun. Then trusted signing for a public release.
 6. App head tracking: glasses A/B of prediction 20 vs 26 ms (measured latch→scan-out ≈ 22 ms, ADR-0009); optional Strong vs Balanced for the last nod bob. Removing DWM (always composed here) needs exclusive fullscreen or DirectComposition — deferred.
@@ -53,17 +55,6 @@
 ## Session log
 | Date | Agent | Summary |
 |------|-------|---------|
-| 2026-09-26 | Claude | M0: research, plan, solution, app, docs, CI. |
-| 2026-09-26 | Claude | M1 hardware test on 1S: protocol verified, axis mapping/pitch/bias fixed, fixtures + tests, docs updated. |
-| 2026-09-26 | Claude | M2: Display project, glasses EDID detection, ADR-0008 virtual-display-rs provider verified on hardware. |
-| 2026-09-26 | Claude | M2 done: layout snapshot/restore, 1S mode table, WGC capture of virtual monitors. |
-| 2026-09-26 | Claude | M3: renderer in the glasses; user A/B tests → tracker tuning, stabilizer presets, desktop refresh sync (ADR-0009 update). |
-| 2026-09-26 | Claude | M3 done: drift test 5 min OK, mouse fixed (desktop order), all verified with the user in the glasses. |
-| 2026-09-26 | Claude | M4/M5 start: WorkspaceEngine (Host), app Start/Stop workspace, stabilizer UI, settings persistence. |
-| 2026-09-26/27 | Claude | M4/M5: engine + app Start/Stop; user feedback → axes modes, neck model, stabilizer, NaN fix, glasses-anchor workspace (ADR-0010) with gap/aspect/preview/apply, crash-safe restore. |
-| 2026-09-27 | Claude | M6 tray/autostart/hotkey; M7 phase 1: icon, signed self-contained MSIX, install scripts. |
-| 2026-09-27 | Claude | Lag work: gyro-speed stabilizer, late latch, 20 ms prediction; nod bobbing fixed with Madgwick rate gate (glasses A/B). |
-| 2026-09-27 | Claude | Latency measurement in presenter stats (latch→scan-out ≈ 22 ms, always DWM-composed); late latch default back to 0 (no gain while composed). |
 | 2026-09-27 | Claude | M7 phase 2: driver built from source (rustup, WDK, LLVM 18), separate driver cert, Install-Driver.ps1 (SetupAPI root device), package bundles the driver. |
 | 2026-09-29 | Claude | M6: autosave of all settings, saved workspaces with import/export, start latest workspace at launch, Exit in the window; Host.Tests project; start on glasses connect, primary virtual screen, move windows off the glasses. |
 | 2026-10-10 | Claude | Head look for games (ADR-0011): HeadMouseMapper (Look/Stick) + SendInput injector + `xrs imu mouse`. |
@@ -73,3 +64,4 @@
 | 2026-10-10 | Claude | Developer SDK (XrealScreen.Sdk) + local API (JSON-RPC over a named pipe, Contracts, Sdk.Client), docs/sdk, samples, NuGet packing, 48 new tests (ADR-0012). |
 | 2026-10-11 | Claude | Microsoft Store packaging: Build-StorePackage.ps1 (unsigned x64+ARM64 bundle), driver-missing detection + Get the driver link, standalone driver zip script, ADR-0005 update. |
 | 2026-10-11 | Claude | MSI with FalkForge (ADR-0013): unpackaged app + Run-key autostart, `xrs driver` (C# driver setup), installer/msi + Build-Msi.ps1. |
+| 2026-10-11 | Claude | NuGet publishing prep: package README links made absolute, IDs checked free on nuget.org; push steps for the user in Next steps. |
