@@ -12,6 +12,7 @@ root.Subcommands.Add(DeviceCommands.CreateProbe());
 root.Subcommands.Add(ImuCommands.Create());
 root.Subcommands.Add(DisplayCommands.Create());
 root.Subcommands.Add(VddCommands.Create());
+root.Subcommands.Add(DriverCommands.Create());
 root.Subcommands.Add(CaptureCommands.Create());
 root.Subcommands.Add(RenderCommands.Create());
 var recover = new Command("recover", "Clean up after a crashed session: remove XrealScreen virtual monitors, restore layout and refresh rates.");
