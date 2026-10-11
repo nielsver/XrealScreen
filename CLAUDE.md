@@ -42,7 +42,7 @@ WinUI templates: `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templa
 Planned projects (Service M6) are created when their milestone starts — see `docs/ARCHITECTURE.md`.
 
 Glasses setup depends on the workspace type (ADR-0010): **Glasses anchor** = OSD **Anchor** + UltraWide 32:9/16:18/21:9; **App head tracking** = UltraWide **Off**, **Follow**, **Stabilizer off** (see `docs/findings/xreal-1s-hardware.md`).
-The packaged app appears in the Start menu as **XrealScreen** after `dotnet run`; starting `XrealScreen.App.exe` directly crashes (no package identity).
+The packaged app appears in the Start menu as **XrealScreen** after `dotnet run`; starting the dev build's `XrealScreen.App.exe` directly crashes (no package identity). The MSI ships an unpackaged build (`WindowsPackageType=None`) that runs without identity (ADR-0013).
 
 ## Rules
 - **Clean room (ADR-0006):** never copy code from GPL projects, the XREAL SDK (no license) or VertoXR (proprietary; no decompiling). MIT code may be ported with attribution in `THIRD-PARTY-NOTICES.md` and `docs/legal/SOURCES.md`.

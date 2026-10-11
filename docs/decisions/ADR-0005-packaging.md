@@ -55,3 +55,7 @@ We want clean install/update/uninstall (MSIX), but MSIX cannot install kernel or
 - Open: the public driver needs an EV certificate + Microsoft attestation signing (no self-signed root on user PCs).
 - Rejected: an EXE/MSI Store submission that installs the driver itself (loses the MSIX lifecycle; revisit once the
   driver is attestation-signed); Windows Update delivery (a root-enumerated software device has no hardware ID to match).
+
+## Update 2026-10-11 — MSI
+- An MSI of the unpackaged app (built with FalkForge) installs app + driver without PowerShell scripts: **ADR-0013**.
+  The MSIX stays for development and the Store.

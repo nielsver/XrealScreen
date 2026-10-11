@@ -26,3 +26,4 @@ Every external source consulted. **How used:** `facts` (IDs/constants/behaviour 
 | `csharp-developer` skill | https://github.com/Jeffallan (per SKILL.md metadata) | MIT (per frontmatter) | imported | 2026-09-26 |
 | `winui-app` skill | see `.claude/skills/winui-app/` | Apache-2.0 (`LICENSE.txt`) | imported | 2026-09-26 |
 | XREAL tutorials: One-series OSD (UltraWide, Stabilizer) + One-series user guide | https://tutorials.xreal.com/docs/glasses/one-series/osd/stabilizer/ , https://us.shop.xreal.com/blogs/buying-guide/user-guide_xreal-one-series | vendor docs | facts (OSD usage) | 2026-09-26 |
+| FalkForge 0.5.0-beta.8 (NuGet `FalkForge.Core`, `FalkForge.Compiler.Msi`, tool `FalkForge.Tool`; docs + source `877eec7`) | https://github.com/Falkesand/FalkForge | FSL-1.1 (Apache-2.0 after 2 years; building installers for own software permitted) | build tool for the MSI (ADR-0013); nothing of it ships in the MSI | 2026-10-11 |

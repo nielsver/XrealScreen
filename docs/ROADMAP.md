@@ -47,6 +47,7 @@ Deliverables: tray, StartupTask, helper service + ACL'd pipe, crash-safe topolog
 - [x] App icon + MSIX logos (`tools/branding/Make-Icons.ps1`)
 - [x] Signed self-contained MSIX + install/uninstall scripts (`installer/`, ADR-0005 update)
 - [x] Phase 2: build + sign virtual-display-rs 0.4 ourselves; installer installs it (`installer/driver/Build-Driver.ps1`, `Install-Driver.ps1`, ADR-0005)
+- [x] MSI with FalkForge: unpackaged self-contained app, `xrs driver` installs the driver (`installer\Build-Msi.ps1`, ADR-0013) — install test on a PC pending
 - [ ] Trusted signing certificate (or Store) for a public release; driver via EV + attestation signing; license list of the driver's Rust crates
 - [ ] Clean-VM install test
 

@@ -1,5 +1,26 @@
 # XrealScreen installer (test build)
 
+## MSI (recommended, ADR-0013)
+```powershell
+.\installer\Build-Msi.ps1 -Version 0.1.0     # -> artifacts\installer\XrealScreen-0.1.0-x64.msi
+```
+Double-click the MSI (Windows asks for administrator rights), or silently:
+```powershell
+msiexec /i XrealScreen-0.1.0-x64.msi /qn /l*v install.log          # app + driver (when bundled)
+msiexec /i XrealScreen-0.1.0-x64.msi /qn ADDLOCAL=App               # app only
+msiexec /x XrealScreen-0.1.0-x64.msi /qn                            # uninstall
+```
+- Installs the unpackaged, self-contained app (+ `xrs.exe`) to `C:\Program Files\XrealScreen` and a Start menu shortcut.
+- **Virtual display driver** feature (only when `artifacts\driver` was built, `driver\Build-Driver.ps1`): runs
+  `xrs driver install` — keeps an existing virtual-display-rs driver, otherwise trusts the driver's test certificate and
+  installs the driver. Uninstall removes only what it installed (`xrs driver status` shows the state).
+- Built with FalkForge (`installer\msi\Program.cs`; CLI pinned in `dotnet-tools.json`). ICE validation needs the
+  Windows SDK MSI tools (`darice.cub`), otherwise it is skipped.
+- Unsigned for now. Signing: `-CertificateThumbprint <thumbprint>` signs our exes/DLLs and the MSI; a public release
+  needs a trusted certificate and an attestation-signed driver (ADR-0013).
+
+## MSIX + scripts (ADR-0005)
+
 ## Install
 1. Copy this folder to the PC.
 2. Open **PowerShell as administrator** in this folder and run:
