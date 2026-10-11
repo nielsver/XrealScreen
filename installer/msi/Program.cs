@@ -14,8 +14,19 @@ using FalkForge.Models;
 //
 // Wizard: Welcome → License → Install folder → [Virtual display driver] → progress → finish.
 
-string payload = Path.GetFullPath(Arg("--payload") ?? throw new ArgumentException("--payload <publish folder> is required"));
-string license = Path.GetFullPath(Arg("--license") ?? throw new ArgumentException("--license <LICENSE file> is required"));
+if (Arg("--payload") is not { } payloadArg || Arg("--license") is not { } licenseArg)
+{
+    Console.Error.WriteLine("""
+        This tool BUILDS XrealScreen.msi; it is not the installer.
+          Build the MSI:   .\installer\Build-Msi.ps1          (publishes the app, then runs this tool)
+          Install:         artifacts\installer\XrealScreen-<version>-x64.msi
+        Direct use: XrealScreen.Installer --payload <publish folder> --license <LICENSE> [--version x.y.z] [-o <output folder>]
+        """);
+    return 2;
+}
+
+string payload = Path.GetFullPath(payloadArg);
+string license = Path.GetFullPath(licenseArg);
 var version = Version.Parse(Arg("--version") ?? "0.1.0");
 bool hasDriver = File.Exists(Path.Combine(payload, "driver", "VirtualDisplayDriver.inf"));
 
