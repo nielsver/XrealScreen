@@ -21,6 +21,18 @@ msiexec /x XrealScreen-0.1.0-x64.msi /qn                            # uninstall
 - Unsigned for now. Signing: `-CertificateThumbprint <thumbprint>` signs our exes/DLLs and the MSI; a public release
   needs a trusted certificate and an attestation-signed driver (ADR-0013).
 
+### GitHub release
+`.github/workflows/release.yml` builds the MSI on a GitHub runner and attaches it to the release:
+1. Once: add two repository secrets (Settings → Secrets and variables → Actions) so the driver is signed with the
+   same test certificate every release:
+   ```powershell
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes('installer\.signing\driver\XrealScreen-driver.pfx')) | Set-Clipboard   # DRIVER_PFX_BASE64
+   Get-Content installer\.signing\driver\pfx-password.txt | Set-Clipboard                                                    # DRIVER_PFX_PASSWORD
+   ```
+   Without them the release MSI has no driver page.
+2. Publish a release with a tag `vX.Y.Z` (e.g. `v0.2.0`): the workflow builds `XrealScreen-X.Y.Z-x64.msi` and uploads
+   it to that release (~20–30 min). **Actions → Release MSI → Run workflow** builds a test MSI as a workflow artifact.
+
 ## MSIX + scripts (ADR-0005)
 
 ## Install
