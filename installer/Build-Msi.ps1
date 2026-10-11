@@ -42,6 +42,8 @@ Invoke-Checked { dotnet publish (Join-Path $repo 'src\XrealScreen.App') -c $Conf
     -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -p:SelfContained=true -p:Version=$Version `
     -o $payload } 'publish app'
 Get-ChildItem $payload -Filter *.pdb | Remove-Item
+Copy-Item (Join-Path $repo 'LICENSE') (Join-Path $payload 'LICENSE.txt')
+Copy-Item (Join-Path $repo 'THIRD-PARTY-NOTICES.md') $payload
 
 # 2. Driver (optional)
 $driver = Join-Path $repo 'artifacts\driver'
@@ -66,7 +68,7 @@ try {
     # -o is a folder; FalkForge names the file <Name>-<Version>.msi
     $build = Join-Path $repo 'artifacts\msi\out'
     Remove-Item $build -Recurse -Force -ErrorAction SilentlyContinue
-    Invoke-Checked { dotnet run --project (Join-Path $PSScriptRoot 'msi') -c $Configuration -- --payload $payload --version $Version -o $build } 'FalkForge build'
+    Invoke-Checked { dotnet run --project (Join-Path $PSScriptRoot 'msi') -c $Configuration -- --payload $payload --license (Join-Path $repo 'LICENSE') --version $Version -o $build } 'FalkForge build'
     Move-Item (Get-ChildItem $build -Filter *.msi | Select-Object -First 1).FullName $msi -Force
 } finally {
     Remove-Item Env:XRS_SIGN_THUMBPRINT -ErrorAction SilentlyContinue

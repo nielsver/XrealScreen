@@ -28,9 +28,15 @@ Ship an **MSI of the unpackaged, self-contained app**, built with FalkForge:
 - **MSI** (`installer/msi`, `installer/Build-Msi.ps1`): per-machine, `Program Files\XrealScreen`, payload = app + `xrs`
   published into one folder, Start menu shortcut, fixed UpgradeCode `d322530b-9c76-4b91-882d-db8616d6ea57`,
   MajorUpgrade + downgrade block, Restart Manager (the app runs in the tray), Windows 11 x64 launch conditions, Run
-  value removed on uninstall. Optional **Driver** feature (only when `artifacts\driver` is built) runs `xrs driver` as
-  deferred, elevated PowerShell custom actions (FalkForge has no EXE-from-installed-file action); the driver stays on a
-  major upgrade. ICE validation with the FalkForge CLI pinned in `dotnet-tools.json`.
+  value removed on uninstall, `LICENSE` + `THIRD-PARTY-NOTICES.md` installed. Wizard: Welcome → License (LICENSE as RTF)
+  → Install folder → **Virtual display driver** page (custom dialog, check box `INSTALLDRIVER`, default on; only when
+  `artifacts\driver` is built) → progress. FalkForge cannot insert a page into a stock wizard (its step-builder
+  interface is internal), so the InstallDir page's last button reads **Next** and the driver page follows the wizard
+  in the UI sequence. `xrs driver` runs as deferred, elevated PowerShell custom actions (FalkForge has no
+  EXE-from-installed-file action); the driver stays on a major upgrade. Windows 11 check: build number from the
+  registry (AppSearch/RegLocator as custom tables) — FalkForge's `WindowsBuildNumber` property does not exist in
+  Windows Installer, so `Condition.IsWindows11OrLater` always fails [verified-local]. ICE validation with the FalkForge
+  CLI pinned in `dotnet-tools.json`.
 - **Signing later**: unsigned builds for testing. `Build-Msi.ps1 -CertificateThumbprint` already signs our exes/DLLs
   (signtool) and the MSI (FalkForge `Signing`, `XRS_SIGN_THUMBPRINT`). A public release needs a trusted code-signing
   certificate (or Azure Trusted Signing) and the driver attestation-signed by Microsoft (no self-signed root on user PCs).
@@ -38,7 +44,7 @@ Ship an **MSI of the unpackaged, self-contained app**, built with FalkForge:
 The MSIX path (ADR-0005, Store package) stays for development (`dotnet run`) and the Store.
 
 ## Consequences
-- + Standard Windows install/repair/uninstall, silent installs (`msiexec /i … /qn`, `ADDLOCAL=App` without the driver),
+- + Standard Windows install/repair/uninstall, silent installs (`msiexec /i … /qn`, `INSTALLDRIVER=0` without the driver),
   installs the driver itself instead of PowerShell scripts.
 - + Same code runs packaged and unpackaged; no identity-only APIs left in the app.
 - − ~86 MB MSI: the self-contained Windows App SDK brings components the app does not use (OnnxRuntime, DirectML, …).

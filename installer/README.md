@@ -4,14 +4,16 @@
 ```powershell
 .\installer\Build-Msi.ps1 -Version 0.1.0     # -> artifacts\installer\XrealScreen-0.1.0-x64.msi
 ```
-Double-click the MSI (Windows asks for administrator rights), or silently:
+Double-click the MSI: Welcome → License (MIT) → Install folder (Change...) → Virtual display driver (check box; only
+when the driver is bundled) → Install (Windows asks for administrator rights). Or silently:
 ```powershell
 msiexec /i XrealScreen-0.1.0-x64.msi /qn /l*v install.log          # app + driver (when bundled)
-msiexec /i XrealScreen-0.1.0-x64.msi /qn ADDLOCAL=App               # app only
+msiexec /i XrealScreen-0.1.0-x64.msi /qn INSTALLDRIVER=0            # app only
+msiexec /i XrealScreen-0.1.0-x64.msi /qn INSTALLDIR="D:\Apps\XrealScreen\"   # other folder
 msiexec /x XrealScreen-0.1.0-x64.msi /qn                            # uninstall
 ```
 - Installs the unpackaged, self-contained app (+ `xrs.exe`) to `C:\Program Files\XrealScreen` and a Start menu shortcut.
-- **Virtual display driver** feature (only when `artifacts\driver` was built, `driver\Build-Driver.ps1`): runs
+- **Virtual display driver** (only when `artifacts\driver` was built, `driver\Build-Driver.ps1`): runs
   `xrs driver install` — keeps an existing virtual-display-rs driver, otherwise trusts the driver's test certificate and
   installs the driver. Uninstall removes only what it installed (`xrs driver status` shows the state).
 - Built with FalkForge (`installer\msi\Program.cs`; CLI pinned in `dotnet-tools.json`). ICE validation needs the
