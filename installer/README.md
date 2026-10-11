@@ -2,7 +2,7 @@
 
 ## MSI (recommended, ADR-0013)
 ```powershell
-.\installer\Build-Msi.ps1 -Version 0.1.0     # -> artifacts\installer\XrealScreen-0.1.0-x64.msi
+.\installer\Build-Msi.ps1 -Version 0.1.0     # -> artifacts\msi\XrealScreen-0.1.0-x64.msi (the only file to copy)
 ```
 Double-click the MSI: Welcome → License (MIT) → Install folder (Change...) → Virtual display driver (check box; only
 when the driver is bundled) → Install (Windows asks for administrator rights). Or silently:

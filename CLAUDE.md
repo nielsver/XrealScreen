@@ -13,6 +13,7 @@ dotnet build XrealScreen.slnx -p:Platform=x64      # everything incl. WinUI app
 dotnet test --solution XrealScreen.slnx            # xUnit v3 on Microsoft.Testing.Platform (global.json)
 dotnet build src/XrealScreen.App -p:Platform=x64         # build the APP PROJECT before running it: the solution build writes bin\Debug\…, but
 dotnet run --project src/XrealScreen.App -p:Platform=x64   # `dotnet run -p:Platform=x64` launches bin\x64\Debug\… (stale app otherwise!)
+.\installer\Build-Msi.ps1                            # MSI (FalkForge, ADR-0013): app + xrs + driver page -> artifacts\msi\ (copy only the .msi)
 .\installer\Build-Package.ps1                        # signed self-contained MSIX + install scripts -> artifacts\installer\
 .\installer\Build-StorePackage.ps1                   # unsigned Store .msixbundle (x64+ARM64) -> artifacts\store\ (installer\store\README.md)
 .\tools\Pack-Sdk.ps1                                 # SDK NuGet packages -> artifacts\nuget\ (docs/sdk)

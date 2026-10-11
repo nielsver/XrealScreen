@@ -19,7 +19,7 @@ if (Arg("--payload") is not { } payloadArg || Arg("--license") is not { } licens
     Console.Error.WriteLine("""
         This tool BUILDS XrealScreen.msi; it is not the installer.
           Build the MSI:   .\installer\Build-Msi.ps1          (publishes the app, then runs this tool)
-          Install:         artifacts\installer\XrealScreen-<version>-x64.msi
+          Install:         artifacts\msi\XrealScreen-<version>-x64.msi
         Direct use: XrealScreen.Installer --payload <publish folder> --license <LICENSE> [--version x.y.z] [-o <output folder>]
         """);
     return 2;

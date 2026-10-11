@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-  Builds XrealScreen-<version>-x64.msi with FalkForge (ADR-0013) into artifacts\installer.
+  Builds XrealScreen-<version>-x64.msi with FalkForge (ADR-0013) into artifacts\msi (only the .msi; build files in artifacts\msi-build).
 
 .DESCRIPTION
   1. Publishes the app unpackaged and self-contained (.NET + Windows App SDK inside; WindowsPackageType=None) and
-     the xrs tool into one payload folder (artifacts\msi\payload).
+     the xrs tool into one payload folder (artifacts\msi-build\payload).
   2. Bundles the virtual display driver from artifacts\driver when it has been built
      (installer\driver\Build-Driver.ps1); without it the MSI has no Driver feature.
   3. Optional signing (-CertificateThumbprint, cert in CurrentUser\My): signs our exes/DLLs with signtool and the
@@ -14,7 +14,7 @@
 .EXAMPLE
   .\installer\Build-Msi.ps1
   .\installer\Build-Msi.ps1 -Version 0.2.0
-  msiexec /i artifacts\installer\XrealScreen-0.1.0-x64.msi /l*v install.log
+  msiexec /i artifacts\msi\XrealScreen-0.1.0-x64.msi /l*v install.log
 #>
 param(
     [string]$Version = '0.1.0',
@@ -23,8 +23,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$payload = Join-Path $repo 'artifacts\msi\payload'
-$out = Join-Path $repo 'artifacts\installer'
+$payload = Join-Path $repo 'artifacts\msi-build\payload'
+$out = Join-Path $repo 'artifacts\msi'
 $msi = Join-Path $out "XrealScreen-$Version-x64.msi"
 
 function Invoke-Checked([scriptblock]$Command, [string]$What) {
@@ -66,7 +66,7 @@ if ($CertificateThumbprint) {
 # 4. MSI
 try {
     # -o is a folder; FalkForge names the file <Name>-<Version>.msi
-    $build = Join-Path $repo 'artifacts\msi\out'
+    $build = Join-Path $repo 'artifacts\msi-build\out'
     Remove-Item $build -Recurse -Force -ErrorAction SilentlyContinue
     Invoke-Checked { dotnet run --project (Join-Path $PSScriptRoot 'msi') -c $Configuration -- --payload $payload --license (Join-Path $repo 'LICENSE') --version $Version -o $build } 'FalkForge build'
     Move-Item (Get-ChildItem $build -Filter *.msi | Select-Object -First 1).FullName $msi -Force
