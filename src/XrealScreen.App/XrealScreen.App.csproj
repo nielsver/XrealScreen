@@ -28,6 +28,11 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
 
+  <!-- Unpackaged (MSI) publish: copy Assets next to the exe (MSIX packages Content anyway); the tray loads AppIcon.ico. -->
+  <ItemGroup>
+    <Content Update="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Builds XrealScreen.msi with FalkForge (ADR-0013). Run through installer\Build-Msi.ps1, which publishes the payload first. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>XrealScreen.Installer</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="FalkForge.Core" />
+    <PackageReference Include="FalkForge.Compiler.Msi" />
+  </ItemGroup>
+</Project>

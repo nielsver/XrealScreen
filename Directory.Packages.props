@@ -16,6 +16,9 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
     <PackageVersion Include="System.CommandLine" Version="2.0.12" />
+    <!-- MSI installer (ADR-0013); prerelease, pin exactly -->
+    <PackageVersion Include="FalkForge.Core" Version="0.5.0-beta.8" />
+    <PackageVersion Include="FalkForge.Compiler.Msi" Version="0.5.0-beta.8" />
     <!-- Tests -->
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
