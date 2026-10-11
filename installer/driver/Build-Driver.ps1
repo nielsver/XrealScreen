@@ -14,11 +14,12 @@
 
   Prerequisites (docs/decisions/ADR-0008): Rust via rustup (the pinned nightly is fetched automatically), the WDK
   10.0.26100, Visual Studio C++ tools, and LLVM 18 (bindgen 0.70 in this driver version produces empty structs with
-  newer libclang; LLVM 23 failed [verified-local] 2026-09-27).
+  newer libclang; LLVM 23 failed [verified-local] 2026-09-27). winget ids: Rustlang.Rustup,
+  Microsoft.WindowsWDK.10.0.26100, LLVM.LLVM --version 18.1.8 [verified-local 2026-10-11].
 #>
 param(
     [string]$Source = 'C:\GIT\third-party\virtual-display-rs',
-    [string]$LibClang = 'C:\GIT\third-party\llvm-18\bin',
+    [string]$LibClang = '',   # default: C:\GIT\third-party\llvm-18\bin, else C:\Program Files\LLVM\bin
     [string]$DriverVersion = '0.4.0.1'
 )
 $ErrorActionPreference = 'Stop'
@@ -37,13 +38,18 @@ function Invoke-Tool([string]$exe, [string[]]$arguments) {
 }
 
 # 1. Source at the pinned commit
-if (-not (Test-Path $Source)) {
-    git clone https://github.com/MolotovCherry/virtual-display-rs.git $Source
+if (-not (Test-Path (Join-Path $Source '.git'))) {
+    Invoke-Tool git @('clone', 'https://github.com/MolotovCherry/virtual-display-rs.git', $Source)
 }
-git -C $Source checkout -q $commit
+Invoke-Tool git @('-C', $Source, 'checkout', '-q', $commit)
 if ((git -C $Source status --porcelain) -ne $null) { throw "$Source has local changes; the build must use unmodified upstream source" }
 
 # 2. Build
+if (-not $LibClang) {
+    $LibClang = @('C:\GIT\third-party\llvm-18\bin', 'C:\Program Files\LLVM\bin') |
+        Where-Object { Test-Path (Join-Path $_ 'libclang.dll') } | Select-Object -First 1
+    if (-not $LibClang) { throw 'libclang.dll (LLVM 18) not found: winget install LLVM.LLVM --version 18.1.8, or pass -LibClang' }
+}
 $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
 $env:LIBCLANG_PATH = $LibClang
 Push-Location (Join-Path $Source 'rust')
