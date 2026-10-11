@@ -3,11 +3,13 @@
 # Trigger: publish a release with a tag like v0.2.0 (version = tag without "v"), or run it by hand
 # (Actions -> Release MSI -> Run workflow) to get the MSI as a workflow artifact.
 #
-# Driver: built from source and signed with the driver TEST certificate from two repository secrets
-# (Settings -> Secrets and variables -> Actions):
-#   DRIVER_PFX_BASE64    base64 of installer\.signing\driver\XrealScreen-driver.pfx
-#   DRIVER_PFX_PASSWORD  content of installer\.signing\driver\pfx-password.txt
-# Without them the MSI is built without the driver page (warning in the log).
+# Driver (virtual-display-rs, signed with the driver TEST certificate), first match wins:
+#   1. downloaded from the pre-release DRIVER_TAG (XrealScreen-Driver.zip, built locally with
+#      installer\driver\Build-Driver.ps1 + installer\Build-DriverPackage.ps1) - no toolchain, no key on GitHub;
+#   2. the Actions cache of an earlier build;
+#   3. built here (WDK + LLVM 18 + Rust, ~15 min) when the secrets DRIVER_PFX_BASE64 (base64 of
+#      installer\.signing\driver\XrealScreen-driver.pfx) and DRIVER_PFX_PASSWORD exist.
+# Otherwise the MSI is built without the driver page (warning in the log).
 name: Release MSI
 
 on:
@@ -28,6 +30,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 60
     env:
+      DRIVER_TAG: driver-v0.4.0.1
       DRIVER_PFX_BASE64: ${{ secrets.DRIVER_PFX_BASE64 }}
       DRIVER_PFX_PASSWORD: ${{ secrets.DRIVER_PFX_PASSWORD }}
     defaults:
@@ -48,9 +51,26 @@ jobs:
           if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "version '$v' must be x.y.z (tag v1.2.3)" }
           "value=$v" >> $env:GITHUB_OUTPUT
 
+      - name: Driver from release ${{ env.DRIVER_TAG }}
+        id: driver-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          gh release download $env:DRIVER_TAG -p XrealScreen-Driver.zip -D $env:RUNNER_TEMP --clobber 2>&1 | ForEach-Object { "$_" }
+          if ($LASTEXITCODE -eq 0) {
+            Expand-Archive "$env:RUNNER_TEMP\XrealScreen-Driver.zip" "$env:RUNNER_TEMP\driver-pkg" -Force
+            New-Item -ItemType Directory -Force artifacts | Out-Null
+            Copy-Item "$env:RUNNER_TEMP\driver-pkg\driver" artifacts\driver -Recurse
+            "found=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "no $env:DRIVER_TAG release - building the driver instead (needs the secrets)"
+          }
+          exit 0
+
       - name: Driver signing certificate
         id: cert
-        if: env.DRIVER_PFX_BASE64 != ''
+        if: steps.driver-release.outputs.found != 'true' && env.DRIVER_PFX_BASE64 != ''
         run: |
           $dir = 'installer\.signing\driver'
           New-Item -ItemType Directory -Force $dir | Out-Null
@@ -64,14 +84,14 @@ jobs:
       # reuse the signed package and skip the toolchain (~10-15 min). Unused caches expire after 7 days.
       - name: Driver cache
         id: driver-cache
-        if: env.DRIVER_PFX_BASE64 != ''
+        if: steps.driver-release.outputs.found != 'true' && env.DRIVER_PFX_BASE64 != ''
         uses: actions/cache@v4
         with:
           path: artifacts/driver
           key: driver-${{ hashFiles('installer/driver/Build-Driver.ps1') }}-${{ steps.cert.outputs.hash }}
 
       - name: Driver toolchain (WDK 10.0.26100, LLVM 18.1.8)
-        if: env.DRIVER_PFX_BASE64 != '' && steps.driver-cache.outputs.cache-hit != 'true'
+        if: steps.driver-release.outputs.found != 'true' && env.DRIVER_PFX_BASE64 != '' && steps.driver-cache.outputs.cache-hit != 'true'
         run: |
           $kits = "${env:ProgramFiles(x86)}\Windows Kits\10"
           if (-not (Test-Path "$kits\bin\10.0.26100.0\x86\Inf2Cat.exe") -or -not (Test-Path "$kits\Include\wdf")) {
@@ -84,7 +104,7 @@ jobs:
           if (-not (Test-Path 'C:\llvm-18\bin\libclang.dll')) { throw 'LLVM 18 install failed' }
 
       - name: Build driver
-        if: env.DRIVER_PFX_BASE64 != '' && steps.driver-cache.outputs.cache-hit != 'true'
+        if: steps.driver-release.outputs.found != 'true' && env.DRIVER_PFX_BASE64 != '' && steps.driver-cache.outputs.cache-hit != 'true'
         run: .\installer\driver\Build-Driver.ps1 -Source "$env:RUNNER_TEMP\virtual-display-rs" -LibClang 'C:\llvm-18\bin'
 
       - name: Build MSI
@@ -99,4 +119,12 @@ jobs:
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload '${{ github.event.release.tag_name }}' 'artifacts\msi\XrealScreen-${{ steps.version.outputs.value }}-x64.msi' --clobber
+        run: |
+          $assets = @("artifacts\msi\XrealScreen-${{ steps.version.outputs.value }}-x64.msi")
+          # Standalone driver zip too: the Store app's "Get the driver" links to releases/latest
+          if (Test-Path artifacts\driver\VirtualDisplayDriver.inf) {
+            .\installer\Build-DriverPackage.ps1
+            $assets += 'artifacts\driver-installer\XrealScreen-Driver.zip'
+          }
+          gh release upload '${{ github.event.release.tag_name }}' @assets --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'upload failed' }

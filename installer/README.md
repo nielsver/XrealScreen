@@ -22,16 +22,20 @@ msiexec /x XrealScreen-0.1.0-x64.msi /qn                            # uninstall
   needs a trusted certificate and an attestation-signed driver (ADR-0013).
 
 ### GitHub release
-`.github/workflows/release.yml` builds the MSI on a GitHub runner and attaches it to the release:
-1. Once: add two repository secrets (Settings → Secrets and variables → Actions) so the driver is signed with the
-   same test certificate every release:
+`.github/workflows/release.yml` builds the MSI on a GitHub runner and attaches it (plus `XrealScreen-Driver.zip`) to the
+release. The driver is **not** built on GitHub: the workflow downloads it from the pre-release `driver-v0.4.0.1`.
+1. Once per driver version (here, with the toolchain installed):
    ```powershell
-   [Convert]::ToBase64String([IO.File]::ReadAllBytes('installer\.signing\driver\XrealScreen-driver.pfx')) | Set-Clipboard   # DRIVER_PFX_BASE64
-   Get-Content installer\.signing\driver\pfx-password.txt | Set-Clipboard                                                    # DRIVER_PFX_PASSWORD
+   .\installer\driver\Build-Driver.ps1        # -> artifacts\driver (signed with the driver test certificate)
+   .\installer\Build-DriverPackage.ps1         # -> artifacts\driver-installer\XrealScreen-Driver.zip
    ```
-   Without them the release MSI has no driver page.
-2. Publish a release with a tag `vX.Y.Z` (e.g. `v0.2.0`): the workflow builds `XrealScreen-X.Y.Z-x64.msi` and uploads
-   it to that release (~20–30 min). **Actions → Release MSI → Run workflow** builds a test MSI as a workflow artifact.
+   Create a GitHub **pre-release** with tag `driver-v0.4.0.1` and upload `XrealScreen-Driver.zip` to it
+   (a new driver version: new tag, and update `DRIVER_TAG` in the workflow).
+2. Publish a release with a tag `vX.Y.Z` (e.g. `v0.2.0`): the workflow builds `XrealScreen-X.Y.Z-x64.msi` and uploads it
+   (~10 min). **Actions → Release MSI → Run workflow** builds a test MSI as a workflow artifact.
+- Fallback: without the driver pre-release the workflow builds the driver itself if the secrets `DRIVER_PFX_BASE64`
+  (base64 of `installer\.signing\driver\XrealScreen-driver.pfx`) and `DRIVER_PFX_PASSWORD` exist (+~15 min, cached);
+  otherwise the MSI has no driver page. Keeping the key off GitHub is safer (it signs a root certificate users trust).
 
 ## MSIX + scripts (ADR-0005)
 
