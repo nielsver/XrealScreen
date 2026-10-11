@@ -1,7 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.Windows.AppLifecycle;
 using XrealScreen.App.Api;
 using XrealScreen.App.Tray;
 using XrealScreen.App.ViewModels;
@@ -13,9 +12,6 @@ namespace XrealScreen.App;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001", Justification = "App lives for the whole process; the tray icon is disposed in ExitApp / window closing.")]
 public partial class App : Application
 {
-    /// <summary>StartupTask id declared in Package.appxmanifest.</summary>
-    public const string StartupTaskId = "XrealScreenStartup";
-
     private TrayIcon? _tray;
     private AppApiHandler? _apiHandler;
     private LocalApiServer? _apiServer;
@@ -88,8 +84,7 @@ public partial class App : Application
         }
 
         // Started by Windows at sign-in: stay in the tray.
-        bool startedByWindows = AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.StartupTask;
-        if (!startedByWindows)
+        if (!AppStartup.StartedByWindows)
         {
             MainWindow.Activate();
         }

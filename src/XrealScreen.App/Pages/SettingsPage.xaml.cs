@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.ApplicationModel;
+using XrealScreen.Host;
 
 namespace XrealScreen.App.Pages;
 
@@ -31,9 +31,16 @@ public sealed partial class SettingsPage : Page
 
     private async Task LoadStartupStateAsync()
     {
-        var task = await StartupTask.GetAsync(App.StartupTaskId);
-        StartWithWindowsToggle.IsOn = task.State is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy;
-        ShowStartupHint(task.State);
+        try
+        {
+            var state = await AppStartup.GetStateAsync().ConfigureAwait(true);
+            StartWithWindowsToggle.IsOn = state == StartupState.Enabled;
+            ShowStartupHint(state);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write("Startup", ex);
+        }
     }
 
     private async void StartWithWindows_Toggled(object sender, RoutedEventArgs e)
@@ -45,33 +52,26 @@ public sealed partial class SettingsPage : Page
 
         try
         {
-            var task = await StartupTask.GetAsync(App.StartupTaskId);
-            var state = StartWithWindowsToggle.IsOn ? await task.RequestEnableAsync() : Disable(task);
+            var state = await AppStartup.SetEnabledAsync(StartWithWindowsToggle.IsOn).ConfigureAwait(true);
             _loading = true;
-            StartWithWindowsToggle.IsOn = state is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy;
+            StartWithWindowsToggle.IsOn = state == StartupState.Enabled;
             _loading = false;
             ShowStartupHint(state);
         }
         catch (Exception ex)
         {
-            CrashLog.Write("StartupTask", ex);
+            CrashLog.Write("Startup", ex);
             StartupHint.Text = $"Could not change the startup setting: {ex.Message}";
             StartupHint.Visibility = Visibility.Visible;
         }
     }
 
-    private static StartupTaskState Disable(StartupTask task)
-    {
-        task.Disable();
-        return task.State;
-    }
-
-    private void ShowStartupHint(StartupTaskState state)
+    private void ShowStartupHint(StartupState state)
     {
         string? hint = state switch
         {
-            StartupTaskState.DisabledByUser => "Windows blocks this because start-up was turned off for XrealScreen in Task Manager → Startup apps. Turn it on there.",
-            StartupTaskState.DisabledByPolicy => "Start-up is disabled by a system policy.",
+            StartupState.DisabledByUser => "Windows blocks this because start-up was turned off for XrealScreen in Task Manager → Startup apps. Turn it on there.",
+            StartupState.DisabledByPolicy => "Start-up is disabled by a system policy.",
             _ => null,
         };
         StartupHint.Text = hint ?? string.Empty;
