@@ -2,7 +2,7 @@
 
 Head tracking from **XREAL One / One Pro / 1S** glasses in your own .NET program on Windows. You don't need the XrealScreen app. The package also includes head look for games (head movement to mouse movement) and helpers for the glasses monitor.
 
-To control the *running* XrealScreen app instead (workspaces, its head look, its pose stream), use the [local API](local-api.md). For help choosing, see [README.md](README.md).
+To control the *running* XrealScreen app instead (workspaces, its head look, its pose stream), use the [local API](https://github.com/nikryden/Screen-XREAL-1S/blob/main/docs/sdk/local-api.md). For help choosing, see [README.md](https://github.com/nikryden/Screen-XREAL-1S/blob/main/docs/sdk/README.md).
 
 ```xml
 <PackageReference Include="XrealScreen.Sdk" Version="0.1.0" />
@@ -114,4 +114,4 @@ You can implement `XrealScreen.Core.Abstractions.IImuSource` yourself to replay 
 | Mouse moves are rejected | The game runs as administrator. Run your program as administrator too. |
 | The game opens on the wrong monitor | Use `GlassesDisplay.MakePrimaryAsync()` before starting the game. |
 
-Sample: [`samples/HeadPose.Console`](../../samples/HeadPose.Console/Program.cs) (`--simulate` works without glasses). Source and issues: https://github.com/nikryden/Screen-XREAL-1S
+Sample: [`samples/HeadPose.Console`](https://github.com/nikryden/Screen-XREAL-1S/blob/main/samples/HeadPose.Console/Program.cs) (`--simulate` works without glasses). Source and issues: https://github.com/nikryden/Screen-XREAL-1S

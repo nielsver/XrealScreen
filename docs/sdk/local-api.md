@@ -2,7 +2,7 @@
 
 Control the running **XrealScreen** app from your own program: read the head pose, start and stop workspaces, switch head look for games on and off, take screenshots of the glasses. Any language that can open a Windows named pipe and read and write JSON can use it. .NET programs can use the **`XrealScreen.Sdk.Client`** package instead of writing JSON by hand.
 
-To read the glasses without the app, use the .NET SDK instead ([dotnet-sdk.md](dotnet-sdk.md)). For help choosing, see [README.md](README.md).
+To read the glasses without the app, use the .NET SDK instead ([dotnet-sdk.md](https://github.com/nikryden/Screen-XREAL-1S/blob/main/docs/sdk/dotnet-sdk.md)). For help choosing, see [README.md](https://github.com/nikryden/Screen-XREAL-1S/blob/main/docs/sdk/README.md).
 
 - [Connecting](#connecting)
 - [Message format](#message-format)
@@ -233,10 +233,10 @@ catch (XrealScreenApiException ex) when (ex.Code == ApiErrorCodes.Conflict) { /*
 - `Disconnected` is raised when the app exits or switches the API off. After that, calls throw with code -32001.
 - `CallRawAsync(method, params)` calls methods that are newer than the client.
 
-Full sample: [`samples/AppClient.Console`](../../samples/AppClient.Console/Program.cs).
+Full sample: [`samples/AppClient.Console`](https://github.com/nikryden/Screen-XREAL-1S/blob/main/samples/AppClient.Console/Program.cs).
 
 ### Python (standard library)
-[`samples/python/xrealscreen_api.py`](../../samples/python/xrealscreen_api.py) is a single-file client you can copy.
+[`samples/python/xrealscreen_api.py`](https://github.com/nikryden/Screen-XREAL-1S/blob/main/samples/python/xrealscreen_api.py) is a single-file client you can copy.
 ```python
 from xrealscreen_api import XrealScreenApi
 
@@ -252,7 +252,7 @@ with XrealScreenApi("my script") as api:
 A synchronous pipe handle in Python cannot read and write at the same time, so the sample client is single-threaded. `call()` keeps notifications that arrive before its response, and `next_notification()` returns them first. `next_notification()` blocks until a notification arrives, so only wait for poses while something is tracking. For asynchronous reading, use one thread per direction on two handles, or `asyncio` with `ProactorEventLoop.create_pipe_connection`.
 
 ### PowerShell
-[`samples/powershell/XrealScreenApi.ps1`](../../samples/powershell/XrealScreenApi.ps1) makes one call per run:
+[`samples/powershell/XrealScreenApi.ps1`](https://github.com/nikryden/Screen-XREAL-1S/blob/main/samples/powershell/XrealScreenApi.ps1) makes one call per run:
 ```powershell
 .\samples\powershell\XrealScreenApi.ps1                                   # status.get
 .\samples\powershell\XrealScreenApi.ps1 -Method workspace.start -Params @{ name = 'Desk' }
