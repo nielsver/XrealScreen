@@ -1,0 +1,6 @@
+{
+  "_comment": "Copy these from Partner Center -> your app -> Product management -> Product identity. Not secret. Placeholders build a local test package only.",
+  "IdentityName": "<Package/Identity/Name>",
+  "Publisher": "<Package/Identity/Publisher, e.g. CN=12345678-ABCD-...>",
+  "PublisherDisplayName": "<Package/Properties/PublisherDisplayName>"
+}

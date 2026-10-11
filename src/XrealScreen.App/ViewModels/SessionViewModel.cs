@@ -222,6 +222,26 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
             CrashLog.Write("Recovery", ex);
             AddLog($"recovery failed: {ex.Message} — run `xrs vdd clear` and `xrs display restore`");
         }
+
+        await CheckDriverAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>The virtual display driver is not installed (Store installs have no driver, ADR-0005): workspaces cannot start.</summary>
+    [ObservableProperty]
+    public partial bool IsDriverMissing { get; set; }
+
+    public Uri DriverDownloadUri { get; } = new(VirtualDisplayDriver.DownloadUrl);
+
+    private async Task<bool> CheckDriverAsync()
+    {
+        bool available = await Task.Run(() => VirtualDisplayDriver.IsAvailableAsync(CancellationToken.None)).ConfigureAwait(true);
+        if (!available && !IsDriverMissing)
+        {
+            AddLog("virtual display driver not found: workspaces need it (head look on the Games page does not)");
+        }
+
+        IsDriverMissing = !available;
+        return available;
     }
 
     public ObservableCollection<string> Log { get; } = [];
@@ -350,6 +370,17 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         }
 
         IsWaitingForGlassesMode = false;
+        if (!await CheckDriverAsync().ConfigureAwait(true))
+        {
+            StatusTitle = "Virtual display driver not installed — workspace not started";
+            StatusMessage = "Workspaces create virtual monitors and need the virtual display driver. Install it with the driver installer (link above), then select Start workspace again. Head look on the Games page works without it.";
+            Severity = InfoBarSeverity.Error;
+            Notification?.Invoke(this, new SessionNotification(
+                "Workspace not started: driver missing",
+                "Install the XrealScreen virtual display driver, then start the workspace again."));
+            return;
+        }
+
         if (_tracking.IsRunning)
         {
             await _tracking.StopCommand.ExecuteAsync(null).ConfigureAwait(true);

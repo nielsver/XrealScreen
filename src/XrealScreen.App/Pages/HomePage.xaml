@@ -14,6 +14,16 @@
                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Workspace in the glasses" />
                     <InfoBar
                         IsClosable="False"
+                        IsOpen="{x:Bind Session.IsDriverMissing, Mode=OneWay}"
+                        Message="Workspaces need the XrealScreen virtual display driver, which is installed separately (the Store cannot install drivers). Head look on the Games page works without it."
+                        Severity="Warning"
+                        Title="Virtual display driver not installed">
+                        <InfoBar.ActionButton>
+                            <HyperlinkButton Content="Get the driver" NavigateUri="{x:Bind Session.DriverDownloadUri}" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+                    <InfoBar
+                        IsClosable="False"
                         IsOpen="True"
                         Message="{x:Bind Session.StatusMessage, Mode=OneWay}"
                         Severity="{x:Bind Session.Severity, Mode=OneWay}"

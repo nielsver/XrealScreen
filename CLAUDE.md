@@ -14,6 +14,7 @@ dotnet test --solution XrealScreen.slnx            # xUnit v3 on Microsoft.Testi
 dotnet build src/XrealScreen.App -p:Platform=x64         # build the APP PROJECT before running it: the solution build writes bin\Debug\…, but
 dotnet run --project src/XrealScreen.App -p:Platform=x64   # `dotnet run -p:Platform=x64` launches bin\x64\Debug\… (stale app otherwise!)
 .\installer\Build-Package.ps1                        # signed self-contained MSIX + install scripts -> artifacts\installer\
+.\installer\Build-StorePackage.ps1                   # unsigned Store .msixbundle (x64+ARM64) -> artifacts\store\ (installer\store\README.md)
 .\tools\Pack-Sdk.ps1                                 # SDK NuGet packages -> artifacts\nuget\ (docs/sdk)
 dotnet run --project tools/XrealScreen.Cli -- --help       # xrs: devices | probe | imu … | display … | vdd … | capture test | render
 ```

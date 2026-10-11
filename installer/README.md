@@ -30,3 +30,6 @@ Removes the app, and the driver + driver certificate only if this installer inst
 .\installer\Build-Package.ps1              # → artifacts\installer\ (bundles artifacts\driver)
 .\installer\Build-Package.ps1 -Version 0.2.0.0
 ```
+
+## Microsoft Store
+The Store build has no driver: see `store\README.md` (`Build-StorePackage.ps1`, `Build-DriverPackage.ps1`).

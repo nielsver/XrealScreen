@@ -42,3 +42,16 @@ We want clean install/update/uninstall (MSIX), but MSIX cannot install kernel or
 - Security: trusting a self-signed root lets whoever holds its key sign code this PC trusts. Hence a dedicated driver
   certificate, an explicit prompt, and removal on uninstall. For a public release: EV certificate + Microsoft
   attestation signing (no root install), and a full license list of the Rust crates statically linked into the DLL.
+
+## Update 2026-10-11 — Microsoft Store package (user decision: "route 2")
+- MSIX cannot install drivers (platform limit, independent of the driver), so the **Store package has no driver**.
+  The app checks the driver (`Host.VirtualDisplayDriver`, at start and before every workspace start) and, when it is
+  missing, shows a Home warning with **Get the driver** → GitHub releases (`installer\Build-DriverPackage.ps1` →
+  `XrealScreen-Driver.zip`). Head look (Games) and the local API work without the driver.
+- `installer\Build-StorePackage.ps1` → unsigned `.msixbundle` (x64 + ARM64, self-contained) in `artifacts\store\`;
+  identity from `installer\store\StoreIdentity.json` (Partner Center); `-RunWack` runs the App Certification Kit.
+  Submission notes and capability justifications: `installer\store\README.md`.
+- Manifest targets `Windows.Desktop` only (the template's `Windows.Universal` family was dropped).
+- Open: the public driver needs an EV certificate + Microsoft attestation signing (no self-signed root on user PCs).
+- Rejected: an EXE/MSI Store submission that installs the driver itself (loses the MSIX lifecycle; revisit once the
+  driver is attestation-signed); Windows Update delivery (a root-enumerated software device has no hardware ID to match).
