@@ -51,6 +51,7 @@ Add every new source to `docs/legal/SOURCES.md`: name, URL, license, how used (`
 - Keep each doc focused on current truth.
 
 ## Commits (when the user asked you to commit)
+- On a feature branch, never `main`; push and give the PR link (skill `git-branch-pr`).
 - One commit per completed step, small and self-describing: `M1: add IMU frame parser with golden tests`.
 - STATUS.md update is part of the same commit.
 - Do not commit secrets, captured frames or large binaries (fixtures < 5 MB each).
