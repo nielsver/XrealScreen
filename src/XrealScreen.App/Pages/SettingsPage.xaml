@@ -9,6 +9,22 @@
             <TextBlock Style="{StaticResource PageTitleStyle}" Text="Settings" />
 
             <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="8">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Look" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Text="Choose how XrealScreen looks. It changes right away and is remembered. Lens and Stage are dark and Instrument is light; only Classic follows the app theme." />
+                    <RadioButtons x:Name="LookRadio" MaxColumns="2" SelectionChanged="LookRadio_SelectionChanged">
+                        <x:String>Classic: Windows standard</x:String>
+                        <x:String>Lens: graphite with the lens sheen</x:String>
+                        <x:String>Instrument: light, precise, measured</x:String>
+                        <x:String>Stage: your screens in a dark room</x:String>
+                    </RadioButtons>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="12">
                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Background" />
                     <ToggleSwitch
@@ -68,11 +84,19 @@
             </Border>
 
             <Border Style="{StaticResource CardStyle}">
-                <RadioButtons x:Name="ThemeRadio" Header="App theme" SelectionChanged="ThemeRadio_SelectionChanged">
-                    <x:String>Use system setting</x:String>
-                    <x:String>Light</x:String>
-                    <x:String>Dark</x:String>
-                </RadioButtons>
+                <StackPanel Spacing="8">
+                    <RadioButtons x:Name="ThemeRadio" Header="App theme" SelectionChanged="ThemeRadio_SelectionChanged">
+                        <x:String>Use system setting</x:String>
+                        <x:String>Light</x:String>
+                        <x:String>Dark</x:String>
+                    </RadioButtons>
+                    <TextBlock
+                        x:Name="ThemeLockedHint"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="The app theme applies to the Classic look. Lens, Instrument and Stage have their own."
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                </StackPanel>
             </Border>
         </StackPanel>
     </ScrollViewer>

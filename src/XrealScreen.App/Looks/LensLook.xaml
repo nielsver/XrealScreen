@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--  Lens look: graphite with the coated-lens sheen (cyan, rose, gold) on Start and the page marker. Dark only.  -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--  Palette  -->
+    <SolidColorBrush x:Key="LensPaneBrush" Color="#FF11161C" />
+    <SolidColorBrush x:Key="LensCardBrush" Color="#FF151B22" />
+    <SolidColorBrush x:Key="LensRaisedBrush" Color="#FF1A222B" />
+    <SolidColorBrush x:Key="LensLineBrush" Color="#FF222B35" />
+    <SolidColorBrush x:Key="LensTextBrush" Color="#FFE6EBF1" />
+    <SolidColorBrush x:Key="LensMutedBrush" Color="#FF8794A4" />
+    <SolidColorBrush x:Key="LensCyanBrush" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="LensWellBrush" Color="#FF10151B" />
+
+    <SolidColorBrush x:Key="LookShellBackground" Color="#FF0D1116" />
+    <FontFamily x:Key="LookDisplayFontFamily">Segoe UI Variable Display</FontFamily>
+    <FontFamily x:Key="LookMonoFontFamily">Cascadia Mono, Consolas</FontFamily>
+
+    <!--  Accent (control templates read these brushes, so the system accent colours are not enough)  -->
+    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FF7FE0EC" />
+    <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FF7FE0EC" />
+    <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FF7FE0EC" />
+    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF062229" />
+    <SolidColorBrush x:Key="AccentButtonBackground" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF062229" />
+    <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF062229" />
+    <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF062229" />
+    <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#00000000" />
+    <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#00000000" />
+    <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#00000000" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FF062229" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FF062229" />
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FF062229" />
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FF062229" />
+    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="#FF062229" />
+    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="#FF062229" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF062229" />
+    <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="SliderThumbBackground" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#FF7ADBE8" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#FF4BB5C4" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#FF062229" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="#FF062229" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="#FF062229" />
+    <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#FF7FE0EC" />
+    <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#FF7FE0EC" />
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="#FF5ED2E2" />
+    <SolidColorBrush x:Key="ProgressBarForeground" Color="#FF5ED2E2" />
+
+    <!--  Navigation pane  -->
+    <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF11161C" />
+    <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF11161C" />
+    <SolidColorBrush x:Key="NavigationViewMinimalPaneBackground" Color="#FF11161C" />
+    <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF11161C" />
+    <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF0D1116" />
+    <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="#FF222B35" />
+    <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FF8794A4" />
+    <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFE6EBF1" />
+    <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFE6EBF1" />
+    <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FFE6EBF1" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FF171E26" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FF1A222B" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FF1A222B" />
+
+    <!--  The lens sheen: used only on Start and the page marker.  -->
+    <LinearGradientBrush x:Key="LensSheenBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#FF5ED2E2" />
+        <GradientStop Offset="0.5" Color="#FFD97AB8" />
+        <GradientStop Offset="1" Color="#FFE8C36A" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NavigationViewSelectionIndicatorForeground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#FF5ED2E2" />
+        <GradientStop Offset="0.5" Color="#FFD97AB8" />
+        <GradientStop Offset="1" Color="#FFE8C36A" />
+    </LinearGradientBrush>
+    <RadialGradientBrush x:Key="LensRingInnerBrush" Center="0.5,0.35" GradientOrigin="0.5,0.35" RadiusX="0.7" RadiusY="0.7">
+        <GradientStop Offset="0" Color="#FF1D2630" />
+        <GradientStop Offset="1" Color="#FF0F141A" />
+    </RadialGradientBrush>
+    <RadialGradientBrush x:Key="LensGlowBrush">
+        <GradientStop Offset="0" Color="#405ED2E2" />
+        <GradientStop Offset="0.55" Color="#18D97AB8" />
+        <GradientStop Offset="1" Color="#000D1116" />
+    </RadialGradientBrush>
+    <LinearGradientBrush x:Key="LensHeroBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#FF17202A" />
+        <GradientStop Offset="0.6" Color="#FF151B22" />
+    </LinearGradientBrush>
+
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="#FF151B22" />
+        <Setter Property="BorderBrush" Value="#FF222B35" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="20" />
+    </Style>
+
+    <Style x:Key="PageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+        <Setter Property="FontSize" Value="30" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style x:Key="SubtitleTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="LensPillButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="Background" Value="#FF141A21" />
+        <Setter Property="BorderBrush" Value="#FF222B35" />
+    </Style>
+</ResourceDictionary>

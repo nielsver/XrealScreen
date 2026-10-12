@@ -7,19 +7,9 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!--  The window look (Looks/*.xaml); MainWindow.ApplyLook replaces this entry.  -->
+                <ResourceDictionary Source="ms-appx:///Looks/ClassicLook.xaml" />
             </ResourceDictionary.MergedDictionaries>
-
-            <Style x:Key="CardStyle" TargetType="Border">
-                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
-                <Setter Property="Padding" Value="16" />
-            </Style>
-
-            <Style x:Key="PageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
-                <Setter Property="Margin" Value="0,0,0,8" />
-            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--  Stage look Home: the screens in a dark room, workspace name as the title, every action in one floating dock.  -->
+<Page
+    x:Class="XrealScreen.App.Pages.Looks.StageHomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:XrealScreen.App.Controls"
+    xmlns:looks="using:XrealScreen.App.Looks"
+    Background="Transparent">
+
+    <Page.Resources>
+        <Style x:Key="PillStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource StageChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource StageLineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="12,7" />
+        </Style>
+        <Style x:Key="KeyStyle" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{StaticResource StageLineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource StageRoomBrush}">
+        <Ellipse
+            Width="1100"
+            Height="560"
+            Margin="0,-60,0,0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Fill="{StaticResource StageGlowBrush}"
+            IsHitTestVisible="False" />
+
+        <controls:StageView
+            Margin="0,120,0,0"
+            Accent="{StaticResource StageAmberBrush}"
+            Face="{StaticResource StageScreenFaceBrush}"
+            IsHitTestVisible="False"
+            Muted="{StaticResource StageMutedBrush}" />
+
+        <!--  Top left: workspace name is the title  -->
+        <StackPanel Margin="28,22,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Spacing="2">
+            <TextBlock FontSize="12" Foreground="{StaticResource StageMutedBrush}" Text="Workspace" />
+            <DropDownButton
+                Padding="0,0,8,0"
+                AutomationProperties.Name="Choose a saved workspace"
+                Background="Transparent"
+                BorderThickness="0">
+                <TextBlock
+                    FontFamily="{StaticResource LookDisplayFontFamily}"
+                    FontSize="36"
+                    FontWeight="Black"
+                    Foreground="{StaticResource StageTextBrush}"
+                    Text="{x:Bind looks:LookFormat.WorkspaceTitle(Session.SelectedWorkspace), Mode=OneWay}" />
+                <DropDownButton.Flyout>
+                    <MenuFlyout x:Name="WorkspaceMenu" Opening="WorkspaceMenu_Opening" Placement="BottomEdgeAlignedLeft" />
+                </DropDownButton.Flyout>
+            </DropDownButton>
+            <TextBlock
+                MaxWidth="460"
+                Margin="0,4,0,0"
+                HorizontalAlignment="Left"
+                FontSize="13"
+                Foreground="{StaticResource StageMutedBrush}"
+                Text="{x:Bind Session.StatusMessage, Mode=OneWay}"
+                TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!--  Top right: glasses and workspace state  -->
+        <StackPanel Margin="0,26,28,0" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="10">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                <Border Style="{StaticResource PillStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="13" Foreground="{StaticResource StageMutedBrush}" Glyph="&#xE703;" />
+                        <TextBlock MaxWidth="240" FontSize="13" Foreground="{StaticResource StageTextBrush}" Text="{x:Bind Device.StatusTitle, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PillStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{x:Bind looks:LookFormat.StateBrush(Session.State), Mode=OneWay}" />
+                        <TextBlock FontSize="13" Foreground="{StaticResource StageTextBrush}" Text="{x:Bind Session.StatusTitle, Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+            <InfoBar
+                MaxWidth="460"
+                IsClosable="False"
+                IsOpen="{x:Bind Session.IsDriverMissing, Mode=OneWay}"
+                Message="Workspaces need the XrealScreen virtual display driver."
+                Severity="Warning"
+                Title="Driver not installed">
+                <InfoBar.ActionButton>
+                    <HyperlinkButton Content="Get the driver" NavigateUri="{x:Bind Session.DriverDownloadUri}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+        </StackPanel>
+
+        <!--  Bottom left: shortcuts  -->
+        <StackPanel Margin="28,0,0,112" HorizontalAlignment="Left" VerticalAlignment="Bottom" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Style="{StaticResource KeyStyle}"><TextBlock FontFamily="{StaticResource LookMonoFontFamily}" FontSize="11" Foreground="{StaticResource StageTextBrush}" Text="Ctrl Alt W" /></Border>
+                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource StageMutedBrush}" Text="start / stop" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Style="{StaticResource KeyStyle}"><TextBlock FontFamily="{StaticResource LookMonoFontFamily}" FontSize="11" Foreground="{StaticResource StageTextBrush}" Text="Ctrl Alt P" /></Border>
+                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource StageMutedBrush}" Text="screenshot" />
+            </StackPanel>
+        </StackPanel>
+
+        <!--  Bottom right: telemetry  -->
+        <StackPanel Margin="0,0,28,112" HorizontalAlignment="Right" VerticalAlignment="Bottom" Spacing="4">
+            <TextBlock HorizontalAlignment="Right" FontFamily="{StaticResource LookMonoFontFamily}" FontSize="12" Foreground="{StaticResource StageMutedBrush}">
+                <Run Text="yaw " /><Run Foreground="{StaticResource StageTextBrush}" Text="{x:Bind looks:LookFormat.Degrees(Tracking.Yaw), Mode=OneWay}" />
+                <Run Text="  pitch " /><Run Foreground="{StaticResource StageTextBrush}" Text="{x:Bind looks:LookFormat.Degrees(Tracking.Pitch), Mode=OneWay}" />
+            </TextBlock>
+            <TextBlock
+                MaxWidth="300"
+                HorizontalAlignment="Right"
+                FontFamily="{StaticResource LookMonoFontFamily}"
+                FontSize="11"
+                Foreground="{StaticResource StageMutedBrush}"
+                Text="{x:Bind looks:LookFormat.ScreensText(Workspace.ScreenCount, Workspace.KindIndex), Mode=OneWay}"
+                TextAlignment="Right"
+                TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+
+        <!--  The dock  -->
+        <Border
+            Margin="0,0,0,26"
+            Padding="8"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Background="{StaticResource StageDockBrush}"
+            BorderBrush="{StaticResource StageLineBrush}"
+            BorderThickness="1"
+            CornerRadius="22">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                    Padding="22,12"
+                    AutomationProperties.Name="Start or stop the workspace"
+                    Click="StartStop_Click"
+                    CornerRadius="16"
+                    Style="{StaticResource AccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon FontSize="14" Glyph="{x:Bind looks:LookFormat.StartGlyph(Session.State), Mode=OneWay}" />
+                        <TextBlock FontSize="15" FontWeight="Bold" Text="{x:Bind looks:LookFormat.StartLabel(Session.State), Mode=OneWay}" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{x:Bind Session.RecenterCommand}" Style="{StaticResource StageDockButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xE7AD;" />
+                        <TextBlock Text="Recenter" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    AutomationProperties.Name="Screenshot of the glasses"
+                    Command="{x:Bind Session.TakeScreenshotCommand}"
+                    Style="{StaticResource StageDockButtonStyle}"
+                    ToolTipService.ToolTip="Save what the glasses show to Pictures\XrealScreen (Ctrl+Alt+P)">
+                    <FontIcon FontSize="14" Glyph="&#xE722;" />
+                </Button>
+                <Button
+                    AutomationProperties.Name="Preview head tracking"
+                    Command="{x:Bind Tracking.StartCommand}"
+                    Style="{StaticResource StageDockButtonStyle}"
+                    ToolTipService.ToolTip="Preview head tracking without starting the workspace">
+                    <FontIcon FontSize="14" Glyph="&#xE7B3;" />
+                </Button>
+
+                <Rectangle Width="1" Height="30" Margin="6,0" VerticalAlignment="Center" Fill="{StaticResource StageLineBrush}" />
+
+                <Border Padding="3" VerticalAlignment="Center" Background="#59000000" CornerRadius="12">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <ToggleButton
+                            x:Name="AnchorToggle"
+                            Click="Kind_Click"
+                            Content="Anchor"
+                            IsChecked="{x:Bind looks:LookFormat.Checked(Workspace.KindIndex, 0), Mode=OneWay}"
+                            Style="{StaticResource StageSegmentStyle}"
+                            Tag="0"
+                            ToolTipService.ToolTip="Glasses anchor: 1–3 screens in the glasses image" />
+                        <ToggleButton
+                            Click="Kind_Click"
+                            Content="Head tracking"
+                            IsChecked="{x:Bind looks:LookFormat.Checked(Workspace.KindIndex, 1), Mode=OneWay}"
+                            Style="{StaticResource StageSegmentStyle}"
+                            Tag="1"
+                            ToolTipService.ToolTip="App head tracking: up to 6 curved screens" />
+                    </StackPanel>
+                </Border>
+
+                <Rectangle Width="1" Height="30" Margin="6,0" VerticalAlignment="Center" Fill="{StaticResource StageLineBrush}" />
+
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
+                    <Button
+                        Width="34"
+                        Height="34"
+                        Padding="0"
+                        AutomationProperties.Name="Fewer screens"
+                        Click="Fewer_Click"
+                        Content="−"
+                        CornerRadius="10"
+                        IsEnabled="{x:Bind looks:LookFormat.Above(Workspace.ScreenCount, 1), Mode=OneWay}" />
+                    <TextBlock
+                        MinWidth="74"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource StageTextBrush}"
+                        Text="{x:Bind looks:LookFormat.ScreenCountText(Workspace.ScreenCount), Mode=OneWay}"
+                        TextAlignment="Center" />
+                    <Button
+                        Width="34"
+                        Height="34"
+                        Padding="0"
+                        AutomationProperties.Name="More screens"
+                        Click="More_Click"
+                        Content="+"
+                        CornerRadius="10"
+                        IsEnabled="{x:Bind looks:LookFormat.Below(Workspace.ScreenCount, Workspace.MaxScreenCount), Mode=OneWay}" />
+                </StackPanel>
+
+                <Button
+                    Margin="6,0,0,0"
+                    Command="{x:Bind Session.ApplyScreenSettingsCommand}"
+                    Content="Apply"
+                    CornerRadius="14"
+                    Visibility="{x:Bind Workspace.HasPendingScreenChanges, Mode=OneWay}" />
+
+                <Button AutomationProperties.Name="More actions" Style="{StaticResource StageDockButtonStyle}">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <Button.Flyout>
+                        <Flyout Placement="Top">
+                            <StackPanel Width="380" Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Command="{x:Bind Device.CheckCommand}" Content="Check glasses" />
+                                    <Button Click="Import_Click" Content="Import…" />
+                                    <Button Click="Export_Click" Content="Export…" />
+                                </StackPanel>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox
+                                        AutomationProperties.Name="Workspace name"
+                                        MaxLength="60"
+                                        PlaceholderText="Save current as…"
+                                        Text="{x:Bind Session.WorkspaceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="1" Command="{x:Bind Session.SaveWorkspaceCommand}" Content="Save" />
+                                </Grid>
+                                <TextBlock FontSize="12" Foreground="{StaticResource StageMutedBrush}" Text="Log" />
+                                <ScrollViewer MaxHeight="220">
+                                    <ItemsControl FontFamily="{StaticResource LookMonoFontFamily}" FontSize="11" ItemsSource="{x:Bind Session.Log}" />
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

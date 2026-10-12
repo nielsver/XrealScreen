@@ -3,7 +3,7 @@
 > Read this first. Update it at the end of every task (see skill `docs-handoff`).
 
 ## Current
-- **Milestone:** M4/M5 (workspace in the app) — **mostly done**; M6 started (crash-safe restore). Last updated 2026-10-11.
+- **Milestone:** M4/M5 (workspace in the app) — **mostly done**; M6 started (crash-safe restore). Last updated 2026-10-12.
 - The app is usable end to end: Start menu → **XrealScreen** → Home → **Start workspace**.
 
 ## Done
@@ -24,6 +24,7 @@
 - **Developer SDK + local API (2026-10-10, ADR-0012)**: `XrealScreen.Sdk` (NuGet; `XrealGlasses` pose stream with auto-reconnect, `HeadLookEngine`, `GlassesDisplay`; head-look code moved here from Host), local API = JSON-RPC 2.0 over `\\.\pipe\XrealScreen.Api` (`CurrentUserOnly`; `XrealScreen.Contracts`, `Host.Api.LocalApiServer`, app `AppApiHandler`; Settings → Developers toggle, on by default), .NET client `XrealScreen.Sdk.Client`. Docs `docs/sdk/` (overview, SDK guide, full protocol reference). Samples: `HeadPose.Console` (`--simulate`), `AppClient.Console`, Python, PowerShell. `tools/Pack-Sdk.ps1` → `artifacts/nuget` (6 packages). [verified-local] every client against the running app (status, workspaces, settings, errors, head look start/stop) and both packages from fresh consumer projects; pose streaming over the API not yet tested with the glasses.
 - **MSI installer (2026-10-11, ADR-0013)**: `installer\Build-Msi.ps1` → `artifacts\msi\XrealScreen-<ver>-x64.msi` (FalkForge 0.5.0-beta.8, ~86 MB) [verified-local: build, table check, forge validate; ICE skipped (no darice.cub); wizard pages Welcome/License/Folder/Driver rendered and navigated (test build with a dummy driver); Windows 11 launch condition passes; **not yet installed**]. Unpackaged self-contained app [verified-local: starts; borderless capture allowed without identity]; Start with Windows via HKCU Run when unpackaged (`AppStartup`, `Host.RunKeyStartup`, tests); `xrs driver status|install|uninstall` (`Host.DriverSetup`, C# port of Install-Driver.ps1) [verified-local: status finds VertoXR 0.4.0.0, install keeps it, uninstall no-op]; Driver page only when `artifacts\driver` exists — rebuilt 2026-10-11 after reinstalling the toolchain via winget (Rustlang.Rustup, LLVM.LLVM 18.1.8, Microsoft.WindowsWDK.10.0.26100; new driver test certificate) and bundled in the MSI (82 MB) [verified-local: build + sign + Inf2Cat; not yet installed]. Unsigned; `-CertificateThumbprint` ready for later. GitHub release workflow `.github/workflows/release.yml` (release `vX.Y.Z` → MSI + `XrealScreen-Driver.zip`; driver downloaded from the pre-release `driver-v0.4.0.1`, fallback build from secrets, cached) — **not yet run on GitHub**.
 - **Microsoft Store package (2026-10-11, ADR-0005 update)**: `installer\Build-StorePackage.ps1` → unsigned self-contained `.msixbundle` (x64 + ARM64, ~207 MB) in `artifacts\store\` [verified-local] (build + bundle; placeholder identity). Identity from `installer\store\StoreIdentity.json` (placeholders until the name is reserved in Partner Center); submission notes + capability justifications in `installer\store\README.md`. No driver in the Store package: Home shows **Virtual display driver not installed / Get the driver** (→ GitHub releases/latest) and Start refuses with an explanation (`Host.VirtualDisplayDriver`; not yet seen in the app — this PC has the driver). `installer\Build-DriverPackage.ps1` → `XrealScreen-Driver.zip` (not yet run: needs `artifacts\driver`). Manifest now targets Windows.Desktop only.
+- **App looks (2026-10-12, ADR-0014)**: Settings → Look: Classic, Lens, Instrument, **Stage (default)**, switched live; own Home page per look, Stage also on the Screens page; App theme only for Classic. Navigation pane resizable (drag the edge, snaps to icons where the labels end). Screen count limited to 3 in glasses anchor, 6 in app head tracking. [verified-local: screenshots of every look, live switching, both workspace types; not yet used with the glasses].
 - Pitfall: building `src/XrealScreen.App` while the app runs re-registers the dev package and kills the app without cleanup (leftover virtual monitors) — run `xrs recover`.
 - 169/169 tests (RunKeyStartup 7 new).
 
@@ -55,7 +56,6 @@ uget\*.nupkg" --api-key $key --source https://api.nuget.org/v3/index.json --skip
 ## Session log
 | Date | Agent | Summary |
 |------|-------|---------|
-| 2026-09-29 | Claude | M6: autosave of all settings, saved workspaces with import/export, start latest workspace at launch, Exit in the window; Host.Tests project; start on glasses connect, primary virtual screen, move windows off the glasses. |
 | 2026-10-10 | Claude | Head look for games (ADR-0011): HeadMouseMapper (Look/Stick) + SendInput injector + `xrs imu mouse`. |
 | 2026-10-10 | Claude | Head look worked in Skyrim; games on the glasses: glasses primary while head look runs (crash-safe), Ctrl+Alt+G moves the active window. |
 | 2026-10-10 | Claude | `xrs imu mouse` waits for and reconnects to the glasses' IMU instead of exiting on a connect timeout. |
@@ -65,3 +65,4 @@ uget\*.nupkg" --api-key $key --source https://api.nuget.org/v3/index.json --skip
 | 2026-10-11 | Claude | MSI with FalkForge (ADR-0013): unpackaged app + Run-key autostart, `xrs driver` (C# driver setup), installer/msi + Build-Msi.ps1. |
 | 2026-10-11 | Claude | NuGet publishing prep: package README links made absolute, IDs checked free on nuget.org; push steps for the user in Next steps. |
 | 2026-10-12 | Claude | App: navigation pane resizable by dragging its edge (collapses to icons below 160 px, reopens at the last width; saved in app.json). |
+| 2026-10-12 | Claude | App looks (ADR-0014): Classic / Lens / Instrument / Stage (default) picked in Settings and switched live; Stage monitor view on Home and Screens. |

@@ -36,6 +36,9 @@ public sealed class AppPreferences
     /// <summary>0 = system, 1 = light, 2 = dark.</summary>
     public int Theme { get; set; }
 
+    /// <summary>Window look: 0 = Classic, 1 = Lens, 2 = Instrument, 3 = Stage (default). See <see cref="Looks.AppLook"/>.</summary>
+    public int Look { get; set; } = (int)Looks.AppLook.Stage;
+
     /// <summary>Width of the open navigation pane (dragged at its right edge).</summary>
     public double NavPaneWidth { get; set; } = 320;
 

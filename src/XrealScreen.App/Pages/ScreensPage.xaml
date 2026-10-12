@@ -28,7 +28,11 @@
             </InfoBar>
 
             <Border Style="{StaticResource CardStyle}" Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}">
-                <controls:WorkspacePreview Height="280" />
+                <Grid>
+                    <controls:WorkspacePreview x:Name="TrackingPreview" Height="280" />
+                    <!--  Stage look: StageView goes here (ScreensPage.UseStageView)  -->
+                    <Grid x:Name="TrackingStageHost" Visibility="Collapsed" />
+                </Grid>
             </Border>
 
             <Border Style="{StaticResource CardStyle}">
@@ -41,7 +45,8 @@
                         SelectedIndex="{x:Bind Workspace.UltrawideModeIndex, Mode=TwoWay}" />
 
                     <StackPanel Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
-                        <controls:AnchorPreview Height="200" />
+                        <controls:AnchorPreview x:Name="AnchorLayoutPreview" Height="200" />
+                        <Grid x:Name="AnchorStageHost" Visibility="Collapsed" />
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Slider
                                 Header="Space between screens"
