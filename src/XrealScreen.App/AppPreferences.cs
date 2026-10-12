@@ -36,6 +36,12 @@ public sealed class AppPreferences
     /// <summary>0 = system, 1 = light, 2 = dark.</summary>
     public int Theme { get; set; }
 
+    /// <summary>Width of the open navigation pane (dragged at its right edge).</summary>
+    public double NavPaneWidth { get; set; } = 320;
+
+    /// <summary>Navigation pane open (icons and text) or collapsed to icons.</summary>
+    public bool NavPaneOpen { get; set; } = true;
+
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XrealScreen", "app.json");
 

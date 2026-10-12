@@ -55,7 +55,6 @@ uget\*.nupkg" --api-key $key --source https://api.nuget.org/v3/index.json --skip
 ## Session log
 | Date | Agent | Summary |
 |------|-------|---------|
-| 2026-09-27 | Claude | M7 phase 2: driver built from source (rustup, WDK, LLVM 18), separate driver cert, Install-Driver.ps1 (SetupAPI root device), package bundles the driver. |
 | 2026-09-29 | Claude | M6: autosave of all settings, saved workspaces with import/export, start latest workspace at launch, Exit in the window; Host.Tests project; start on glasses connect, primary virtual screen, move windows off the glasses. |
 | 2026-10-10 | Claude | Head look for games (ADR-0011): HeadMouseMapper (Look/Stick) + SendInput injector + `xrs imu mouse`. |
 | 2026-10-10 | Claude | Head look worked in Skyrim; games on the glasses: glasses primary while head look runs (crash-safe), Ctrl+Alt+G moves the active window. |
@@ -65,3 +64,4 @@ uget\*.nupkg" --api-key $key --source https://api.nuget.org/v3/index.json --skip
 | 2026-10-11 | Claude | Microsoft Store packaging: Build-StorePackage.ps1 (unsigned x64+ARM64 bundle), driver-missing detection + Get the driver link, standalone driver zip script, ADR-0005 update. |
 | 2026-10-11 | Claude | MSI with FalkForge (ADR-0013): unpackaged app + Run-key autostart, `xrs driver` (C# driver setup), installer/msi + Build-Msi.ps1. |
 | 2026-10-11 | Claude | NuGet publishing prep: package README links made absolute, IDs checked free on nuget.org; push steps for the user in Next steps. |
+| 2026-10-12 | Claude | App: navigation pane resizable by dragging its edge (collapses to icons below 160 px, reopens at the last width; saved in app.json). |

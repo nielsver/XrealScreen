@@ -3,6 +3,7 @@
     x:Class="XrealScreen.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:XrealScreen.App.Controls"
     Title="XrealScreen">
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -31,8 +32,11 @@
             x:Name="NavView"
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
+            DisplayModeChanged="NavView_DisplayModeChanged"
             IsPaneToggleButtonVisible="False"
             ItemInvoked="NavView_ItemInvoked"
+            PaneClosing="NavView_PaneClosing"
+            PaneOpening="NavView_PaneOpening"
             SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Home" IsSelected="True" Tag="home">
@@ -80,5 +84,15 @@
             </NavigationView.FooterMenuItems>
             <Frame x:Name="NavFrame" />
         </NavigationView>
+
+        <!--  Drag the pane edge to resize it; narrower than icon + text collapses it to icons.  -->
+        <controls:PaneSplitter
+            x:Name="PaneSplitter"
+            Grid.Row="1"
+            HorizontalAlignment="Left"
+            AutomationProperties.Name="Resize navigation pane"
+            DragCompleted="PaneSplitter_DragCompleted"
+            DragStarted="PaneSplitter_DragStarted"
+            Dragged="PaneSplitter_Dragged" />
     </Grid>
 </Window>
