@@ -12,8 +12,11 @@ public sealed partial class MainWindow : Window
 
     private const double MaxOpenPaneWidth = 480;
 
-    private double _dragStartWidth;
-    private bool _dragStartOpen;
+    /// <summary>Open width to come back to after a drag ends below <see cref="MinOpenPaneWidth"/>.</summary>
+    private double _restoreWidth;
+
+    /// <summary>Set when a drag collapsed the pane; applied once the close animation has finished.</summary>
+    private double? _pendingOpenWidth;
 
     public MainWindow()
     {
@@ -39,6 +42,12 @@ public sealed partial class MainWindow : Window
     // Reopening keeps OpenPaneLength, so the pane comes back at the width it had before it was collapsed.
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
     {
+        if (_pendingOpenWidth is { } width)
+        {
+            _pendingOpenWidth = null;
+            NavView.OpenPaneLength = width;
+        }
+
         NavView.IsPaneOpen = !NavView.IsPaneOpen;
         SavePaneLayout();
     }
@@ -49,33 +58,37 @@ public sealed partial class MainWindow : Window
 
     private void NavView_PaneClosing(NavigationView sender, NavigationViewPaneClosingEventArgs args) => UpdatePaneSplitter();
 
-    private void PaneSplitter_DragStarted(object? sender, EventArgs e)
+    private void NavView_PaneClosed(NavigationView sender, object args)
     {
-        _dragStartWidth = NavView.OpenPaneLength;
-        _dragStartOpen = NavView.IsPaneOpen;
+        if (_pendingOpenWidth is { } width)
+        {
+            _pendingOpenWidth = null;
+            NavView.OpenPaneLength = width;
+        }
     }
 
+    private void PaneSplitter_DragStarted(object? sender, EventArgs e)
+    {
+        // OpenPaneLength is at least MinOpenPaneWidth outside a drag, also while the pane shows icons only.
+        _restoreWidth = _pendingOpenWidth ?? NavView.OpenPaneLength;
+        _pendingOpenWidth = null;
+    }
+
+    // The edge follows the pointer the whole drag; whether it snaps to icons is decided on release.
     private void PaneSplitter_Dragged(object? sender, double x)
     {
-        if (x < MinOpenPaneWidth)
-        {
-            NavView.IsPaneOpen = false;
-        }
-        else
-        {
-            NavView.OpenPaneLength = Math.Min(x, MaxOpenPaneWidth);
-            NavView.IsPaneOpen = true;
-        }
-
+        NavView.OpenPaneLength = Math.Clamp(x, NavView.CompactPaneLength, MaxOpenPaneWidth);
+        NavView.IsPaneOpen = true;
         UpdatePaneSplitter();
     }
 
     private void PaneSplitter_DragCompleted(object? sender, EventArgs e)
     {
-        // Dragged shut: remember the width from before the drag, not the minimum it passed on the way.
-        if (_dragStartOpen && !NavView.IsPaneOpen)
+        if (NavView.IsPaneOpen && NavView.OpenPaneLength < MinOpenPaneWidth)
         {
-            NavView.OpenPaneLength = _dragStartWidth;
+            // Too narrow for icon + text: show icons only, and reopen later at the width from before this drag.
+            _pendingOpenWidth = _restoreWidth;
+            NavView.IsPaneOpen = false;
         }
 
         SavePaneLayout();
@@ -98,7 +111,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        App.Preferences.NavPaneWidth = NavView.OpenPaneLength;
+        App.Preferences.NavPaneWidth = _pendingOpenWidth ?? NavView.OpenPaneLength;
         App.Preferences.NavPaneOpen = NavView.IsPaneOpen;
         App.Preferences.Save();
     }

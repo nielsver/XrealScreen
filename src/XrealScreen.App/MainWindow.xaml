@@ -35,6 +35,7 @@
             DisplayModeChanged="NavView_DisplayModeChanged"
             IsPaneToggleButtonVisible="False"
             ItemInvoked="NavView_ItemInvoked"
+            PaneClosed="NavView_PaneClosed"
             PaneClosing="NavView_PaneClosing"
             PaneOpening="NavView_PaneOpening"
             SelectionChanged="NavView_SelectionChanged">
