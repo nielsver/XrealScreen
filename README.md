@@ -18,11 +18,19 @@ A Windows 11 app that turns **XREAL 1S** (also One / One Pro) AR glasses into a 
 - **Head look for games** (Games page): steer games like Skyrim with your head. Head movement becomes mouse movement (no driver), as **Look** (1:1 camera) or **Joystick** (turn your head to keep turning). The glasses become the primary monitor while it runs, so games open there; Ctrl+Alt+H on/off, Ctrl+Alt+C recenter, Ctrl+Alt+G moves a windowed game to the glasses.
 - **For developers**: a .NET SDK (`XrealScreen.Sdk`) for head tracking from the glasses, and a local API (JSON-RPC over a named pipe) to control the running app from any language. See [For developers](#for-developers).
 - **Tray and hotkeys**: runs in the tray; Ctrl+Alt+W starts/stops the workspace, Ctrl+Alt+P takes a screenshot; start with Windows; **Exit** quits for real.
-- Modern WinUI 3 UI (Fluent, Mica, light/dark), .NET 10.
+- **Four looks** (Settings → Look, switch any time): **Stage** (default) shows your screens in a dark room at their real angles with every action in one dock; **Lens** has a round Start button and live head readouts; **Instrument** is a light, precise look with a degree-scale field map; **Classic** is the standard Windows look (Fluent, Mica, light/dark). WinUI 3, .NET 10.
 
 > **Status: preview.** Both workspace types run end to end on the XREAL 1S; the installer (signed MSIX + virtual display driver) is being tested. See [docs/STATUS.md](docs/STATUS.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Screenshots
+**Looks** (the Home page in each look; pick one under Settings → Look)
+
+| Stage (default) | Lens | Instrument |
+|-----------------|------|------------|
+| ![Stage look: the screens in a dark room at their real angles, with a dock for Start, Recenter, workspace type and number of screens](images/look-stage.png) | ![Lens look: round Start button, live yaw/pitch/roll readouts, layout and saved workspaces](images/look-lens.png) | ![Instrument look: status strip, field map on a degree scale, Start panel and presets table](images/look-instrument.png) |
+
+The pages below are shown in the **Classic** look.
+
 | Home | Screens |
 |------|---------|
 | ![Home page: start/stop, saved workspaces, layout preview](images/home.png) | ![Screens page: workspace type, screen split preview, primary monitor](images/screens.png) |
