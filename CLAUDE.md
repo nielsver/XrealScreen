@@ -51,4 +51,4 @@ The packaged app appears in the Start menu as **XrealScreen** after `dotnet run`
 - **Keep docs clean:** a decision goes in an ADR; if direction changes, mark the old ADR "Superseded by ADR-xxxx" and delete stale text elsewhere — don't accumulate history in STATUS.
 - **Code:** central package versions (`Directory.Packages.props`), warnings are errors, async methods end in `Async` and take a `CancellationToken` (skill `csharp-async`), `ConfigureAwait(false)` in libraries.
 - **Hardware facts:** only `[verified-hw]` after a run on the real glasses; record date, device, firmware in STATUS "Last hardware verification".
-- Commit after each completed step with a descriptive message, **never on `main`**: work on a feature branch, push it to origin and open a pull request (skill `git-branch-pr`).
+- Commit after each completed step with a descriptive message, **never on `main`**: Feature Branch Workflow: one branch per feature from `origin/main`, pushed to origin, merged by a pull request on GitHub (skill `git-branch-pr`).
