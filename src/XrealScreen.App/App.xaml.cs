@@ -62,6 +62,7 @@ public partial class App : Application
 
         MainWindow = new MainWindow();
         MainWindow.SetTheme(ThemeFromIndex(Preferences.Theme));
+        MainWindow.ApplyLook((Looks.AppLook)Math.Clamp(Preferences.Look, 0, 3));
         MainWindow.AppWindow.Closing += OnWindowClosing;
         MainWindow.Closed += (_, _) => ShutDownSession();
 

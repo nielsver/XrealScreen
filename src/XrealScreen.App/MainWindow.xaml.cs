@@ -2,7 +2,9 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using XrealScreen.App.Looks;
 using XrealScreen.App.Pages;
+using XrealScreen.App.Pages.Looks;
 
 namespace XrealScreen.App;
 
@@ -27,6 +29,12 @@ public sealed partial class MainWindow : Window
     /// <summary>Set when a drag collapsed the pane; applied once the close animation has finished.</summary>
     private double? _pendingOpenWidth;
 
+    /// <summary>Theme chosen on the Settings page; Lens, Instrument and Stage override it (see <see cref="EffectiveTheme"/>).</summary>
+    private ElementTheme _userTheme;
+
+    /// <summary>The merged look dictionary (Looks/*.xaml) currently in Application.Resources.</summary>
+    private ResourceDictionary? _lookResources;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -43,10 +51,69 @@ public sealed partial class MainWindow : Window
         UpdatePaneSplitter();
     }
 
-    /// <summary>Applies the theme chosen on the Settings page to the whole window.</summary>
-    public void SetTheme(ElementTheme theme) => RootGrid.RequestedTheme = theme;
+    /// <summary>Applies the theme chosen on the Settings page to the whole window (Classic look; the others have their own).</summary>
+    public void SetTheme(ElementTheme theme)
+    {
+        _userTheme = theme;
+        RootGrid.RequestedTheme = EffectiveTheme;
+    }
 
-    public ElementTheme CurrentTheme => RootGrid.RequestedTheme;
+    public ElementTheme CurrentTheme => _userTheme;
+
+    public AppLook Look { get; private set; }
+
+    /// <summary>Lens and Stage are designed dark, Instrument light; Classic follows the theme setting.</summary>
+    private ElementTheme EffectiveTheme => Look switch
+    {
+        AppLook.Lens or AppLook.Stage => ElementTheme.Dark,
+        AppLook.Instrument => ElementTheme.Light,
+        _ => _userTheme,
+    };
+
+    /// <summary>
+    /// Switches the window look while the app runs: swaps the look dictionary in Application.Resources,
+    /// re-resolves theme resources in the shell and rebuilds the open page with the new resources.
+    /// </summary>
+    public void ApplyLook(AppLook look)
+    {
+        Look = look;
+        var merged = Application.Current.Resources.MergedDictionaries;
+        var next = new ResourceDictionary { Source = new Uri($"ms-appx:///Looks/{look}Look.xaml") };
+        int index = _lookResources is null
+            ? merged.ToList().FindIndex(d => d.Source?.AbsolutePath.StartsWith("/Looks/", StringComparison.OrdinalIgnoreCase) == true)
+            : merged.IndexOf(_lookResources);
+        if (index >= 0)
+        {
+            merged[index] = next;
+        }
+        else
+        {
+            merged.Add(next);
+        }
+
+        _lookResources = next;
+        RootGrid.Background = (Brush)next["LookShellBackground"];
+
+        // Stage keeps the pane as an icon rail; the others use the resizable pane.
+        bool rail = look == AppLook.Stage;
+        NavView.PaneDisplayMode = rail ? NavigationViewPaneDisplayMode.LeftCompact : NavigationViewPaneDisplayMode.Auto;
+        NavView.IsPaneOpen = !rail && App.Preferences.NavPaneOpen;
+
+        // Theme resources are re-read only on a theme change: flip the theme once to pick up the new brushes.
+        ElementTheme theme = EffectiveTheme;
+        RootGrid.RequestedTheme = theme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
+        RootGrid.RequestedTheme = theme;
+        UpdatePaneSplitter();
+
+        if (NavView.SelectedItem is { } selected && NavFrame.Content is not null)
+        {
+            NavigateTo(selected);
+            if (NavFrame.BackStack.Count > 0)
+            {
+                NavFrame.BackStack.RemoveAt(NavFrame.BackStack.Count - 1); // a rebuilt page is not a step back
+            }
+        }
+    }
 
     // Reopening keeps OpenPaneLength, so the pane comes back at the width it had before it was collapsed.
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
@@ -198,20 +265,34 @@ public sealed partial class MainWindow : Window
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        if (args.IsSettingsSelected)
+        if (args.SelectedItem is { } selected)
+        {
+            NavigateTo(selected);
+        }
+    }
+
+    private void NavigateTo(object selected)
+    {
+        if (ReferenceEquals(selected, NavView.SettingsItem))
         {
             NavFrame.Navigate(typeof(SettingsPage));
             return;
         }
 
-        if (args.SelectedItem is not NavigationViewItem item)
+        if (selected is not NavigationViewItem item)
         {
             return;
         }
 
         Type page = item.Tag switch
         {
-            "home" => typeof(HomePage),
+            "home" => Look switch
+            {
+                AppLook.Lens => typeof(LensHomePage),
+                AppLook.Instrument => typeof(InstrumentHomePage),
+                AppLook.Stage => typeof(StageHomePage),
+                _ => typeof(HomePage),
+            },
             "screens" => typeof(ScreensPage),
             "tracking" => typeof(TrackingPage),
             "games" => typeof(GamesPage),

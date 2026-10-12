@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--  Instrument look Home: status strip, field map on a degree scale, Start panel and presets table.  -->
+<Page
+    x:Class="XrealScreen.App.Pages.Looks.InstrumentHomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:XrealScreen.App.Controls"
+    xmlns:looks="using:XrealScreen.App.Looks"
+    Background="Transparent">
+
+    <Page.Resources>
+        <Style x:Key="SegmentStyle" TargetType="Border">
+            <Setter Property="Padding" Value="18,11" />
+            <Setter Property="BorderBrush" Value="{StaticResource InstRuleBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,1,0" />
+        </Style>
+        <Style x:Key="PanelStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource InstSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource InstRuleBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="18,16" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Status strip  -->
+        <Border Background="{StaticResource InstSurfaceBrush}" BorderBrush="{StaticResource InstRuleBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Border Style="{StaticResource SegmentStyle}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Style="{StaticResource InstLabelStyle}" Text="WORKSPACE" />
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{x:Bind looks:LookFormat.StateBrush(Session.State), Mode=OneWay}" />
+                            <TextBlock Style="{StaticResource InstValueStyle}" Text="{x:Bind looks:LookFormat.StateUpper(Session.State), Mode=OneWay}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SegmentStyle}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Style="{StaticResource InstLabelStyle}" Text="GLASSES" />
+                        <TextBlock MaxWidth="220" Style="{StaticResource InstValueStyle}" Text="{x:Bind looks:LookFormat.Upper(Device.StatusTitle), Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SegmentStyle}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Style="{StaticResource InstLabelStyle}" Text="MODE" />
+                        <TextBlock Style="{StaticResource InstValueStyle}" Text="{x:Bind looks:LookFormat.ScreensTextUpper(Workspace.ScreenCount, Workspace.KindIndex), Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SegmentStyle}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Style="{StaticResource InstLabelStyle}" Text="TRACKING" />
+                        <TextBlock MaxWidth="200" Style="{StaticResource InstValueStyle}" Text="{x:Bind looks:LookFormat.Upper(Tracking.Status), Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SegmentStyle}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Style="{StaticResource InstLabelStyle}" Text="DRIVER" />
+                        <TextBlock Style="{StaticResource InstValueStyle}" Text="{x:Bind looks:LookFormat.DriverText(Session.IsDriverMissing), Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1">
+            <Grid Padding="28,22,28,28" RowSpacing="18" MaxWidth="1200">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <InfoBar
+                    IsClosable="False"
+                    IsOpen="{x:Bind Session.IsDriverMissing, Mode=OneWay}"
+                    Message="Workspaces need the XrealScreen virtual display driver. Head look on the Games page works without it."
+                    Severity="Warning"
+                    Title="Virtual display driver not installed">
+                    <InfoBar.ActionButton>
+                        <HyperlinkButton Content="Get the driver" NavigateUri="{x:Bind Session.DriverDownloadUri}" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
+                <!--  Field map  -->
+                <Border Grid.Row="1" Style="{StaticResource PanelStyle}">
+                    <Grid RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="230" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource PageTitleStyle}" Margin="0" FontSize="24" Text="FIELD MAP" />
+                            <TextBlock
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                FontFamily="{StaticResource LookMonoFontFamily}"
+                                FontSize="12"
+                                Foreground="{StaticResource InstMutedBrush}"
+                                Text="yaw −90° … +90° · head line shows while tracking runs" />
+                        </Grid>
+                        <controls:FieldMap
+                            Grid.Row="1"
+                            Field="{StaticResource InstFieldBrush}"
+                            Ink="{StaticResource InstInkBrush}"
+                            Mono="{StaticResource LookMonoFontFamily}"
+                            Muted="{StaticResource InstMutedBrush}"
+                            Rule="{StaticResource InstGridBrush}"
+                            Screen="{StaticResource InstBlueBrush}"
+                            Signal="{StaticResource InstSignalBrush}" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="2" ColumnSpacing="18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1.25*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Start panel  -->
+                    <Border Style="{StaticResource PanelStyle}">
+                        <StackPanel Spacing="12">
+                            <Button
+                                Padding="18,16"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                AutomationProperties.Name="Start or stop the workspace"
+                                Click="StartStop_Click"
+                                CornerRadius="2"
+                                Style="{StaticResource AccentButtonStyle}">
+                                <Grid>
+                                    <TextBlock
+                                        FontSize="20"
+                                        FontStretch="Condensed"
+                                        FontWeight="Bold"
+                                        CharacterSpacing="80"
+                                        Text="{x:Bind looks:LookFormat.StartLabelUpper(Session.State), Mode=OneWay}" />
+                                    <TextBlock
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        FontFamily="{StaticResource LookMonoFontFamily}"
+                                        FontSize="11"
+                                        Opacity="0.9"
+                                        Text="Ctrl+Alt+W" />
+                                </Grid>
+                            </Button>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Command="{x:Bind Session.RecenterCommand}" Content="RECENTER" Style="{StaticResource InstOutlineButtonStyle}" />
+                                <Button Grid.Column="1" Command="{x:Bind Session.TakeScreenshotCommand}" Content="CAPTURE" Style="{StaticResource InstOutlineButtonStyle}" />
+                                <Button Grid.Column="2" Command="{x:Bind Tracking.StartCommand}" Content="TRACK" Style="{StaticResource InstOutlineButtonStyle}" ToolTipService.ToolTip="Preview head tracking without starting the workspace" />
+                            </Grid>
+                            <TextBlock
+                                FontSize="13"
+                                Foreground="{StaticResource InstMutedBrush}"
+                                Text="{x:Bind Session.StatusMessage, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                            <Grid ColumnSpacing="18">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="3">
+                                    <TextBlock Style="{StaticResource InstLabelStyle}" Text="YAW" />
+                                    <TextBlock Style="{StaticResource InstValueStyle}" FontSize="18" Text="{x:Bind looks:LookFormat.Degrees(Tracking.Yaw), Mode=OneWay}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Style="{StaticResource InstLabelStyle}" Text="PITCH" />
+                                    <TextBlock Style="{StaticResource InstValueStyle}" FontSize="18" Text="{x:Bind looks:LookFormat.Degrees(Tracking.Pitch), Mode=OneWay}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="3">
+                                    <TextBlock Style="{StaticResource InstLabelStyle}" Text="ROLL" />
+                                    <TextBlock Style="{StaticResource InstValueStyle}" FontSize="18" Text="{x:Bind looks:LookFormat.Degrees(Tracking.Roll), Mode=OneWay}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Presets  -->
+                    <Border Grid.Column="1" Style="{StaticResource PanelStyle}">
+                        <Grid RowSpacing="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Border BorderBrush="{StaticResource InstInkBrush}" BorderThickness="0,0,0,1" Padding="8,0,8,8">
+                                <Grid>
+                                    <TextBlock Style="{StaticResource InstLabelStyle}" Text="PRESET" />
+                                    <TextBlock HorizontalAlignment="Right" Style="{StaticResource InstLabelStyle}" Text="AUTO-SAVED" />
+                                </Grid>
+                            </Border>
+                            <TextBlock
+                                Grid.Row="1"
+                                Margin="8,6"
+                                FontSize="13"
+                                Foreground="{StaticResource InstMutedBrush}"
+                                Text="No presets yet. Type a name and press SAVE to keep the current settings."
+                                TextWrapping="Wrap"
+                                Visibility="{x:Bind looks:LookFormat.ShowIfEmpty(Session.SavedWorkspaces.Count), Mode=OneWay}" />
+                            <ListView
+                                Grid.Row="1"
+                                MinHeight="110"
+                                MaxHeight="200"
+                                ItemsSource="{x:Bind Session.SavedWorkspaces}"
+                                SelectedItem="{x:Bind Session.SelectedWorkspace, Mode=TwoWay}"
+                                SelectionMode="Single">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Padding="0,7" FontSize="15" Text="{x:Bind}" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <Grid Grid.Row="2" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button Command="{x:Bind Session.LoadWorkspaceCommand}" Content="LOAD" Style="{StaticResource InstOutlineButtonStyle}" />
+                                <Button Grid.Column="1" Command="{x:Bind Session.DeleteWorkspaceCommand}" Content="DELETE" Style="{StaticResource InstOutlineButtonStyle}" />
+                                <TextBox
+                                    Grid.Column="2"
+                                    AutomationProperties.Name="Workspace name"
+                                    MaxLength="60"
+                                    PlaceholderText="New preset name"
+                                    Text="{x:Bind Session.WorkspaceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="3" Command="{x:Bind Session.SaveWorkspaceCommand}" Content="SAVE" Style="{StaticResource InstOutlineButtonStyle}" />
+                                <Button Grid.Column="4" AutomationProperties.Name="Import or export" Content="···" Style="{StaticResource InstOutlineButtonStyle}">
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Click="Import_Click" Text="Import…" />
+                                            <MenuFlyoutItem Click="Export_Click" Text="Export…" />
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Expander
+                    Grid.Row="3"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Header="LOG">
+                    <ScrollViewer MaxHeight="200">
+                        <ItemsControl FontFamily="{StaticResource LookMonoFontFamily}" FontSize="12" ItemsSource="{x:Bind Session.Log}" />
+                    </ScrollViewer>
+                </Expander>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

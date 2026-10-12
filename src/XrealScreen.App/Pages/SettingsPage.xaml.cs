@@ -17,6 +17,12 @@ public sealed partial class SettingsPage : Page
             ElementTheme.Dark => 2,
             _ => 0,
         };
+        LookRadio.SelectedIndex = (int)App.MainWindow.Look;
+
+        // Only Classic follows the app theme; the other looks bring their own (the page is rebuilt on a look change).
+        bool classic = App.MainWindow.Look == XrealScreen.App.Looks.AppLook.Classic;
+        ThemeRadio.IsEnabled = classic;
+        ThemeLockedHint.Visibility = classic ? Visibility.Collapsed : Visibility.Visible;
         TrayToggle.IsOn = App.Preferences.KeepRunningInTray;
         StartWorkspaceToggle.IsOn = App.Preferences.StartWorkspaceOnLaunch;
         GlassesConnectToggle.IsOn = App.Preferences.StartWorkspaceWhenGlassesConnect;
@@ -136,6 +142,26 @@ public sealed partial class SettingsPage : Page
     {
         App.Preferences.StartWorkspaceWhenGlassesConnect = GlassesConnectToggle.IsOn;
         App.Preferences.Save();
+    }
+
+    private void LookRadio_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // The old page reports -1 while it is torn down by the look switch; only a real pick counts.
+        if (!IsLoaded || LookRadio.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        var look = (XrealScreen.App.Looks.AppLook)LookRadio.SelectedIndex;
+        if (look == App.MainWindow.Look)
+        {
+            return;
+        }
+
+        App.Preferences.Look = (int)look;
+        App.Preferences.Save();
+        // Rebuilds this page too; run it after the selection event has finished.
+        DispatcherQueue.TryEnqueue(() => App.MainWindow.ApplyLook(look));
     }
 
     private void ThemeRadio_SelectionChanged(object sender, SelectionChangedEventArgs e)
