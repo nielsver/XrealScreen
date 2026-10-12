@@ -1,6 +1,6 @@
 ---
 name: git-branch-pr
-description: XrealScreen git workflow - never commit to main; put work on a feature branch, commit there, push it to origin and give the user the GitHub pull request link. Use whenever you commit, push, or the user asks for a branch, a PR/MR, or to "commit and push".
+description: XrealScreen git workflow - never commit to main; put work on a feature branch, commit there, push it to origin and give the user the GitHub pull request link. Use whenever you commit, push, or the user asks for a branch, a PR/MR, or to "commit and push". The user opens the PR on the GitHub web page.
 ---
 
 # Git: branch, commit, push, pull request
@@ -43,13 +43,10 @@ git push -u origin HEAD             # first push sets upstream; later pushes: gi
 ```
 Never `git push --force` to a shared branch; on your own feature branch use `--force-with-lease` only when the user asked for a rewrite.
 
-## 4. Pull request
-- With GitHub CLI installed (`gh --version`):
-  `gh pr create --base main --head <branch> --title "<title>" --body "<summary, test results>"`
-  End the body with the PR attribution line from the current attribution instructions.
-- Without `gh` (current setup): give the user the link
-  `https://github.com/nikryden/Screen-XREAL-1S/pull/new/<branch>`
-  (git also prints it after the first push) plus a ready-to-paste title and description.
+## 4. Pull request (the user opens it on the GitHub web page)
+Do not create the PR yourself (no `gh pr create`, no API calls). Give the user:
+- the link `https://github.com/nikryden/Screen-XREAL-1S/pull/new/<branch>` (git also prints it after the first push),
+- a ready-to-paste **title** and **description** (what changed, why, build/test result).
 
 ## 5. Reply
 State the branch name, the commits pushed (`git log --oneline origin/main..HEAD`), build/test result, and the PR link.
