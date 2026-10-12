@@ -30,8 +30,18 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsAppTracking));
         OnPropertyChanged(nameof(IsGlassesAnchor));
+        OnPropertyChanged(nameof(MaxScreenCount));
+        if (ScreenCount > MaxScreenCount)
+        {
+            ScreenCount = MaxScreenCount; // refreshes the preview too
+            return;
+        }
+
         RefreshGlassesSignal();
     }
+
+    /// <summary>Glasses anchor splits one ultrawide image into at most 3 screens; app head tracking allows 6.</summary>
+    public double MaxScreenCount => IsGlassesAnchor ? AnchorSplit.MaxScreens : WorkspaceLayout.MaxScreens;
 
     public bool IsGlassesAnchor => KindIndex == 0;
 
@@ -209,6 +219,12 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     partial void OnScreenCountChanged(double value)
     {
+        if (value > MaxScreenCount)
+        {
+            ScreenCount = MaxScreenCount;
+            return;
+        }
+
         Recompute();
         if (IsGlassesAnchor)
         {

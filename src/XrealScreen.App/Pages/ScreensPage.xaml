@@ -65,7 +65,7 @@
                     <NumberBox
                         x:Name="ScreenCountBox"
                         Header="Number of screens"
-                        Maximum="6"
+                        Maximum="{x:Bind Workspace.MaxScreenCount, Mode=OneWay}"
                         Minimum="1"
                         SpinButtonPlacementMode="Inline"
                         HorizontalAlignment="Left"
