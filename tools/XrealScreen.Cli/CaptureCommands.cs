@@ -2,6 +2,8 @@ using System.CommandLine;
 using System.Diagnostics;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
 using XrealScreen.Display;
 using XrealScreen.Render;
 using XrealScreen.Render.Capture;
@@ -44,7 +46,8 @@ internal static class CaptureCommands
         var gdi = new Argument<string?>("gdi") { Description = @"Monitor like \\.\DISPLAY22 (default: first virtual monitor, else the glasses).", Arity = ArgumentArity.ZeroOrOne };
         var seconds = new Option<double>("--seconds") { DefaultValueFactory = _ => 3 };
         var border = new Option<bool>("--border") { Description = "Allow the yellow capture border (skip borderless request)." };
-        var command = new Command("test", "Capture a monitor for a few seconds and print frame statistics.") { gdi, seconds, border };
+        var png = new Option<string?>("--png") { Description = "Write the first captured frame to this PNG path." };
+        var command = new Command("test", "Capture a monitor for a few seconds and print frame statistics.") { gdi, seconds, border, png };
         command.SetAction(async (parse, ct) =>
         {
             var monitors = new CcdDisplayTopology().GetActiveMonitors();
@@ -76,10 +79,13 @@ internal static class CaptureCommands
             using var staging = gd.Device.CreateTexture2D(new Texture2DDescription(
                 Format.B8G8R8A8_UNorm, 64, 64, 1, 1, BindFlags.None, ResourceUsage.Staging, CpuAccessFlags.Read));
             using var capture = new MonitorCapture(gd.Device, hmon, borderless);
+            string? pngPath = parse.GetValue(png);
 
             long frames = 0;
             double latencySumMs = 0, latencyMaxMs = 0;
             string? sample = null;
+            byte[]? savedFrame = null;
+            int savedWidth = 0, savedHeight = 0;
             var sizes = new HashSet<string>();
             capture.FrameArrived += f =>
             {
@@ -91,6 +97,12 @@ internal static class CaptureCommands
                 if (frames++ == 0)
                 {
                     sample = MeanColor(gd, staging, f);
+                    if (pngPath is not null)
+                    {
+                        savedFrame = CopyFrame(gd, f);
+                        savedWidth = f.Width;
+                        savedHeight = f.Height;
+                    }
                 }
             };
 
@@ -106,9 +118,69 @@ internal static class CaptureCommands
                 Console.WriteLine($"center 64×64 mean BGRA = {sample}");
             }
 
+            if (pngPath is not null)
+            {
+                if (savedFrame is null)
+                {
+                    Console.Error.WriteLine("no frame to write");
+                    return 4;
+                }
+
+                await WritePngAsync(pngPath, savedFrame, savedWidth, savedHeight, ct).ConfigureAwait(false);
+                Console.WriteLine($"wrote {pngPath} ({savedWidth}×{savedHeight})");
+            }
+
             return frames > 0 ? 0 : 4;
         });
         return command;
+    }
+
+    /// <summary>Copy one captured frame to tightly packed BGRA. The source texture is only valid inside the callback.</summary>
+    private static byte[] CopyFrame(GraphicsDevice gd, CapturedFrame frame)
+    {
+        using var staging = gd.Device.CreateTexture2D(new Texture2DDescription(
+            Format.B8G8R8A8_UNorm, (uint)frame.Width, (uint)frame.Height, 1, 1, BindFlags.None, ResourceUsage.Staging, CpuAccessFlags.Read));
+        gd.Context.CopySubresourceRegion(
+            staging, 0, 0, 0, 0, frame.Texture, 0,
+            new Vortice.Mathematics.Box(0, 0, 0, frame.Width, frame.Height, 1));
+        var map = gd.Context.Map(staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            byte[] pixels = new byte[frame.Width * frame.Height * 4];
+            int rowBytes = frame.Width * 4;
+            unsafe
+            {
+                fixed (byte* destination = pixels)
+                {
+                    for (int row = 0; row < frame.Height; row++)
+                    {
+                        System.Buffer.MemoryCopy(
+                            (byte*)map.DataPointer + (row * map.RowPitch),
+                            destination + (row * rowBytes),
+                            rowBytes,
+                            rowBytes);
+                    }
+                }
+            }
+
+            return pixels;
+        }
+        finally
+        {
+            gd.Context.Unmap(staging, 0);
+        }
+    }
+
+    private static async Task WritePngAsync(string path, byte[] bgra, int width, int height, CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        using var memory = new InMemoryRandomAccessStream();
+        var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, memory).AsTask(cancellationToken).ConfigureAwait(false);
+        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight, (uint)width, (uint)height, 96, 96, bgra);
+        await encoder.FlushAsync().AsTask(cancellationToken).ConfigureAwait(false);
+        memory.Seek(0);
+        await using var file = File.Create(path);
+        await memory.AsStreamForRead().CopyToAsync(file, cancellationToken).ConfigureAwait(false);
     }
 
     private static string MeanColor(GraphicsDevice gd, ID3D11Texture2D staging, CapturedFrame frame)

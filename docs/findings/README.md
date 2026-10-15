@@ -22,3 +22,4 @@ When a hypothesis is confirmed or refuted, edit the line in place (change the ta
 | [virtual-display-drivers.md](virtual-display-drivers.md) | IddCx driver options |
 | [capture-render.md](capture-render.md) | Capture and rendering pipeline |
 | [local-environment.md](local-environment.md) | Dev machine toolchain |
+| [arrealone-pc.md](arrealone-pc.md) | This PC: build, tests, and desktop capture |
