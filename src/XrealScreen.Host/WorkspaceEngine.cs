@@ -205,7 +205,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             FrameStyle frame = FrameStyles.Resolve(o.AnchorFrame, o.AnchorGradient);
             int framePx = frame == FrameStyle.SeeThrough ? 0 : FrameStyles.FramePixels;
             var signal = glasses.Resolution;
-            var rects = AnchorSplit.Place(signal, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect, framePx);
+            var rects = AnchorSplit.Place(signal, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect, framePx, AnchorSplit.NormalizeWidthScale(o.AnchorWidth));
             var virtuals = new List<VirtualDisplay>();
             foreach (var rect in rects)
             {

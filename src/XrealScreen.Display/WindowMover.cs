@@ -55,6 +55,41 @@ public static partial class WindowMover
         return moved;
     }
 
+    /// <summary>
+    /// Moves <paramref name="hwnd"/> onto <paramref name="screen"/> when it opened somewhere else.
+    /// A window already on that screen is left alone, including one the user maximized there.
+    /// </summary>
+    public static bool TryMoveOnto(nint hwnd, Rectangle screen)
+    {
+        if (hwnd == 0 || !IsAppWindow(hwnd) || !GetWindowRect(hwnd, out var rect))
+        {
+            return false;
+        }
+
+        var window = Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        if (window.Width < 40 || window.Height < 40)
+        {
+            return false;
+        }
+
+        Rectangle? target = AppOpenPlacement.MoveTarget(window, screen);
+        if (target is not { } place)
+        {
+            return false;
+        }
+
+        var placement = new WINDOWPLACEMENT { Length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
+        if (!GetWindowPlacement(hwnd, ref placement)
+            || placement.ShowCmd is SW_SHOWMINIMIZED or SW_MINIMIZE or SW_SHOWMINNOACTIVE)
+        {
+            return false;
+        }
+
+        placement.NormalPosition = new RECT(place.Left, place.Top, place.Right, place.Bottom);
+        placement.ShowCmd = placement.ShowCmd == SW_SHOWMAXIMIZED ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
+        return SetWindowPlacement(hwnd, ref placement);
+    }
+
     /// <summary>Moves the foreground window onto <paramref name="to"/> (see <see cref="GameDisplay.FitOnto"/>); maximized windows stay maximized.</summary>
     /// <returns>The moved window's title, or null when there is no movable foreground window.</returns>
     public static unsafe string? MoveForegroundWindow(Rectangle to)
@@ -170,6 +205,7 @@ public static partial class WindowMover
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TOOLWINDOW = 0x80;
     private const uint DWMWA_CLOAKED = 14;
+    private const uint SW_SHOWNORMAL = 1;
     private const uint SW_SHOWMINIMIZED = 2;
     private const uint SW_SHOWMAXIMIZED = 3;
     private const uint SW_SHOWNOACTIVATE = 4;

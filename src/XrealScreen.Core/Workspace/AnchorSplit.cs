@@ -103,20 +103,55 @@ public static class AnchorSplit
         static int Even(double v) => Math.Max(2, (int)Math.Floor(v / 2) * 2);
     }
 
+    /// <summary>Fraction of the glasses width used when no width was saved. Half stays clear of the sides.</summary>
+    public const double DefaultWidthScale = 0.5;
+
+    public static double NormalizeWidthScale(double? saved) => Math.Clamp(saved ?? DefaultWidthScale, 0.35, 1);
+
     /// <summary>
     /// Same split as <see cref="Split"/>, shifted so a frame of <paramref name="framePx"/> stays around the screens.
+    /// <paramref name="widthScale"/> pulls the screens in from the sides. 1 keeps the full width.
     /// The rectangles are in the full glasses image.
     /// </summary>
-    public static IReadOnlyList<PixelRect> Place(Resolution signal, int count, int gapPixels, AnchorAspect aspect, int framePx)
+    public static IReadOnlyList<PixelRect> Place(Resolution signal, int count, int gapPixels, AnchorAspect aspect, int framePx, double widthScale = 1)
     {
         framePx = Math.Max(0, framePx);
         bool framed = framePx > 0 && signal.Width > framePx * 2 + 32 && signal.Height > framePx * 2 + 32;
         var canvas = framed ? new Resolution(signal.Width - framePx * 2, signal.Height - framePx * 2) : signal;
         int ox = (signal.Width - canvas.Width) / 2;
         int oy = (signal.Height - canvas.Height) / 2;
-        return Split(canvas, count, gapPixels, aspect)
+        var placed = Split(canvas, count, gapPixels, aspect)
             .Select(r => new PixelRect(r.X + ox, r.Y + oy, r.Width, r.Height))
             .ToArray();
+        return ScaleWidth(placed, widthScale);
+    }
+
+    /// <summary>
+    /// Pulls the screens toward the middle of the group. Height stays. 1 keeps the rectangles unchanged.
+    /// </summary>
+    public static IReadOnlyList<PixelRect> ScaleWidth(IReadOnlyList<PixelRect> rects, double widthScale)
+    {
+        ArgumentNullException.ThrowIfNull(rects);
+        if (rects.Count == 0 || widthScale >= 0.999)
+        {
+            return rects;
+        }
+
+        widthScale = Math.Clamp(widthScale, 0.35, 1);
+        int left = rects.Min(r => r.X);
+        int right = rects.Max(r => r.X + r.Width);
+        double center = (left + right) / 2.0;
+        var scaled = new PixelRect[rects.Count];
+        for (int i = 0; i < rects.Count; i++)
+        {
+            PixelRect r = rects[i];
+            int width = Math.Max(2, (int)Math.Floor(r.Width * widthScale / 2.0) * 2);
+            double nextCenter = center + (r.X + r.Width / 2.0 - center) * widthScale;
+            int x = (int)Math.Round(nextCenter - width / 2.0);
+            scaled[i] = new PixelRect(x, r.Y, width, r.Height);
+        }
+
+        return scaled;
     }
 
     /// <summary>

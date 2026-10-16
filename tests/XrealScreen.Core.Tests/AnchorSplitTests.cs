@@ -61,6 +61,32 @@ public class AnchorSplitTests
     }
 
     [Fact]
+    public void HalfWidth_PullsOneScreenInFromTheSides()
+    {
+        var full = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 0);
+        var half = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 0, widthScale: 0.5);
+
+        Assert.Equal(3840, full[0].Width);
+        Assert.Equal(1920, half[0].Width);
+        Assert.Equal(full[0].Height, half[0].Height);
+        Assert.Equal(960, half[0].X);
+        Assert.Equal(full[0].X + full[0].Width / 2, half[0].X + half[0].Width / 2);
+    }
+
+    [Fact]
+    public void HalfWidth_ThreeScreens_StaySideBySideAndNarrower()
+    {
+        var full = AnchorSplit.Place(Wide32x9, 3, gapPixels: 0, AnchorAspect.Fill, framePx: 0);
+        var half = AnchorSplit.ScaleWidth(full, 0.5);
+
+        Assert.All(half, s => Assert.Equal(640, s.Width));
+        Assert.Equal(full[0].Height, half[0].Height);
+        Assert.True(half[0].X > full[0].X);
+        Assert.True(half[2].X + half[2].Width < full[2].X + full[2].Width);
+        Assert.True(half[1].X > half[0].X + half[0].Width - 2);
+    }
+
+    [Fact]
     public void Place_LeavesABorderAroundTheScreens()
     {
         var r = AnchorSplit.Place(Wide32x9, 3, gapPixels: 16, AnchorAspect.Fill, framePx: 36);

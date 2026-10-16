@@ -34,6 +34,7 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
     private readonly WorkspaceViewModel _workspace;
     private readonly TrackingViewModel _tracking;
     private readonly DispatcherQueueTimer _poseTimer;
+    private readonly AppOpenHook _openHook;
     private bool _applyingEngineDistance;
 
     public SessionViewModel(DispatcherQueue dispatcher, WorkspaceViewModel workspace, TrackingViewModel tracking)
@@ -41,6 +42,7 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _workspace = workspace;
         _tracking = tracking;
+        _openHook = new AppOpenHook(dispatcher, () => _engine.VirtualScreenBounds.ToList());
         _poseTimer = dispatcher.CreateTimer();
         _poseTimer.Interval = TimeSpan.FromMilliseconds(33);
         _poseTimer.Tick += (_, _) => _tracking.ApplyExternalPose(_engine.CurrentPose);
@@ -502,6 +504,7 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
     {
         _autoSaveTimer.Stop();
         _glassesTimer.Stop();
+        _openHook.Dispose();
         SaveIfChanged();
         StopBlocking();
         _engine.DisposeAsync().AsTask().GetAwaiter().GetResult();
@@ -514,15 +517,17 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         if (state == WorkspaceState.Running)
         {
             _poseTimer.Start();
+            _openHook.Start();
             StatusTitle = "Workspace running";
             StatusMessage = _workspace.KindIndex == 0
-                ? "Screens are ready. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
-                : "Screens are ready. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
+                ? "Screens are ready. An app you click on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
+                : "Screens are ready. An app you click on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
             Severity = InfoBarSeverity.Success;
         }
         else if (state is WorkspaceState.Stopped or WorkspaceState.Faulted)
         {
             _poseTimer.Stop();
+            _openHook.Stop();
             _tracking.ClearExternalPose();
             _workspace.RefreshGlassesSignal();
             if (_engine.LastStopReason == WorkspaceStopReason.GlassesDisplayChanged)
@@ -606,6 +611,7 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         Kind = _workspace.KindIndex == 0 ? WorkspaceKind.GlassesAnchor : WorkspaceKind.AppTracking,
         AnchorGapPixels = (int)Math.Round(_workspace.AnchorGapPixels),
         AnchorAspect = _workspace.AnchorAspect,
+        AnchorWidth = _workspace.AnchorWidth,
         AnchorGradient = _workspace.AnchorGradient,
         AnchorFrame = _workspace.FrameStyle,
         AnchorGradientLeft = _workspace.GradientLeftHex,
@@ -639,6 +645,7 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         _workspace.KindIndex = o.Kind == WorkspaceKind.GlassesAnchor ? 0 : 1;
         _workspace.AnchorGapPixels = o.AnchorGapPixels;
         _workspace.AnchorAspectIndex = (int)o.AnchorAspect;
+        _workspace.AnchorWidth = AnchorSplit.NormalizeWidthScale(o.AnchorWidth);
         _workspace.FrameStyleIndex = (int)FrameStyles.Resolve(o.AnchorFrame, o.AnchorGradient);
         _workspace.SetGradientHex(o.AnchorGradientLeft, o.AnchorGradientRight);
         _workspace.ApplyScreenColors(o.AnchorScreenColors);

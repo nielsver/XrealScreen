@@ -61,6 +61,15 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public string AnchorGapText => $"{Math.Round(AnchorGapPixels):F0} px";
 
+    /// <summary>Fraction of the glasses width the screens use. Half keeps them clear of the sides.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AnchorWidthText))]
+    public partial double AnchorWidth { get; set; } = AnchorSplit.DefaultWidthScale;
+
+    public string AnchorWidthText => $"{Math.Round(AnchorWidth * 100):F0}%";
+
+    partial void OnAnchorWidthChanged(double value) => OnAnchorSettingChanged();
+
     public XrealScreen.Core.Workspace.AnchorAspect AnchorAspect => (XrealScreen.Core.Workspace.AnchorAspect)Math.Clamp(AnchorAspectIndex, 0, 2);
 
     /// <summary>Index matches <see cref="FrameStyle"/>.</summary>
@@ -612,13 +621,14 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     {
         int count = double.IsNaN(ScreenCount) ? 1 : (int)Math.Clamp(Math.Round(ScreenCount), 1, XrealScreen.Core.Workspace.AnchorSplit.MaxScreens);
         int gap = (int)Math.Round(AnchorGapPixels);
-        GlassesSignal = XrealScreen.Host.GlassesSignal.Describe(count, gap, AnchorAspect);
+        double width = AnchorSplit.NormalizeWidthScale(AnchorWidth);
+        GlassesSignal = XrealScreen.Host.GlassesSignal.Describe(count, gap, AnchorAspect, width);
 
         var current = XrealScreen.Host.GlassesSignal.CurrentResolution();
         AnchorCanvasIsExample = current is not { } r || !XrealScreen.Core.Workspace.AnchorSplit.IsUltrawideSignal(r);
         AnchorCanvas = AnchorCanvasIsExample ? new XrealScreen.Core.Workspace.Resolution(3840, 1080) : current!.Value;
         int framePx = FrameStyle == FrameStyle.SeeThrough ? 0 : FrameStyles.FramePixels;
-        AnchorRects = AnchorSplit.Place(AnchorCanvas, count, gap, AnchorAspect, framePx);
+        AnchorRects = AnchorSplit.Place(AnchorCanvas, count, gap, AnchorAspect, framePx, width);
         if (!_loading && !_screenColorsCustom)
         {
             FillDefaultScreenColors();

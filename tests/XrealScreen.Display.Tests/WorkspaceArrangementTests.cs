@@ -199,6 +199,33 @@ public class WorkspaceArrangementTests
         Assert.True(layout.Monitors.Single(m => m.DevicePath == "desk").IsPrimary);
     }
 
+    [Fact]
+    public void AppOpen_WindowOnTheDesk_MovesOntoTheVirtualScreen()
+    {
+        var screen = new System.Drawing.Rectangle(3840, 0, 1920, 1080);
+        var window = new System.Drawing.Rectangle(200, 100, 800, 600);
+
+        Assert.Equal(screen, AppOpenPlacement.ScreenAt(new System.Drawing.Point(4000, 40), [screen]));
+        Assert.Null(AppOpenPlacement.ScreenAt(new System.Drawing.Point(10, 10), [screen]));
+        Assert.Equal(new System.Drawing.Rectangle(3840 + 560, 240, 800, 600), AppOpenPlacement.MoveTarget(window, screen));
+    }
+
+    [Fact]
+    public void AppOpen_WindowAlreadyOnTheScreen_Stays()
+    {
+        var screen = new System.Drawing.Rectangle(3840, 0, 1920, 1080);
+        var window = new System.Drawing.Rectangle(4000, 80, 1400, 900);
+        Assert.Null(AppOpenPlacement.MoveTarget(window, screen));
+    }
+
+    [Fact]
+    public void AppOpen_WiderThanTheScreen_ShrinksToTheScreen()
+    {
+        var screen = new System.Drawing.Rectangle(0, 0, 1600, 1000);
+        var window = new System.Drawing.Rectangle(100, 100, 3840, 2160);
+        Assert.Equal(new System.Drawing.Rectangle(0, 0, 1600, 1000), AppOpenPlacement.MoveTarget(window, screen));
+    }
+
     [Theory]
     [InlineData(100, 50, 400, 300, 3940, 50, 400, 300)] // same offset on the target
     [InlineData(1800, 900, 400, 300, 5360, 780, 400, 300)] // pushed back inside

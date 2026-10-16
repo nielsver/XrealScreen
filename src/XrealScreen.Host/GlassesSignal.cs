@@ -19,7 +19,7 @@ public static class GlassesSignal
         }
     }
 
-    public static string Describe(int screenCount, int gapPixels = 0, AnchorAspect aspect = AnchorAspect.Fill)
+    public static string Describe(int screenCount, int gapPixels = 0, AnchorAspect aspect = AnchorAspect.Fill, double widthScale = 1)
     {
         try
         {
@@ -36,7 +36,7 @@ public static class GlassesSignal
             }
 
             string name = r.Height > r.Width ? "16:18" : (double)r.Width / r.Height > 3 ? "32:9" : "21:9";
-            var split = AnchorSplit.Split(r, screenCount, gapPixels, aspect);
+            var split = AnchorSplit.ScaleWidth(AnchorSplit.Split(r, screenCount, gapPixels, aspect), widthScale);
             return $"The glasses send {name} ({r}) → {split.Count} screen(s) of {split[0].Width}×{split[0].Height}. Change UltraWide in the glasses menu; a running workspace adapts automatically.";
         }
         catch (System.ComponentModel.Win32Exception ex)

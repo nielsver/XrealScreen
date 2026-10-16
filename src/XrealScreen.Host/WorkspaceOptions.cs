@@ -47,6 +47,12 @@ public sealed record WorkspaceOptions
     public AnchorAspect AnchorAspect { get; init; } = AnchorAspect.Fill;
 
     /// <summary>
+    /// Glasses anchor: fraction of the glasses width the screens use (0.35–1). Null means half,
+    /// so the screens stay clear of the sides. 1 runs them out to the edges.
+    /// </summary>
+    public double? AnchorWidth { get; init; }
+
+    /// <summary>
     /// Glasses anchor: draw a left-to-right gradient around the screens.
     /// Null means on, so an older settings file keeps the gradient. <see cref="AnchorFrame"/> wins when set.
     /// </summary>

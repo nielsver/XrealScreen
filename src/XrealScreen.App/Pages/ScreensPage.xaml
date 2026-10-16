@@ -62,6 +62,25 @@
                                 Style="{StaticResource BodyStrongTextBlockStyle}"
                                 Text="{x:Bind Workspace.AnchorGapText, Mode=OneWay}" />
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Slider
+                                Header="Width toward the sides"
+                                MinWidth="320"
+                                Maximum="1"
+                                Minimum="0.35"
+                                StepFrequency="0.05"
+                                Value="{x:Bind Workspace.AnchorWidth, Mode=TwoWay}" />
+                            <TextBlock
+                                Margin="0,24,0,0"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Workspace.AnchorWidthText, Mode=OneWay}" />
+                        </StackPanel>
+                        <TextBlock
+                            Margin="0,-8,0,0"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap"
+                            Text="Half keeps the screens well clear of the sides. 100% runs them out to the edges. Apply to use a new width." />
                         <RadioButtons
                             Header="Screen shape (screens fill the space and keep this aspect ratio)"
                             ItemsSource="{x:Bind Workspace.AnchorAspectNames}"
