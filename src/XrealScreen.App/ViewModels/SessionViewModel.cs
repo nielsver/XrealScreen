@@ -336,9 +336,9 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
 
     /// <summary>Result of sending a window or finding the cursor.</summary>
     [ObservableProperty]
-    public partial string DeskStatus { get; set; } = "Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor.";
+    public partial string DeskStatus { get; set; } = "Ctrl+Alt+1 through 6 sends the window you are using. Ctrl+Alt+0 finds the cursor.";
 
-    /// <summary>Moves the window you are using onto virtual screen <paramref name="screen"/> (1, 2, or 3).</summary>
+    /// <summary>Moves the window you are using onto virtual screen <paramref name="screen"/> (1 through 6).</summary>
     public void SendWindowTo(int screen)
     {
         if (!IsRunning)
@@ -520,8 +520,8 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
             _openHook.Start();
             StatusTitle = "Workspace running";
             StatusMessage = _workspace.KindIndex == 0
-                ? "Screens are ready. A new app opened while the pointer is on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
-                : "Screens are ready. A new app opened while the pointer is on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
+                ? "Screens are ready. A new app opened while the pointer is on a virtual screen opens there. Ctrl+Alt+1 through 6 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
+                : "Screens are ready. A new app opened while the pointer is on a virtual screen opens there. Ctrl+Alt+1 through 6 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
             Severity = InfoBarSeverity.Success;
         }
         else if (state is WorkspaceState.Stopped or WorkspaceState.Faulted)

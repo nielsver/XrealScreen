@@ -17,10 +17,13 @@ public enum TrayCommand
     /// <summary>Ctrl+Alt+P: screenshot of what the glasses show.</summary>
     Screenshot = 7,
 
-    /// <summary>Ctrl+Alt+1, 2, or 3: send the window you are using to that virtual screen.</summary>
+    /// <summary>Ctrl+Alt+1 through 6: send the window you are using to that virtual screen.</summary>
     SendToScreen1 = 8,
     SendToScreen2 = 9,
     SendToScreen3 = 10,
+    SendToScreen4 = 12,
+    SendToScreen5 = 13,
+    SendToScreen6 = 14,
 
     /// <summary>Ctrl+Alt+0: put the cursor on the main virtual screen.</summary>
     FindCursor = 11,
@@ -40,6 +43,9 @@ public sealed unsafe partial class TrayIcon : IDisposable
     private const int HotkeyScreen2 = 4;
     private const int HotkeyScreen3 = 5;
     private const int HotkeyFindCursor = 6;
+    private const int HotkeyScreen4 = 7;
+    private const int HotkeyScreen5 = 8;
+    private const int HotkeyScreen6 = 9;
     private static TrayIcon? s_current;
 
     private readonly uint _taskbarCreated;
@@ -70,6 +76,9 @@ public sealed unsafe partial class TrayIcon : IDisposable
         RegisterHotKey(_hwnd, HotkeyScreen1, 0x0002 | 0x0001 | 0x4000, 0x31 /* 1 */);
         RegisterHotKey(_hwnd, HotkeyScreen2, 0x0002 | 0x0001 | 0x4000, 0x32 /* 2 */);
         RegisterHotKey(_hwnd, HotkeyScreen3, 0x0002 | 0x0001 | 0x4000, 0x33 /* 3 */);
+        RegisterHotKey(_hwnd, HotkeyScreen4, 0x0002 | 0x0001 | 0x4000, 0x34 /* 4 */);
+        RegisterHotKey(_hwnd, HotkeyScreen5, 0x0002 | 0x0001 | 0x4000, 0x35 /* 5 */);
+        RegisterHotKey(_hwnd, HotkeyScreen6, 0x0002 | 0x0001 | 0x4000, 0x36 /* 6 */);
         RegisterHotKey(_hwnd, HotkeyFindCursor, 0x0002 | 0x0001 | 0x4000, 0x30 /* 0 */);
         Tooltip = tooltip;
         Add();
@@ -149,6 +158,15 @@ public sealed unsafe partial class TrayIcon : IDisposable
         AppendMenu(menu, WorkspaceRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.Recenter, "Recenter");
         AppendMenu(menu, WorkspaceRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.Screenshot, "Screenshot of the glasses\tCtrl+Alt+P");
         AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
+        uint send = WorkspaceRunning ? MF_STRING : MF_GRAYED;
+        AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen1, "Send window to screen 1\tCtrl+Alt+1");
+        AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen2, "Send window to screen 2\tCtrl+Alt+2");
+        AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen3, "Send window to screen 3\tCtrl+Alt+3");
+        AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen4, "Send window to screen 4\tCtrl+Alt+4");
+        AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen5, "Send window to screen 5\tCtrl+Alt+5");
+        AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen6, "Send window to screen 6\tCtrl+Alt+6");
+        AppendMenu(menu, send, (IntPtr)TrayCommand.FindCursor, "Find cursor\tCtrl+Alt+0");
+        AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
         AppendMenu(menu, MF_STRING, (IntPtr)TrayCommand.Exit, "Exit");
 
         POINT pt;
@@ -214,6 +232,24 @@ public sealed unsafe partial class TrayIcon : IDisposable
                 return 0;
             }
 
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyScreen4)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.SendToScreen4);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyScreen5)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.SendToScreen5);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyScreen6)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.SendToScreen6);
+                return 0;
+            }
+
             if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyFindCursor)
             {
                 self.CommandInvoked?.Invoke(TrayCommand.FindCursor);
@@ -246,6 +282,9 @@ public sealed unsafe partial class TrayIcon : IDisposable
             UnregisterHotKey(_hwnd, HotkeyScreen1);
             UnregisterHotKey(_hwnd, HotkeyScreen2);
             UnregisterHotKey(_hwnd, HotkeyScreen3);
+            UnregisterHotKey(_hwnd, HotkeyScreen4);
+            UnregisterHotKey(_hwnd, HotkeyScreen5);
+            UnregisterHotKey(_hwnd, HotkeyScreen6);
             UnregisterHotKey(_hwnd, HotkeyFindCursor);
             DestroyWindow(_hwnd);
             _hwnd = IntPtr.Zero;

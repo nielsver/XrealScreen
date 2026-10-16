@@ -34,6 +34,30 @@
                 ToolTipService.ToolTip="Send the window you are using to screen 3 (Ctrl+Alt+3)"
                 Visibility="{x:Bind Workspace.ShowScreen3, Mode=OneWay}" />
             <Button
+                AutomationProperties.Name="Send window to screen 4"
+                MinWidth="40"
+                Click="Send4_Click"
+                Content="4"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Send the window you are using to screen 4 (Ctrl+Alt+4)"
+                Visibility="{x:Bind Workspace.ShowScreen4, Mode=OneWay}" />
+            <Button
+                AutomationProperties.Name="Send window to screen 5"
+                MinWidth="40"
+                Click="Send5_Click"
+                Content="5"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Send the window you are using to screen 5 (Ctrl+Alt+5)"
+                Visibility="{x:Bind Workspace.ShowScreen5, Mode=OneWay}" />
+            <Button
+                AutomationProperties.Name="Send window to screen 6"
+                MinWidth="40"
+                Click="Send6_Click"
+                Content="6"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Send the window you are using to screen 6 (Ctrl+Alt+6)"
+                Visibility="{x:Bind Workspace.ShowScreen6, Mode=OneWay}" />
+            <Button
                 AutomationProperties.Name="Find cursor"
                 Click="Find_Click"
                 Content="Cursor"

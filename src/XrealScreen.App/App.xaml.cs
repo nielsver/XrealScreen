@@ -196,6 +196,15 @@ public partial class App : Application
             case TrayCommand.SendToScreen3:
                 Session.SendWindowTo(3);
                 break;
+            case TrayCommand.SendToScreen4:
+                Session.SendWindowTo(4);
+                break;
+            case TrayCommand.SendToScreen5:
+                Session.SendWindowTo(5);
+                break;
+            case TrayCommand.SendToScreen6:
+                Session.SendWindowTo(6);
+                break;
             case TrayCommand.FindCursor:
                 Session.FindCursor();
                 break;

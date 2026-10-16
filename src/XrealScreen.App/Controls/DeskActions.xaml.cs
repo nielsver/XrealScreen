@@ -29,5 +29,11 @@ public sealed partial class DeskActions : UserControl
 
     private void Send3_Click(object sender, RoutedEventArgs e) => Session.SendWindowTo(3);
 
+    private void Send4_Click(object sender, RoutedEventArgs e) => Session.SendWindowTo(4);
+
+    private void Send5_Click(object sender, RoutedEventArgs e) => Session.SendWindowTo(5);
+
+    private void Send6_Click(object sender, RoutedEventArgs e) => Session.SendWindowTo(6);
+
     private void Find_Click(object sender, RoutedEventArgs e) => Session.FindCursor();
 }

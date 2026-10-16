@@ -302,6 +302,24 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public bool ShowScreen3 => AnchorScreenCount >= 3;
 
+    /// <summary>Screens actually in the workspace, including a second grid row.</summary>
+    private int ShownScreenCount => double.IsNaN(ScreenCount) ? 1 : (int)Math.Clamp(Math.Round(ScreenCount), 1, WorkspaceLayout.MaxScreens);
+
+    public bool ShowScreen4 => ShownScreenCount >= 4;
+
+    public bool ShowScreen5 => ShownScreenCount >= 5;
+
+    public bool ShowScreen6 => ShownScreenCount >= 6;
+
+    private void NotifySendButtons()
+    {
+        OnPropertyChanged(nameof(ShowScreen2));
+        OnPropertyChanged(nameof(ShowScreen3));
+        OnPropertyChanged(nameof(ShowScreen4));
+        OnPropertyChanged(nameof(ShowScreen5));
+        OnPropertyChanged(nameof(ShowScreen6));
+    }
+
     private Color _screen1A = Color.FromArgb(255, 0x1F, 0x0A, 0x6B);
     private Color _screen1B = Color.FromArgb(255, 0x00, 0x8C, 0xB8);
     private Color _screen2A = Color.FromArgb(255, 0x1F, 0x0A, 0x6B);
@@ -668,8 +686,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
             FillDefaultScreenColors();
         }
 
-        OnPropertyChanged(nameof(ShowScreen2));
-        OnPropertyChanged(nameof(ShowScreen3));
+        NotifySendButtons();
         RebuildPrimaryScreenNames();
         if (_loading)
         {
@@ -849,6 +866,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(ScreenCountIndex));
+        NotifySendButtons();
         if (IsGlassesAnchor)
         {
             OnAnchorSettingChanged();
