@@ -207,7 +207,16 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             var signal = glasses.Resolution;
             int columns = o.Preset == LayoutPreset.Grid ? WorkspaceLayout.GridColumns : 0;
             int count = Math.Clamp(o.ScreenCount, 1, columns > 1 ? AnchorSplit.MaxGridScreens : AnchorSplit.MaxScreens);
-            var rects = AnchorSplit.Place(signal, count, o.AnchorGapPixels, o.AnchorAspect, framePx, AnchorSplit.NormalizeWidthScale(o.AnchorWidth), columns);
+            var rects = AnchorSplit.Place(
+                signal,
+                count,
+                o.AnchorGapPixels,
+                o.AnchorAspect,
+                framePx,
+                AnchorSplit.NormalizeWidthScale(o.AnchorWidth),
+                columns,
+                AnchorSplit.NormalizeHeightScale(o.AnchorHeight),
+                AnchorSplit.NormalizeMarginPixels(o.AnchorMarginPixels));
             var virtuals = new List<VirtualDisplay>();
             foreach (var rect in rects)
             {

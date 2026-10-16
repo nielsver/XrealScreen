@@ -152,28 +152,64 @@ public static class AnchorSplit
 
     private static int Even(double v) => Math.Max(2, (int)Math.Floor(v / 2) * 2);
 
+    /// <summary>Smallest fraction of the slot a width or height slider can select.</summary>
+    public const double MinSizeScale = 0.35;
+
     /// <summary>Fraction of the glasses width used when no width was saved. Half stays clear of the sides.</summary>
     public const double DefaultWidthScale = 0.5;
 
-    public static double NormalizeWidthScale(double? saved) => Math.Clamp(saved ?? DefaultWidthScale, 0.35, 1);
+    /// <summary>Fraction of the slot height used when no height was saved. Full height fills the image.</summary>
+    public const double DefaultHeightScale = 1;
+
+    /// <summary>Most clear space the margin slider adds on every side, in pixels.</summary>
+    public const int MaxMarginPixels = 400;
+
+    /// <summary>Canvas that must remain after the frame and the margin, in pixels.</summary>
+    public const int MinCanvasPixels = 32;
+
+    public static double NormalizeWidthScale(double? saved) => Math.Clamp(saved ?? DefaultWidthScale, MinSizeScale, 1);
+
+    public static double NormalizeHeightScale(double? saved) => Math.Clamp(saved ?? DefaultHeightScale, MinSizeScale, 1);
+
+    public static int NormalizeMarginPixels(int? saved) => Math.Clamp(saved ?? 0, 0, MaxMarginPixels);
 
     /// <summary>
     /// Same split as <see cref="Split"/>, shifted so a frame of <paramref name="framePx"/> stays around the screens.
-    /// <paramref name="widthScale"/> pulls the screens in from the sides. 1 keeps the full width.
+    /// <paramref name="marginPixels"/> adds more clear space on every side, inside that frame.
+    /// <paramref name="widthScale"/> and <paramref name="heightScale"/> pull the screens in from the sides and from the top and bottom. 1 keeps that side full.
     /// <paramref name="columns"/> above 1 uses a grid once there are more screens than columns.
     /// The rectangles are in the full glasses image.
     /// </summary>
-    public static IReadOnlyList<PixelRect> Place(Resolution signal, int count, int gapPixels, AnchorAspect aspect, int framePx, double widthScale = 1, int columns = 0)
+    public static IReadOnlyList<PixelRect> Place(Resolution signal, int count, int gapPixels, AnchorAspect aspect, int framePx, double widthScale = 1, int columns = 0, double heightScale = 1, int marginPixels = 0)
     {
-        framePx = Math.Max(0, framePx);
-        bool framed = framePx > 0 && signal.Width > framePx * 2 + 32 && signal.Height > framePx * 2 + 32;
-        var canvas = framed ? new Resolution(signal.Width - framePx * 2, signal.Height - framePx * 2) : signal;
+        int inset = Inset(signal, Math.Max(0, framePx), Math.Clamp(marginPixels, 0, MaxMarginPixels));
+        var canvas = inset > 0 ? new Resolution(signal.Width - inset * 2, signal.Height - inset * 2) : signal;
         int ox = (signal.Width - canvas.Width) / 2;
         int oy = (signal.Height - canvas.Height) / 2;
         var placed = Split(canvas, count, gapPixels, aspect, columns)
             .Select(r => new PixelRect(r.X + ox, r.Y + oy, r.Width, r.Height))
             .ToArray();
-        return ScaleWidth(placed, widthScale);
+        return ScaleHeight(ScaleWidth(placed, widthScale), heightScale);
+    }
+
+    /// <summary>Frame plus margin, or nothing when the image is too small to hold them.</summary>
+    private static int Inset(Resolution signal, int framePx, int marginPixels)
+    {
+        if (marginPixels == 0)
+        {
+            bool framed = framePx > 0
+                && signal.Width > framePx * 2 + MinCanvasPixels
+                && signal.Height > framePx * 2 + MinCanvasPixels;
+            return framed ? framePx : 0;
+        }
+
+        int maxInset = Math.Min((signal.Width - MinCanvasPixels) / 2, (signal.Height - MinCanvasPixels) / 2);
+        if (maxInset < 1)
+        {
+            return 0;
+        }
+
+        return Math.Min(framePx + marginPixels, maxInset);
     }
 
     /// <summary>
@@ -187,7 +223,7 @@ public static class AnchorSplit
             return rects;
         }
 
-        widthScale = Math.Clamp(widthScale, 0.35, 1);
+        widthScale = Math.Clamp(widthScale, MinSizeScale, 1);
         int left = rects.Min(r => r.X);
         int right = rects.Max(r => r.X + r.Width);
         double center = (left + right) / 2.0;
@@ -199,6 +235,34 @@ public static class AnchorSplit
             double nextCenter = center + (r.X + r.Width / 2.0 - center) * widthScale;
             int x = (int)Math.Round(nextCenter - width / 2.0);
             scaled[i] = new PixelRect(x, r.Y, width, r.Height);
+        }
+
+        return scaled;
+    }
+
+    /// <summary>
+    /// Pulls the screens toward the middle of the group. Width stays. 1 keeps the rectangles unchanged.
+    /// </summary>
+    public static IReadOnlyList<PixelRect> ScaleHeight(IReadOnlyList<PixelRect> rects, double heightScale)
+    {
+        ArgumentNullException.ThrowIfNull(rects);
+        if (rects.Count == 0 || heightScale >= 0.999)
+        {
+            return rects;
+        }
+
+        heightScale = Math.Clamp(heightScale, MinSizeScale, 1);
+        int top = rects.Min(r => r.Y);
+        int bottom = rects.Max(r => r.Y + r.Height);
+        double center = (top + bottom) / 2.0;
+        var scaled = new PixelRect[rects.Count];
+        for (int i = 0; i < rects.Count; i++)
+        {
+            PixelRect r = rects[i];
+            int height = Math.Max(2, (int)Math.Floor(r.Height * heightScale / 2.0) * 2);
+            double nextCenter = center + (r.Y + r.Height / 2.0 - center) * heightScale;
+            int y = (int)Math.Round(nextCenter - height / 2.0);
+            scaled[i] = new PixelRect(r.X, y, r.Width, height);
         }
 
         return scaled;

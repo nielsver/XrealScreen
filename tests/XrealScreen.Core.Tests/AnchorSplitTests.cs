@@ -136,6 +136,73 @@ public class AnchorSplitTests
     }
 
     [Fact]
+    public void FullWidthAndHeight_FillTheImage()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 0, widthScale: 1, heightScale: 1, marginPixels: 0);
+        Assert.Equal(new PixelRect(0, 0, 3840, 1080), r[0]);
+    }
+
+    [Fact]
+    public void HalfHeight_PullsOneScreenInFromTopAndBottom()
+    {
+        var full = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 0);
+        var half = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 0, heightScale: 0.5);
+
+        Assert.Equal(3840, half[0].Width);
+        Assert.Equal(540, half[0].Height);
+        Assert.Equal(0, half[0].X);
+        Assert.Equal(270, half[0].Y);
+        Assert.Equal(full[0].X + full[0].Width / 2, half[0].X + half[0].Width / 2);
+    }
+
+    [Fact]
+    public void Margin_LeavesSpaceOnEverySide()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 0, marginPixels: 80);
+        Assert.Equal(new PixelRect(80, 80, 3680, 920), r[0]);
+    }
+
+    [Fact]
+    public void Margin_KeepsTheGapBetweenScreens()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 2, gapPixels: 16, AnchorAspect.Fill, framePx: 0, marginPixels: 40);
+        Assert.Equal(40, r[0].X);
+        Assert.Equal(40, r[0].Y);
+        Assert.Equal(16, r[1].X - (r[0].X + r[0].Width));
+        Assert.Equal(40, Wide32x9.Width - (r[1].X + r[1].Width));
+        Assert.Equal(40, Wide32x9.Height - (r[0].Y + r[0].Height));
+    }
+
+    [Fact]
+    public void FrameAndMargin_Stack()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 1, gapPixels: 0, AnchorAspect.Fill, framePx: 36, marginPixels: 20);
+        Assert.Equal(new PixelRect(56, 56, 3728, 968), r[0]);
+    }
+
+    [Fact]
+    public void HalfHeight_OnAGrid_KeepsTheRowsAndTheWidth()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 6, gapPixels: 0, AnchorAspect.Fill, framePx: 0, columns: 3, heightScale: 0.5);
+        Assert.Equal(6, r.Count);
+        Assert.All(r, s => Assert.Equal(1280, s.Width));
+        Assert.All(r, s => Assert.Equal(270, s.Height));
+        Assert.Equal([0, 1280, 2560], r.Take(3).Select(s => s.X).ToArray());
+        Assert.All(r.Take(3), s => Assert.Equal(270, s.Y));
+        Assert.All(r.Skip(3), s => Assert.Equal(540, s.Y));
+        Assert.True(r[3].Y >= r[0].Y + r[0].Height);
+    }
+
+    [Fact]
+    public void MissingHeightAndMargin_StayFull()
+    {
+        Assert.Equal(1, AnchorSplit.NormalizeHeightScale(null));
+        Assert.Equal(0, AnchorSplit.NormalizeMarginPixels(null));
+        Assert.Equal(AnchorSplit.MinSizeScale, AnchorSplit.NormalizeHeightScale(0.1));
+        Assert.Equal(AnchorSplit.MaxMarginPixels, AnchorSplit.NormalizeMarginPixels(900));
+    }
+
+    [Fact]
     public void Place_LeavesABorderAroundTheScreens()
     {
         var r = AnchorSplit.Place(Wide32x9, 3, gapPixels: 16, AnchorAspect.Fill, framePx: 36);

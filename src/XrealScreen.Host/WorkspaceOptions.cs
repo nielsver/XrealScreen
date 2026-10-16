@@ -53,6 +53,17 @@ public sealed record WorkspaceOptions
     public double? AnchorWidth { get; init; }
 
     /// <summary>
+    /// Glasses anchor: fraction of the slot height the screens use (0.35–1). Null means full height.
+    /// </summary>
+    public double? AnchorHeight { get; init; }
+
+    /// <summary>
+    /// Glasses anchor: clear pixels around the whole group, inside the color frame.
+    /// Null means none. The seam between screens stays <see cref="AnchorGapPixels"/>.
+    /// </summary>
+    public int? AnchorMarginPixels { get; init; }
+
+    /// <summary>
     /// Glasses anchor: draw a left-to-right gradient around the screens.
     /// Null means on, so an older settings file keeps the gradient. <see cref="AnchorFrame"/> wins when set.
     /// </summary>

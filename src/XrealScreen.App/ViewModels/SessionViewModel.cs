@@ -612,6 +612,8 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         AnchorGapPixels = (int)Math.Round(_workspace.AnchorGapPixels),
         AnchorAspect = _workspace.AnchorAspect,
         AnchorWidth = _workspace.AnchorWidth,
+        AnchorHeight = _workspace.AnchorHeight,
+        AnchorMarginPixels = (int)Math.Round(_workspace.AnchorMarginPixels),
         AnchorGradient = _workspace.AnchorGradient,
         AnchorFrame = _workspace.FrameStyle,
         AnchorGradientLeft = _workspace.GradientLeftHex,
@@ -646,6 +648,8 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         _workspace.AnchorGapPixels = o.AnchorGapPixels;
         _workspace.AnchorAspectIndex = (int)o.AnchorAspect;
         _workspace.AnchorWidth = AnchorSplit.NormalizeWidthScale(o.AnchorWidth);
+        _workspace.AnchorHeight = AnchorSplit.NormalizeHeightScale(o.AnchorHeight);
+        _workspace.AnchorMarginPixels = AnchorSplit.NormalizeMarginPixels(o.AnchorMarginPixels);
         _workspace.FrameStyleIndex = (int)FrameStyles.Resolve(o.AnchorFrame, o.AnchorGradient);
         _workspace.SetGradientHex(o.AnchorGradientLeft, o.AnchorGradientRight);
         _workspace.ApplyScreenColors(o.AnchorScreenColors);

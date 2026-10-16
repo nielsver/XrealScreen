@@ -80,6 +80,24 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     partial void OnAnchorWidthChanged(double value) => OnAnchorSettingChanged();
 
+    /// <summary>Fraction of the slot height the screens use. 1 fills the glasses image.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AnchorHeightText))]
+    public partial double AnchorHeight { get; set; } = AnchorSplit.DefaultHeightScale;
+
+    public string AnchorHeightText => $"{Math.Round(AnchorHeight * 100):F0}%";
+
+    partial void OnAnchorHeightChanged(double value) => OnAnchorSettingChanged();
+
+    /// <summary>Clear pixels around the whole group. The gap between screens is separate.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AnchorMarginText))]
+    public partial double AnchorMarginPixels { get; set; }
+
+    public string AnchorMarginText => $"{Math.Round(AnchorMarginPixels):F0} px";
+
+    partial void OnAnchorMarginPixelsChanged(double value) => OnAnchorSettingChanged();
+
     public XrealScreen.Core.Workspace.AnchorAspect AnchorAspect => (XrealScreen.Core.Workspace.AnchorAspect)Math.Clamp(AnchorAspectIndex, 0, 2);
 
     /// <summary>Index matches <see cref="FrameStyle"/>.</summary>
@@ -634,13 +652,15 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         int count = double.IsNaN(ScreenCount) ? 1 : (int)Math.Clamp(Math.Round(ScreenCount), 1, limit);
         int gap = (int)Math.Round(AnchorGapPixels);
         double width = AnchorSplit.NormalizeWidthScale(AnchorWidth);
-        GlassesSignal = XrealScreen.Host.GlassesSignal.Describe(count, gap, AnchorAspect, width, columns);
+        double height = AnchorSplit.NormalizeHeightScale(AnchorHeight);
+        int margin = AnchorSplit.NormalizeMarginPixels((int)Math.Round(AnchorMarginPixels));
+        GlassesSignal = XrealScreen.Host.GlassesSignal.Describe(count, gap, AnchorAspect, width, columns, height, margin);
 
         var current = XrealScreen.Host.GlassesSignal.CurrentResolution();
         AnchorCanvasIsExample = current is not { } r || !XrealScreen.Core.Workspace.AnchorSplit.IsUltrawideSignal(r);
         AnchorCanvas = AnchorCanvasIsExample ? new XrealScreen.Core.Workspace.Resolution(3840, 1080) : current!.Value;
         int framePx = FrameStyle == FrameStyle.SeeThrough ? 0 : FrameStyles.FramePixels;
-        AnchorRects = AnchorSplit.Place(AnchorCanvas, count, gap, AnchorAspect, framePx, width, columns);
+        AnchorRects = AnchorSplit.Place(AnchorCanvas, count, gap, AnchorAspect, framePx, width, columns, height, margin);
         if (!_loading && !_screenColorsCustom)
         {
             FillDefaultScreenColors();

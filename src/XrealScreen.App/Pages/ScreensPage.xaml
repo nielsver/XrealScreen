@@ -64,7 +64,8 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Slider
-                                Header="Width toward the sides"
+                                AutomationProperties.Name="Screen width"
+                                Header="Screen width"
                                 MinWidth="320"
                                 Maximum="1"
                                 Minimum="0.35"
@@ -76,11 +77,41 @@
                                 Style="{StaticResource BodyStrongTextBlockStyle}"
                                 Text="{x:Bind Workspace.AnchorWidthText, Mode=OneWay}" />
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Slider
+                                AutomationProperties.Name="Screen height"
+                                Header="Screen height"
+                                MinWidth="320"
+                                Maximum="1"
+                                Minimum="0.35"
+                                StepFrequency="0.05"
+                                Value="{x:Bind Workspace.AnchorHeight, Mode=TwoWay}" />
+                            <TextBlock
+                                Margin="0,24,0,0"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Workspace.AnchorHeightText, Mode=OneWay}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Slider
+                                AutomationProperties.Name="Space around the screens"
+                                Header="Space around the screens"
+                                MinWidth="320"
+                                Maximum="400"
+                                Minimum="0"
+                                StepFrequency="4"
+                                Value="{x:Bind Workspace.AnchorMarginPixels, Mode=TwoWay}" />
+                            <TextBlock
+                                Margin="0,24,0,0"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind Workspace.AnchorMarginText, Mode=OneWay}" />
+                        </StackPanel>
                         <TextBlock
                             Margin="0,-8,0,0"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap"
-                            Text="Half keeps the screens well clear of the sides. 100% runs them out to the edges. Apply to use a new width." />
+                            Text="100% width and 100% height fill the glasses image. Lower the width for space at the sides, or the height for space above and below. Space around the screens adds a clear border on every side, with every shape and layout. Space between screens is only the seam. Apply to use a new size." />
                         <RadioButtons
                             Header="Screen shape (screens fill the space and keep this aspect ratio)"
                             ItemsSource="{x:Bind Workspace.AnchorAspectNames}"
