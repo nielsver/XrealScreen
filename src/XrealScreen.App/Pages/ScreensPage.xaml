@@ -39,15 +39,23 @@
                 <StackPanel Spacing="16">
                     <RadioButtons
                         Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}"
-                        Header="Ultrawide mode (virtual screen size)"
+                        Header="Screen shape"
                         ItemsSource="{x:Bind Workspace.UltrawideModeNames}"
                         MaxColumns="4"
                         SelectedIndex="{x:Bind Workspace.UltrawideModeIndex, Mode=TwoWay}" />
+                    <TextBlock
+                        Margin="0,-8,0,0"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}"
+                        Text="Full picture uses the whole width and height of each screen's share of the glasses. The other shapes fit inside that share. Six screens in a grid are two rows of three, and they stay inside the picture." />
 
                     <StackPanel Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
                         <controls:AnchorPreview x:Name="AnchorLayoutPreview" Height="200" />
                         <Grid x:Name="AnchorStageHost" Visibility="Collapsed" />
                         <controls:GradientFrameSettings />
+                    </StackPanel>
+                    <StackPanel Spacing="12">
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Slider
                                 Header="Space between screens"
@@ -111,13 +119,14 @@
                             Margin="0,-8,0,0"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap"
-                            Text="100% width and 100% height fill the glasses image. Lower the width for space at the sides, or the height for space above and below. Space around the screens adds a clear border on every side, with every shape and layout. Space between screens is only the seam. Apply to use a new size." />
-                        <RadioButtons
-                            Header="Screen shape (screens fill the space and keep this aspect ratio)"
-                            ItemsSource="{x:Bind Workspace.AnchorAspectNames}"
-                            MaxColumns="3"
-                            SelectedIndex="{x:Bind Workspace.AnchorAspectIndex, Mode=TwoWay}" />
+                            Text="100% width and 100% height fill the glasses picture. Head tracking shares that picture across the screens, so six of them stay in view. Lower the width or the height to leave space. Space around the screens adds a border on every side. Apply to use a new size." />
                     </StackPanel>
+                    <RadioButtons
+                        Header="Screen shape (screens fill the space and keep this aspect ratio)"
+                        ItemsSource="{x:Bind Workspace.AnchorAspectNames}"
+                        MaxColumns="3"
+                        SelectedIndex="{x:Bind Workspace.AnchorAspectIndex, Mode=TwoWay}"
+                        Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}" />
                     <RadioButtons
                         Header="Screens"
                         MaxColumns="3"
@@ -139,7 +148,7 @@
                         Value="{x:Bind Workspace.ScreenCount, Mode=TwoWay}"
                         Visibility="{x:Bind Workspace.ShowScreenStepper, Mode=OneWay}" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button
                             AutomationProperties.Name="Apply screen settings"
                             Command="{x:Bind Session.ApplyScreenSettingsCommand}"

@@ -6,8 +6,8 @@ namespace XrealScreen.Core.Workspace;
 public static class GlassesPictureSetup
 {
     /// <summary>
-    /// Glasses anchor wants the 32:9 image (3840×1080 at 60 Hz). Head tracking wants a normal picture,
-    /// preferring 1920×1080 at 120 Hz. Returns null when the glasses offer neither.
+    /// Glasses anchor wants the 32:9 image (3840×1080 at 60 Hz). Head tracking wants the full
+    /// 1920×1200 picture at 120 Hz, then 1920×1080 at 120 Hz. Returns null when the glasses offer neither.
     /// </summary>
     public static DisplayMode? Choose(bool glassesAnchor, IReadOnlyList<DisplayMode> modes)
     {
@@ -38,19 +38,29 @@ public static class GlassesPictureSetup
             return hits.Count == 0 ? null : hits[0];
         }
 
+        if (Exact(1920, 1200, 120) is { } native120)
+        {
+            return native120;
+        }
+
         if (Exact(1920, 1080, 120) is { } fullHd120)
         {
             return fullHd120;
         }
 
-        if (Exact(1920, 1200, 120) is { } tall120)
+        if (Exact(1920, 1200, 90) is { } native90)
         {
-            return tall120;
+            return native90;
         }
 
         if (Exact(1920, 1080, 90) is { } fullHd90)
         {
             return fullHd90;
+        }
+
+        if (Exact(1920, 1200, 60) is { } native60)
+        {
+            return native60;
         }
 
         if (Exact(1920, 1080, 60) is { } fullHd60)

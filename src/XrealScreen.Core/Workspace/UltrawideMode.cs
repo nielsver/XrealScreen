@@ -41,7 +41,7 @@ public static class UltrawideModes
 
     public static string GetDisplayName(UltrawideMode mode) => mode switch
     {
-        UltrawideMode.Off => "Off (16:9)",
+        UltrawideMode.Off => "Full picture",
         UltrawideMode.Wide21x9 => "21:9",
         UltrawideMode.Wide32x9 => "32:9",
         UltrawideMode.Tall16x18 => "16:18 (stacked)",

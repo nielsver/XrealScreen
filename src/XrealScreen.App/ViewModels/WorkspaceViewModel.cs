@@ -44,6 +44,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         }
 
         RefreshGlassesSignal();
+        Recompute();
     }
 
     /// <summary>Glasses anchor uses 3 screens in a row, or 6 when the layout is a grid. Head tracking allows 6.</summary>
@@ -633,6 +634,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     {
         HasPendingScreenChanges = true;
         RefreshGlassesSignal();
+        Recompute();
     }
 
     public void MarkScreenSettingsApplied()
@@ -802,6 +804,25 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public IReadOnlyList<ScreenPlacement> Placements { get; private set; } = [];
 
+    /// <summary>Pixel size of each head-tracked screen, in screen order. Empty in glasses anchor.</summary>
+    public IReadOnlyList<Resolution> HeadResolutions { get; private set; } = [];
+
+    /// <summary>Native glasses picture head tracking fills. UltraWide Off, 1920×1200.</summary>
+    public static Resolution HeadPicture { get; } = new(1920, 1200);
+
+    public string HeadPixelSize(int screenId)
+    {
+        int index = screenId - 1;
+        if ((uint)index < (uint)HeadResolutions.Count)
+        {
+            Resolution size = HeadResolutions[index];
+            return $"{size.Width} × {size.Height}";
+        }
+
+        Resolution fallback = UltrawideModes.GetResolution(UltrawideMode);
+        return $"{fallback.Width} × {fallback.Height}";
+    }
+
     public UltrawideMode UltrawideMode => UltrawideModes.All[Math.Clamp(UltrawideModeIndex, 0, UltrawideModes.All.Count - 1)];
 
     /// <summary>Last screen count that was accepted. Used so only the step from 3 to 4 selects the grid.</summary>
@@ -834,7 +855,14 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         }
     }
 
-    partial void OnUltrawideModeIndexChanged(int value) => Recompute();
+    partial void OnUltrawideModeIndexChanged(int value)
+    {
+        Recompute();
+        if (!_loading && IsAppTracking)
+        {
+            HasPendingScreenChanges = true;
+        }
+    }
 
     partial void OnPresetIndexChanged(int value)
     {
@@ -859,23 +887,55 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     private void Recompute()
     {
         int count = double.IsNaN(ScreenCount) ? 1 : (int)Math.Clamp(Math.Round(ScreenCount), 1, WorkspaceLayout.MaxScreens);
-        var screens = Enumerable.Range(1, count).Select(i => new ScreenSpec(i, UltrawideMode)).ToList();
-        var settings = new WorkspaceSettings
+        var preset = PresetIndex == 1 ? LayoutPreset.Grid : LayoutPreset.Arc;
+        if (!IsGlassesAnchor)
         {
-            Preset = PresetIndex == 1 ? LayoutPreset.Grid : LayoutPreset.Arc,
-            DistanceMeters = (float)Math.Clamp(DistanceMeters, 0.5, 5),
-        };
-        Placements = WorkspaceLayout.Compute(screens, settings);
+            var fitted = WorkspaceLayout.FitView(
+                HeadPicture,
+                count,
+                preset,
+                AnchorSplit.NormalizeWidthScale(AnchorWidth),
+                AnchorSplit.NormalizeHeightScale(AnchorHeight),
+                (int)Math.Round(AnchorGapPixels),
+                (int)Math.Round(AnchorMarginPixels),
+                (float)Math.Clamp(DistanceMeters, 0.5, 5),
+                UltrawideMode);
+            Placements = [.. fitted.Select(s => s.Placement)];
+            HeadResolutions = [.. fitted.Select(s => new Resolution(s.Pixels.Width, s.Pixels.Height))];
+            int rows = preset == LayoutPreset.Grid && count > WorkspaceLayout.GridColumns
+                ? (count + WorkspaceLayout.GridColumns - 1) / WorkspaceLayout.GridColumns
+                : 1;
+            string arrangement = rows > 1
+                ? $"grid {WorkspaceLayout.GridColumns} × {rows}"
+                : preset == LayoutPreset.Grid
+                    ? "one row — a fourth screen starts the row below"
+                    : "one row";
+            Resolution size = HeadResolutions[0];
+            int widthPercent = (int)Math.Round(AnchorSplit.NormalizeWidthScale(AnchorWidth) * 100);
+            int heightPercent = (int)Math.Round(AnchorSplit.NormalizeHeightScale(AnchorHeight) * 100);
+            Summary = $"{count} × {size.Width}×{size.Height} · {arrangement} · {widthPercent}% of the glasses width, {heightPercent}% of the height";
+        }
+        else
+        {
+            HeadResolutions = [];
+            var screens = Enumerable.Range(1, count).Select(i => new ScreenSpec(i, UltrawideMode)).ToList();
+            var settings = new WorkspaceSettings
+            {
+                Preset = preset,
+                DistanceMeters = (float)Math.Clamp(DistanceMeters, 0.5, 5),
+            };
+            Placements = WorkspaceLayout.Compute(screens, settings);
+            var res = UltrawideModes.GetResolution(UltrawideMode);
+            float left = Placements.Max(p => p.YawDegrees + p.WidthMeters / p.DistanceMeters * 90f / MathF.PI);
+            int rows = (count + WorkspaceLayout.GridColumns - 1) / WorkspaceLayout.GridColumns;
+            string arrangement = settings.Preset == LayoutPreset.Grid && count > WorkspaceLayout.GridColumns
+                ? $"grid {WorkspaceLayout.GridColumns} × {rows}"
+                : settings.Preset == LayoutPreset.Grid
+                    ? "one row — a fourth screen starts the row below"
+                    : "one row";
+            Summary = $"{count} × {res} ({UltrawideModes.GetDisplayName(UltrawideMode)}) · {arrangement} · spans ±{left:F0}°";
+        }
 
-        var res = UltrawideModes.GetResolution(UltrawideMode);
-        float left = Placements.Max(p => p.YawDegrees + p.WidthMeters / p.DistanceMeters * 90f / MathF.PI);
-        int rows = (count + WorkspaceLayout.GridColumns - 1) / WorkspaceLayout.GridColumns;
-        string arrangement = settings.Preset == LayoutPreset.Grid && count > WorkspaceLayout.GridColumns
-            ? $"grid {WorkspaceLayout.GridColumns} × {rows}"
-            : settings.Preset == LayoutPreset.Grid
-                ? "one row — a fourth screen starts the row below"
-                : "one row";
-        Summary = $"{count} × {res} ({UltrawideModes.GetDisplayName(UltrawideMode)}) · {arrangement} · spans ±{left:F0}° · virtual monitors created in M2";
         RebuildPrimaryScreenNames();
         LayoutChanged?.Invoke(this, EventArgs.Empty);
     }

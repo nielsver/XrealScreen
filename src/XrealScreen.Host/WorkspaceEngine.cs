@@ -371,12 +371,25 @@ public sealed class WorkspaceEngine : IAsyncDisposable
                 ?? throw new InvalidOperationException("Glasses monitor not found. Connect the glasses and use an extended display.");
 
             var modes = topology.GetSupportedModes(glasses.GdiDeviceName).Where(m => m.BitsPerPixel == 32).ToList();
-            var native = modes.OrderByDescending(m => m.Resolution.Width * m.Resolution.Height).ThenByDescending(m => m.RefreshHz).First();
-            var wanted = modes.FirstOrDefault(m => m.Resolution == native.Resolution && m.RefreshHz == o.GlassesRefreshHz);
-            if (wanted == default)
+            DisplayMode wanted;
+            if (GlassesPictureSetup.Choose(false, modes) is { } picture)
             {
-                Info($"{o.GlassesRefreshHz} Hz not offered at {native.Resolution} (glasses UltraWide must be Off for 120 Hz); using {native}.");
-                wanted = native;
+                var atRate = modes.FirstOrDefault(m => m.Resolution == picture.Resolution && m.RefreshHz == o.GlassesRefreshHz);
+                wanted = atRate != default ? atRate : picture;
+                if (wanted.Resolution is not { Width: 1920, Height: 1200 })
+                {
+                    Info($"head tracking picture {wanted}. The full glasses picture is 1920×1200 at 120 Hz, which needs UltraWide Off in the glasses menu.");
+                }
+            }
+            else
+            {
+                var native = modes.OrderByDescending(m => m.Resolution.Width * (long)m.Resolution.Height).ThenByDescending(m => m.RefreshHz).First();
+                wanted = modes.FirstOrDefault(m => m.Resolution == native.Resolution && m.RefreshHz == o.GlassesRefreshHz);
+                if (wanted == default)
+                {
+                    Info($"{o.GlassesRefreshHz} Hz not offered at {native.Resolution} (glasses UltraWide must be Off for 120 Hz); using {native}.");
+                    wanted = native;
+                }
             }
 
             if (!store.Exists)
@@ -386,15 +399,21 @@ public sealed class WorkspaceEngine : IAsyncDisposable
 
             changedDesktop = true;
 
-            // Virtual monitors.
-            var specs = Enumerable.Range(1, Math.Clamp(o.ScreenCount, 1, WorkspaceLayout.MaxScreens)).Select(i => new ScreenSpec(i, o.Mode)).ToList();
-            var placements = WorkspaceLayout.Compute(specs, new WorkspaceSettings { Preset = o.Preset, DistanceMeters = o.DistanceMeters });
+            // Virtual monitors share the glasses picture, so six of them stay inside the view.
+            int count = Math.Clamp(o.ScreenCount, 1, WorkspaceLayout.MaxScreens);
+            double widthScale = AnchorSplit.NormalizeWidthScale(o.AnchorWidth ?? 1);
+            double heightScale = AnchorSplit.NormalizeHeightScale(o.AnchorHeight);
+            int gap = Math.Max(0, o.AnchorGapPixels);
+            int margin = AnchorSplit.NormalizeMarginPixels(o.AnchorMarginPixels);
+            List<WorkspaceLayout.FittedScreen> Layout(float distance) =>
+                [.. WorkspaceLayout.FitView(wanted.Resolution, count, o.Preset, widthScale, heightScale, gap, margin, distance, o.Mode)];
+            var fitted = Layout(o.DistanceMeters);
             var virtuals = new List<VirtualDisplay>();
-            foreach (var spec in specs)
+            foreach (var screen in fitted)
             {
-                var vd = await provider.AddAsync(spec.Resolution, 60, stop).ConfigureAwait(false);
+                var vd = await provider.AddAsync(new Resolution(screen.Pixels.Width, screen.Pixels.Height), 60, stop).ConfigureAwait(false);
                 virtuals.Add(vd);
-                Info($"virtual monitor {spec.Id}: {vd.Resolution} → {vd.GdiDeviceName ?? "(not attached)"}");
+                Info($"virtual screen {screen.Placement.ScreenId}: {vd.Resolution} → {vd.GdiDeviceName ?? "(not attached)"}");
             }
 
             await PrepareDesktopAsync(o, topology, virtuals, glasses, stop).ConfigureAwait(false);
@@ -440,6 +459,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             Info($"GPU: {gd.AdapterName}");
             using var scene = new WorkspaceScene(gd) { ClearColor = new Vortice.Mathematics.Color4(0.02f, 0.02f, 0.03f, 1f) };
             await MonitorCapture.RequestBorderlessAsync().ConfigureAwait(false);
+            var shown = new List<int>();
             for (int i = 0; i < virtuals.Count; i++)
             {
                 var m = monitors.FirstOrDefault(x => x.GdiDeviceName == virtuals[i].GdiDeviceName);
@@ -449,7 +469,8 @@ public sealed class WorkspaceEngine : IAsyncDisposable
                     continue;
                 }
 
-                var surface = scene.AddScreen(placements[i], m.Resolution.Width, m.Resolution.Height);
+                shown.Add(i);
+                var surface = scene.AddScreen(fitted[i].Placement, m.Resolution.Width, m.Resolution.Height);
                 var capture = new MonitorCapture(gd.Device, MonitorCapture.MonitorAt(m.X, m.Y));
                 capture.FrameArrived += f =>
                 {
@@ -521,11 +542,11 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             using var presenter = new GlassesPresenter(gd, scene, GlassesOptics.Xreal1S, Latch, glasses.X, glasses.Y, glasses.Resolution.Width, glasses.Resolution.Height) { LatchLeadMs = o.LatchLeadMs };
             presenter.RecenterRequested += Recenter;
             DistanceMeters = o.DistanceMeters;
-            var layoutSpecs = specs.Take(captures.Count).ToList();
             _setDistance = meters =>
             {
                 DistanceMeters = Math.Clamp(meters, 0.5f, 4f);
-                scene.SetPlacements(WorkspaceLayout.Compute(layoutSpecs, new WorkspaceSettings { Preset = o.Preset, DistanceMeters = DistanceMeters }));
+                var next = Layout(DistanceMeters);
+                scene.SetPlacements([.. shown.Select(index => next[index].Placement)]);
                 Info($"distance {DistanceMeters:F2} m");
                 DistanceChanged?.Invoke(this, DistanceMeters);
             };

@@ -92,4 +92,95 @@ public static class WorkspaceLayout
 
         return result;
     }
+
+    /// <summary>One head-tracked screen: its pixels on the glasses picture, and where that rectangle sits in view.</summary>
+    public readonly record struct FittedScreen(PixelRect Pixels, ScreenPlacement Placement);
+
+    /// <summary>
+    /// Shares the glasses picture across the screens and places each one so, at 100% width and height,
+    /// the group fills the glasses field of view. Six screens in a grid stay in front: two rows of three.
+    /// An arc stays one row, still inside the picture, instead of wrapping behind the user.
+    /// </summary>
+    public static IReadOnlyList<FittedScreen> FitView(
+        Resolution picture,
+        int count,
+        LayoutPreset preset,
+        double widthScale,
+        double heightScale,
+        int gapPixels,
+        int marginPixels,
+        float distanceMeters,
+        UltrawideMode shape = UltrawideMode.Off,
+        float horizontalFovDegrees = 45f,
+        float verticalFovDegrees = 29f)
+    {
+        if (picture.Width < 2 || picture.Height < 2)
+        {
+            return [];
+        }
+
+        count = Math.Clamp(count, 1, MaxScreens);
+        int columns = preset == LayoutPreset.Grid ? GridColumns : count;
+        widthScale = Math.Clamp(widthScale, AnchorSplit.MinSizeScale, 1);
+        heightScale = Math.Clamp(heightScale, AnchorSplit.MinSizeScale, 1);
+        var rects = AnchorSplit.Place(picture, count, Math.Max(0, gapPixels), AnchorAspect.Fill, framePx: 0, widthScale, columns, heightScale, AnchorSplit.NormalizeMarginPixels(marginPixels));
+        double? ratio = HeadShapeRatio(shape);
+        if (ratio is { } r)
+        {
+            rects = [.. rects.Select(rect => FitAspect(rect, r))];
+        }
+
+        float radius = MathF.Max(0.5f, distanceMeters);
+        float tanH = MathF.Tan(Math.Clamp(horizontalFovDegrees, 1f, 170f) * MathF.PI / 360f);
+        float tanV = MathF.Tan(Math.Clamp(verticalFovDegrees, 1f, 170f) * MathF.PI / 360f);
+        var fitted = new List<FittedScreen>(rects.Count);
+        for (int i = 0; i < rects.Count; i++)
+        {
+            PixelRect rect = rects[i];
+            float yawL = YawAt(rect.X);
+            float yawR = YawAt(rect.X + rect.Width);
+            float yaw = (yawL + yawR) / 2f;
+            float widthMeters = MathF.Abs(yawL - yawR) * radius;
+            float zTop = NdcY(rect.Y) * tanV * radius * MathF.Cos(yaw);
+            float zBottom = NdcY(rect.Y + rect.Height) * tanV * radius * MathF.Cos(yaw);
+            float centerZ = (zTop + zBottom) / 2f;
+            fitted.Add(new FittedScreen(rect, new ScreenPlacement(
+                i + 1,
+                yaw * 180f / MathF.PI,
+                MathF.Atan2(centerZ, radius) * 180f / MathF.PI,
+                widthMeters,
+                MathF.Abs(zTop - zBottom),
+                radius)));
+        }
+
+        return fitted;
+
+        float YawAt(int pixelX) => MathF.Atan(-NdcX(pixelX) * tanH);
+        float NdcX(int pixelX) => pixelX / (float)picture.Width * 2f - 1f;
+        float NdcY(int pixelY) => 1f - pixelY / (float)picture.Height * 2f;
+    }
+
+    /// <summary>Null keeps the whole cell. The other shapes fit inside the cell.</summary>
+    public static double? HeadShapeRatio(UltrawideMode shape) => shape switch
+    {
+        UltrawideMode.Wide21x9 => 21.0 / 9.0,
+        UltrawideMode.Wide32x9 => 32.0 / 9.0,
+        UltrawideMode.Tall16x18 => 16.0 / 18.0,
+        _ => null,
+    };
+
+    private static PixelRect FitAspect(PixelRect cell, double ratio)
+    {
+        int width = cell.Width;
+        int height = EvenSize(cell.Width / ratio);
+        if (height > cell.Height)
+        {
+            height = cell.Height;
+            width = EvenSize(cell.Height * ratio);
+        }
+
+        return new PixelRect(cell.X + (cell.Width - width) / 2, cell.Y + (cell.Height - height) / 2, Math.Max(2, width), Math.Max(2, height));
+    }
+
+    private static int EvenSize(double value) => Math.Max(2, (int)Math.Floor(value / 2.0) * 2);
 }

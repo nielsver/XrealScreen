@@ -78,10 +78,90 @@ public class WorkspaceTests
     public void PresetForCount_SelectsGridOnlyWhenCrossingPastThree(int previous, int count, LayoutPreset current, LayoutPreset expected) =>
         Assert.Equal(expected, WorkspaceLayout.PresetForCount(previous, count, current));
 
+    private static readonly Resolution HeadPicture = new(1920, 1200);
+
+    [Fact]
+    public void Fit_OneScreen_FillsTheGlassesPicture()
+    {
+        var fitted = WorkspaceLayout.FitView(HeadPicture, 1, LayoutPreset.Arc, 1, 1, 0, 0, 1.5f);
+
+        Assert.Equal(new PixelRect(0, 0, 1920, 1200), fitted[0].Pixels);
+        Assert.Equal(0f, fitted[0].Placement.YawDegrees, 2);
+        Assert.Equal(0f, fitted[0].Placement.PitchDegrees, 2);
+        Assert.Equal(22.5f, EdgeYaw(fitted[0].Placement, 1), 2);
+        Assert.Equal(14.5f, EdgePitch(fitted[0].Placement, 1), 2);
+    }
+
+    [Fact]
+    public void Fit_SixGrid_UsesTheFullPictureAndStaysInFront()
+    {
+        var fitted = WorkspaceLayout.FitView(HeadPicture, 6, LayoutPreset.Grid, 1, 1, 0, 0, 3f);
+
+        Assert.Equal(6, fitted.Count);
+        Assert.Equal(new PixelRect(0, 0, 640, 600), fitted[0].Pixels);
+        Assert.Equal(new PixelRect(640, 0, 640, 600), fitted[1].Pixels);
+        Assert.Equal(new PixelRect(1280, 0, 640, 600), fitted[2].Pixels);
+        Assert.Equal(new PixelRect(0, 600, 640, 600), fitted[3].Pixels);
+        Assert.Equal(new PixelRect(1280, 600, 640, 600), fitted[5].Pixels);
+        Assert.All(fitted.Take(3), s => Assert.True(s.Placement.PitchDegrees > 0));
+        Assert.All(fitted.Skip(3), s => Assert.True(s.Placement.PitchDegrees < 0));
+        Assert.Equal(22.5f, EdgeYaw(fitted[0].Placement, 1), 2);
+        Assert.Equal(-22.5f, EdgeYaw(fitted[2].Placement, -1), 2);
+        Assert.Equal(14.5f, EdgePitch(fitted[0].Placement, 1), 2);
+        Assert.Equal(-14.5f, EdgePitch(fitted[5].Placement, -1), 2);
+        Assert.All(fitted, s => Assert.True(MathF.Abs(s.Placement.YawDegrees) < 23f));
+    }
+
+    [Fact]
+    public void Fit_SixArc_StaysOneRowInsideThePicture()
+    {
+        var fitted = WorkspaceLayout.FitView(HeadPicture, 6, LayoutPreset.Arc, 1, 1, 0, 0, 1.5f);
+
+        Assert.Equal(6, fitted.Count);
+        Assert.All(fitted, s => Assert.Equal(320, s.Pixels.Width));
+        Assert.All(fitted, s => Assert.Equal(1200, s.Pixels.Height));
+        Assert.All(fitted, s => Assert.Equal(0f, s.Placement.PitchDegrees, 2));
+        Assert.Equal(22.5f, EdgeYaw(fitted[0].Placement, 1), 2);
+        Assert.Equal(-22.5f, EdgeYaw(fitted[5].Placement, -1), 2);
+        Assert.All(fitted, s => Assert.True(MathF.Abs(s.Placement.YawDegrees) < 23f));
+    }
+
+    [Fact]
+    public void Fit_HalfWidth_LeavesSpaceOnBothSides()
+    {
+        var fitted = WorkspaceLayout.FitView(HeadPicture, 1, LayoutPreset.Arc, 0.5, 1, 0, 0, 1.5f);
+
+        Assert.Equal(new PixelRect(480, 0, 960, 1200), fitted[0].Pixels);
+        Assert.Equal(0f, fitted[0].Placement.YawDegrees, 2);
+        Assert.True(EdgeYaw(fitted[0].Placement, 1) < 20f);
+    }
+
+    [Fact]
+    public void Fit_DistanceChangesSizeInMeters_NotTheAngle()
+    {
+        var near = WorkspaceLayout.FitView(HeadPicture, 1, LayoutPreset.Arc, 1, 1, 0, 0, 1.5f)[0].Placement;
+        var far = WorkspaceLayout.FitView(HeadPicture, 1, LayoutPreset.Arc, 1, 1, 0, 0, 3f)[0].Placement;
+
+        Assert.Equal(near.YawDegrees, far.YawDegrees, 2);
+        Assert.Equal(near.WidthMeters * 2f, far.WidthMeters, 2);
+    }
+
     [Fact]
     public void TooManyScreens_Throws()
     {
         var screens = Enumerable.Range(1, WorkspaceLayout.MaxScreens + 1).Select(i => new ScreenSpec(i, UltrawideMode.Off)).ToList();
         Assert.Throws<ArgumentOutOfRangeException>(() => WorkspaceLayout.Compute(screens, new WorkspaceSettings()));
+    }
+
+    private static float EdgeYaw(ScreenPlacement placement, float side) =>
+        placement.YawDegrees + side * placement.WidthMeters / placement.DistanceMeters * (180f / MathF.PI) / 2f;
+
+    private static float EdgePitch(ScreenPlacement placement, float side)
+    {
+        float yaw = placement.YawDegrees * MathF.PI / 180f;
+        float radius = placement.DistanceMeters;
+        float centerZ = MathF.Tan(placement.PitchDegrees * MathF.PI / 180f) * radius;
+        float z = centerZ + side * placement.HeightMeters / 2f;
+        return MathF.Atan2(z, radius * MathF.Cos(yaw)) * 180f / MathF.PI;
     }
 }

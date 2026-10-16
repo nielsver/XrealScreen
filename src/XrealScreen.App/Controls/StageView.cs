@@ -122,13 +122,12 @@ public sealed partial class StageView : UserControl
         double w = ActualWidth;
         double cx = w / 2;
         double cy = ActualHeight * 0.42;
-        Resolution res = UltrawideModes.GetResolution(_workspace!.UltrawideMode);
-
+        WorkspaceViewModel workspace = _workspace!;
         // Fit the whole arc into the view: degrees spanned left-right and up-down by the outermost screen edges.
         // The margin leaves room for the outer edges, which the tilt brings closer and draws larger.
         double spanH = 1;
         double spanV = 1;
-        foreach (ScreenPlacement p in _workspace.Placements)
+        foreach (ScreenPlacement p in workspace.Placements)
         {
             spanH = Math.Max(spanH, 2 * (Math.Abs(p.YawDegrees) + WidthDegrees(p) / 2));
             spanV = Math.Max(spanV, 2 * (Math.Abs(p.PitchDegrees) + HeightDegrees(p) / 2));
@@ -137,11 +136,11 @@ public sealed partial class StageView : UserControl
         double k = Math.Min(Math.Min(w * 0.84 / spanH, ActualHeight * 0.62 / spanV), w / DegreesAcross * 1.4);
 
         // Far screens first, so the screen in front is drawn on top.
-        foreach (ScreenPlacement p in _workspace.Placements.OrderByDescending(p => Math.Abs(p.YawDegrees)))
+        foreach (ScreenPlacement p in workspace.Placements.OrderByDescending(p => Math.Abs(p.YawDegrees)))
         {
             double width = WidthDegrees(p) * k * 0.94;
             double height = HeightDegrees(p) * k;
-            var screen = Screen(p.ScreenId, $"{res.Width} × {res.Height}", width, height);
+            var screen = Screen(p.ScreenId, workspace.HeadPixelSize(p.ScreenId), width, height);
 
             // Turned towards you with the outer edge nearer; capped so wide arcs (6 screens) stay readable.
             screen.Projection = new PlaneProjection { RotationY = -Math.Clamp(p.YawDegrees * 0.6, -MaxTilt, MaxTilt) };
