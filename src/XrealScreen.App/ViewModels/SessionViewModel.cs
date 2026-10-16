@@ -5,6 +5,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using XrealScreen.Core.Tracking;
 using XrealScreen.Core.Workspace;
+using XrealScreen.Display;
 using XrealScreen.Host;
 
 namespace XrealScreen.App.ViewModels;
@@ -331,6 +332,56 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
 
     public bool IsRunning => State == WorkspaceState.Running;
 
+    /// <summary>Result of sending a window or finding the cursor.</summary>
+    [ObservableProperty]
+    public partial string DeskStatus { get; set; } = "Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor.";
+
+    /// <summary>Moves the window you are using onto virtual screen <paramref name="screen"/> (1, 2, or 3).</summary>
+    public void SendWindowTo(int screen)
+    {
+        if (!IsRunning)
+        {
+            DeskStatus = "Start the workspace, then send the window.";
+            return;
+        }
+
+        var bounds = _engine.VirtualScreenBounds;
+        if (screen < 1 || screen > bounds.Count)
+        {
+            DeskStatus = "That screen is not in this workspace.";
+            return;
+        }
+
+        string? title = WindowMover.MoveForegroundWindow(bounds[screen - 1]);
+        DeskStatus = title is null
+            ? "That window stayed where it is. A window running as administrator cannot be moved."
+            : $"Sent {title} to screen {screen}.";
+        AddLog(DeskStatus);
+    }
+
+    /// <summary>Puts the pointer in the middle of the primary virtual screen, or screen 1 when the desk monitor stays primary.</summary>
+    public void FindCursor()
+    {
+        if (!IsRunning)
+        {
+            DeskStatus = "Start the workspace, then find the cursor.";
+            return;
+        }
+
+        var bounds = _engine.VirtualScreenBounds;
+        if (bounds.Count == 0)
+        {
+            DeskStatus = "The virtual screens are not ready yet.";
+            return;
+        }
+
+        int index = ScreenDesk.CursorScreen(_workspace.PrimaryScreenIndex, bounds.Count);
+        DeskStatus = ScreenDesk.TryPlaceCursor(bounds[index])
+            ? $"Cursor is on screen {index + 1}."
+            : "The cursor could not be moved.";
+        AddLog(DeskStatus);
+    }
+
     public bool IsIdle => State is WorkspaceState.Stopped or WorkspaceState.Faulted;
 
     /// <summary>A start is in progress (the engine reports Starting asynchronously; this blocks a second start meanwhile).</summary>
@@ -465,8 +516,8 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
             _poseTimer.Start();
             StatusTitle = "Workspace running";
             StatusMessage = _workspace.KindIndex == 0
-                ? "Move the mouse right from your desk monitor onto the virtual screens. Recenter: long-press X on the glasses. Ctrl+Alt+Q stops."
-                : "Move the mouse right from your desk monitor onto the virtual screens. Ctrl+Alt+R recenter · Ctrl+Alt+Plus/Minus closer/farther · Ctrl+Alt+Q stop.";
+                ? "Screens are ready. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
+                : "Screens are ready. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
             Severity = InfoBarSeverity.Success;
         }
         else if (state is WorkspaceState.Stopped or WorkspaceState.Faulted)

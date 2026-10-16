@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="XrealScreen.App.Controls.DeskActions"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Spacing="8">
+        <TextBlock
+            Style="{ThemeResource BodyStrongTextBlockStyle}"
+            Text="Send the window you are using"
+            Visibility="{x:Bind ShowHelp, Mode=OneWay}" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button
+                AutomationProperties.Name="Send window to screen 1"
+                MinWidth="40"
+                Click="Send1_Click"
+                Content="1"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Send the window you are using to screen 1 (Ctrl+Alt+1)" />
+            <Button
+                AutomationProperties.Name="Send window to screen 2"
+                MinWidth="40"
+                Click="Send2_Click"
+                Content="2"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Send the window you are using to screen 2 (Ctrl+Alt+2)"
+                Visibility="{x:Bind Workspace.ShowScreen2, Mode=OneWay}" />
+            <Button
+                AutomationProperties.Name="Send window to screen 3"
+                MinWidth="40"
+                Click="Send3_Click"
+                Content="3"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Send the window you are using to screen 3 (Ctrl+Alt+3)"
+                Visibility="{x:Bind Workspace.ShowScreen3, Mode=OneWay}" />
+            <Button
+                AutomationProperties.Name="Find cursor"
+                Click="Find_Click"
+                Content="Cursor"
+                IsEnabled="{x:Bind Session.IsRunning, Mode=OneWay}"
+                ToolTipService.ToolTip="Put the cursor on your main virtual screen (Ctrl+Alt+0)" />
+        </StackPanel>
+        <TextBlock
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Session.DeskStatus, Mode=OneWay}"
+            TextWrapping="Wrap"
+            Visibility="{x:Bind ShowHelp, Mode=OneWay}" />
+    </StackPanel>
+</UserControl>

@@ -166,6 +166,7 @@
                         <TextBlock Text="Recenter" />
                     </StackPanel>
                 </Button>
+                <controls:DeskActions ShowHelp="False" />
                 <Button
                     AutomationProperties.Name="Screenshot of the glasses"
                     Command="{x:Bind Session.TakeScreenshotCommand}"

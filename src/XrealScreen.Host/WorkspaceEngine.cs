@@ -67,6 +67,11 @@ public sealed class WorkspaceEngine : IAsyncDisposable
     /// <summary>Frame style and colors read every anchor frame. Null uses the options captured at start.</summary>
     public LiveBackdrop? LiveBackdrop { get; set; }
 
+    private System.Drawing.Rectangle[] _virtualBounds = [];
+
+    /// <summary>Desktop rectangles of the virtual screens, in screen-number order. Empty when the workspace is stopped.</summary>
+    public IReadOnlyList<System.Drawing.Rectangle> VirtualScreenBounds => Volatile.Read(ref _virtualBounds);
+
     public event EventHandler<WorkspaceState>? StateChanged;
 
     /// <summary>Progress/diagnostic messages (any thread).</summary>
@@ -213,6 +218,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
 
             var monitors = topology.GetActiveMonitors();
             glasses = GlassesDisplayLocator.FindGlasses(monitors) ?? glasses;
+            RememberVirtualScreens(virtuals, monitors);
             Info($"glasses: {glasses.Resolution} @ {glasses.RefreshHz} Hz — held still by the glasses (Anchor mode)");
 
             using var gd = GraphicsDevice.CreateForMonitor(MonitorCapture.MonitorAt(glasses.X, glasses.Y));
@@ -329,6 +335,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
                 await RestoreDesktopAsync(provider, topology, store, []).ConfigureAwait(false);
             }
 
+            Volatile.Write(ref _virtualBounds, []);
             SetState(LastError is null ? WorkspaceState.Stopped : WorkspaceState.Faulted);
             _running?.TrySetResult();
         }
@@ -413,6 +420,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
 
             var monitors = topology.GetActiveMonitors();
             glasses = GlassesDisplayLocator.FindGlasses(monitors) ?? glasses;
+            RememberVirtualScreens(virtuals, monitors);
             double? measuredHz = OutputTiming.MeasureVblankHz(glasses.GdiDeviceName, TimeSpan.FromSeconds(0.5));
             Info($"glasses: {glasses.Resolution} @ {glasses.RefreshHz} Hz (vblank {measuredHz:F1} Hz)");
 
@@ -577,6 +585,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             _tracker = null;
             _stabilizer = null;
             _setDistance = null;
+            Volatile.Write(ref _virtualBounds, []);
             SetState(LastError is null ? WorkspaceState.Stopped : WorkspaceState.Faulted);
             _running?.TrySetResult(); // unblock StartAsync if we failed before running
         }
@@ -628,6 +637,21 @@ public sealed class WorkspaceEngine : IAsyncDisposable
     /// convenience (mouse path), so failing to apply it is logged, not fatal.
     /// Also makes the chosen virtual screen primary and moves app windows off the glasses monitor.
     /// </summary>
+    private void RememberVirtualScreens(List<VirtualDisplay> virtuals, IReadOnlyList<DisplayMonitor> monitors)
+    {
+        var bounds = new List<System.Drawing.Rectangle>(virtuals.Count);
+        foreach (var vd in virtuals)
+        {
+            var monitor = monitors.FirstOrDefault(m => m.GdiDeviceName == vd.GdiDeviceName);
+            if (monitor is not null)
+            {
+                bounds.Add(new System.Drawing.Rectangle(monitor.X, monitor.Y, monitor.Resolution.Width, monitor.Resolution.Height));
+            }
+        }
+
+        Volatile.Write(ref _virtualBounds, bounds.ToArray());
+    }
+
     private async Task PrepareDesktopAsync(WorkspaceOptions o, CcdDisplayTopology topology, List<VirtualDisplay> virtuals, DisplayMonitor glasses, CancellationToken stop)
     {
         await ArrangeDesktopAsync(o, topology, virtuals, glasses, stop).ConfigureAwait(false);

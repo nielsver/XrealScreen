@@ -16,6 +16,14 @@ public enum TrayCommand
 
     /// <summary>Ctrl+Alt+P: screenshot of what the glasses show.</summary>
     Screenshot = 7,
+
+    /// <summary>Ctrl+Alt+1, 2, or 3: send the window you are using to that virtual screen.</summary>
+    SendToScreen1 = 8,
+    SendToScreen2 = 9,
+    SendToScreen3 = 10,
+
+    /// <summary>Ctrl+Alt+0: put the cursor on the main virtual screen.</summary>
+    FindCursor = 11,
 }
 
 /// <summary>
@@ -28,6 +36,10 @@ public sealed unsafe partial class TrayIcon : IDisposable
     private const uint WM_APP_TRAY = 0x8000 + 1; // WM_APP + 1
     private const int HotkeyToggle = 1;
     private const int HotkeyScreenshot = 2;
+    private const int HotkeyScreen1 = 3;
+    private const int HotkeyScreen2 = 4;
+    private const int HotkeyScreen3 = 5;
+    private const int HotkeyFindCursor = 6;
     private static TrayIcon? s_current;
 
     private readonly uint _taskbarCreated;
@@ -55,6 +67,10 @@ public sealed unsafe partial class TrayIcon : IDisposable
         _icon = LoadImage(IntPtr.Zero, iconPath, 1 /* IMAGE_ICON */, 0, 0, 0x10 | 0x40 /* LR_LOADFROMFILE | LR_DEFAULTSIZE */);
         HotkeyAvailable = RegisterHotKey(_hwnd, HotkeyToggle, 0x0002 | 0x0001 | 0x4000 /* CTRL | ALT | NOREPEAT */, 0x57 /* W */);
         ScreenshotHotkeyAvailable = RegisterHotKey(_hwnd, HotkeyScreenshot, 0x0002 | 0x0001 | 0x4000, 0x50 /* P */);
+        RegisterHotKey(_hwnd, HotkeyScreen1, 0x0002 | 0x0001 | 0x4000, 0x31 /* 1 */);
+        RegisterHotKey(_hwnd, HotkeyScreen2, 0x0002 | 0x0001 | 0x4000, 0x32 /* 2 */);
+        RegisterHotKey(_hwnd, HotkeyScreen3, 0x0002 | 0x0001 | 0x4000, 0x33 /* 3 */);
+        RegisterHotKey(_hwnd, HotkeyFindCursor, 0x0002 | 0x0001 | 0x4000, 0x30 /* 0 */);
         Tooltip = tooltip;
         Add();
     }
@@ -180,6 +196,30 @@ public sealed unsafe partial class TrayIcon : IDisposable
                 return 0;
             }
 
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyScreen1)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.SendToScreen1);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyScreen2)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.SendToScreen2);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyScreen3)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.SendToScreen3);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyFindCursor)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.FindCursor);
+                return 0;
+            }
+
             if (msg == self._taskbarCreated)
             {
                 self.Add(); // Explorer restarted: put the icon back
@@ -203,6 +243,10 @@ public sealed unsafe partial class TrayIcon : IDisposable
         {
             UnregisterHotKey(_hwnd, HotkeyToggle);
             UnregisterHotKey(_hwnd, HotkeyScreenshot);
+            UnregisterHotKey(_hwnd, HotkeyScreen1);
+            UnregisterHotKey(_hwnd, HotkeyScreen2);
+            UnregisterHotKey(_hwnd, HotkeyScreen3);
+            UnregisterHotKey(_hwnd, HotkeyFindCursor);
             DestroyWindow(_hwnd);
             _hwnd = IntPtr.Zero;
         }

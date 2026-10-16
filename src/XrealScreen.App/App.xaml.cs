@@ -187,6 +187,18 @@ public partial class App : Application
                 }
 
                 break;
+            case TrayCommand.SendToScreen1:
+                Session.SendWindowTo(1);
+                break;
+            case TrayCommand.SendToScreen2:
+                Session.SendWindowTo(2);
+                break;
+            case TrayCommand.SendToScreen3:
+                Session.SendWindowTo(3);
+                break;
+            case TrayCommand.FindCursor:
+                Session.FindCursor();
+                break;
             case TrayCommand.ToggleWorkspace:
                 if (Session.IsRunning)
                 {

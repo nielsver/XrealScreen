@@ -57,6 +57,7 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
+                    <controls:DeskActions />
                     <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind Session.HasScreenshot, Mode=OneWay}">
                         <TextBlock
                             VerticalAlignment="Center"
