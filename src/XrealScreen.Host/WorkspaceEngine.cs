@@ -205,7 +205,9 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             FrameStyle frame = FrameStyles.Resolve(o.AnchorFrame, o.AnchorGradient);
             int framePx = frame == FrameStyle.SeeThrough ? 0 : FrameStyles.FramePixels;
             var signal = glasses.Resolution;
-            var rects = AnchorSplit.Place(signal, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect, framePx, AnchorSplit.NormalizeWidthScale(o.AnchorWidth));
+            int columns = o.Preset == LayoutPreset.Grid ? WorkspaceLayout.GridColumns : 0;
+            int count = Math.Clamp(o.ScreenCount, 1, columns > 1 ? AnchorSplit.MaxGridScreens : AnchorSplit.MaxScreens);
+            var rects = AnchorSplit.Place(signal, count, o.AnchorGapPixels, o.AnchorAspect, framePx, AnchorSplit.NormalizeWidthScale(o.AnchorWidth), columns);
             var virtuals = new List<VirtualDisplay>();
             foreach (var rect in rects)
             {

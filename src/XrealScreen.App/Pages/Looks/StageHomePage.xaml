@@ -193,7 +193,7 @@
                             IsChecked="{x:Bind looks:LookFormat.Checked(Workspace.KindIndex, 0), Mode=OneWay}"
                             Style="{StaticResource StageSegmentStyle}"
                             Tag="0"
-                            ToolTipService.ToolTip="Glasses anchor: 1–3 screens in the glasses image" />
+                            ToolTipService.ToolTip="Glasses anchor: 1–3 screens, or up to 6 in a grid" />
                         <ToggleButton
                             Click="Kind_Click"
                             Content="Head tracking"
@@ -211,7 +211,7 @@
                     VerticalAlignment="Center"
                     Background="#59000000"
                     CornerRadius="12"
-                    Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
+                    Visibility="{x:Bind Workspace.ShowAnchorChoices, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="2">
                         <ToggleButton
                             AutomationProperties.Name="1 screen"
@@ -243,7 +243,7 @@
                     VerticalAlignment="Center"
                     Orientation="Horizontal"
                     Spacing="6"
-                    Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}">
+                    Visibility="{x:Bind Workspace.ShowScreenStepper, Mode=OneWay}">
                     <Button
                         Width="34"
                         Height="34"
@@ -270,7 +270,7 @@
                         Content="+"
                         CornerRadius="10"
                         IsEnabled="{x:Bind looks:LookFormat.Below(Workspace.ScreenCount, Workspace.MaxScreenCount), Mode=OneWay}"
-                        ToolTipService.ToolTip="Adds a screen. Four or more sit in a grid, three across." />
+                        ToolTipService.ToolTip="Adds a screen. Four or more sit in a grid, three across, in the glasses and on the desktop." />
                 </StackPanel>
 
                 <Button

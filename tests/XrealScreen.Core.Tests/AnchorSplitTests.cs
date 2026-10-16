@@ -87,6 +87,55 @@ public class AnchorSplitTests
     }
 
     [Fact]
+    public void WithoutColumns_SixScreens_StaysOneRowOfThree()
+    {
+        var r = AnchorSplit.Split(Wide32x9, 6);
+        Assert.Equal(3, r.Count);
+        Assert.All(r, s => Assert.Equal(0, s.Y));
+    }
+
+    [Fact]
+    public void Grid_SixScreens_TwoRowsOfThree_FillsTheWideImage()
+    {
+        var r = AnchorSplit.Split(Wide32x9, 6, gapPixels: 0, columns: 3);
+        Assert.Equal(6, r.Count);
+        Assert.Equal([0, 1280, 2560], r.Take(3).Select(s => s.X).ToArray());
+        Assert.Equal([0, 1280, 2560], r.Skip(3).Select(s => s.X).ToArray());
+        Assert.All(r.Take(3), s => Assert.Equal(0, s.Y));
+        Assert.All(r.Skip(3), s => Assert.Equal(540, s.Y));
+        Assert.All(r, s => Assert.Equal(new PixelRect(s.X, s.Y, 1280, 540), s));
+    }
+
+    [Fact]
+    public void Grid_FourScreens_BottomScreenIsCentered()
+    {
+        var r = AnchorSplit.Split(Wide32x9, 4, gapPixels: 0, columns: 3);
+        Assert.Equal(4, r.Count);
+        Assert.Equal(1280, r[3].X);
+        Assert.Equal(540, r[3].Y);
+        Assert.Equal(1280, r[3].Width);
+    }
+
+    [Fact]
+    public void Grid_ThreeScreens_StaysOneRow()
+    {
+        var row = AnchorSplit.Split(Wide32x9, 3, gapPixels: 0);
+        var grid = AnchorSplit.Split(Wide32x9, 3, gapPixels: 0, columns: 3);
+        Assert.Equal(row, grid);
+    }
+
+    [Fact]
+    public void Grid_Place_KeepsTheFrameClear()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 6, gapPixels: 16, AnchorAspect.Fill, framePx: 36, columns: 3);
+        Assert.Equal(6, r.Count);
+        Assert.All(r, s => Assert.True(s.X >= 36 && s.Y >= 36, s.ToString()));
+        Assert.All(r, s => Assert.True(s.X + s.Width <= 3840 - 36 && s.Y + s.Height <= 1080 - 36, s.ToString()));
+        Assert.True(r[3].Y >= r[0].Y + r[0].Height);
+        Assert.Equal(r[0].X, r[3].X);
+    }
+
+    [Fact]
     public void Place_LeavesABorderAroundTheScreens()
     {
         var r = AnchorSplit.Place(Wide32x9, 3, gapPixels: 16, AnchorAspect.Fill, framePx: 36);

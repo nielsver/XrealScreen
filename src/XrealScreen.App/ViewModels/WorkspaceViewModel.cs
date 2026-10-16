@@ -21,7 +21,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     /// <summary>0 = glasses anchor, 1 = app head tracking.</summary>
     public IReadOnlyList<string> KindNames { get; } =
     [
-        "Glasses anchor — most stable. Glasses menu: Anchor mode + UltraWide 32:9, 16:18 or 21:9. 1–3 screens.",
+        "Glasses anchor — most stable. Glasses menu: Anchor mode + UltraWide 32:9, 16:18 or 21:9. 1–3 screens, or up to 6 in a grid.",
         "App head tracking — curved screens, up to 6. Glasses menu: Follow mode, UltraWide Off, Stabilizer off.",
     ];
 
@@ -35,6 +35,8 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         OnPropertyChanged(nameof(IsAppTracking));
         OnPropertyChanged(nameof(IsGlassesAnchor));
         OnPropertyChanged(nameof(MaxScreenCount));
+        OnPropertyChanged(nameof(ShowAnchorChoices));
+        OnPropertyChanged(nameof(ShowScreenStepper));
         if (ScreenCount > MaxScreenCount)
         {
             ScreenCount = MaxScreenCount; // refreshes the preview too
@@ -44,8 +46,16 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         RefreshGlassesSignal();
     }
 
-    /// <summary>Glasses anchor splits one ultrawide image into at most 3 screens; app head tracking allows 6.</summary>
-    public double MaxScreenCount => IsGlassesAnchor ? AnchorSplit.MaxScreens : WorkspaceLayout.MaxScreens;
+    /// <summary>Glasses anchor uses 3 screens in a row, or 6 when the layout is a grid. Head tracking allows 6.</summary>
+    public double MaxScreenCount => IsGlassesAnchor
+        ? (PresetIndex == 1 ? AnchorSplit.MaxGridScreens : AnchorSplit.MaxScreens)
+        : WorkspaceLayout.MaxScreens;
+
+    /// <summary>The 1 / 2 / 3 choice. Hidden while a grid can add a second row.</summary>
+    public bool ShowAnchorChoices => IsGlassesAnchor && PresetIndex != 1;
+
+    /// <summary>Plus and minus, and the screen-count box. Head tracking, and glasses anchor while Grid is selected.</summary>
+    public bool ShowScreenStepper => IsAppTracking || (IsGlassesAnchor && PresetIndex == 1);
 
     public bool IsGlassesAnchor => KindIndex == 0;
 
@@ -619,16 +629,18 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public void RefreshGlassesSignal()
     {
-        int count = double.IsNaN(ScreenCount) ? 1 : (int)Math.Clamp(Math.Round(ScreenCount), 1, XrealScreen.Core.Workspace.AnchorSplit.MaxScreens);
+        int columns = PresetIndex == 1 ? WorkspaceLayout.GridColumns : 0;
+        int limit = columns > 1 ? AnchorSplit.MaxGridScreens : AnchorSplit.MaxScreens;
+        int count = double.IsNaN(ScreenCount) ? 1 : (int)Math.Clamp(Math.Round(ScreenCount), 1, limit);
         int gap = (int)Math.Round(AnchorGapPixels);
         double width = AnchorSplit.NormalizeWidthScale(AnchorWidth);
-        GlassesSignal = XrealScreen.Host.GlassesSignal.Describe(count, gap, AnchorAspect, width);
+        GlassesSignal = XrealScreen.Host.GlassesSignal.Describe(count, gap, AnchorAspect, width, columns);
 
         var current = XrealScreen.Host.GlassesSignal.CurrentResolution();
         AnchorCanvasIsExample = current is not { } r || !XrealScreen.Core.Workspace.AnchorSplit.IsUltrawideSignal(r);
         AnchorCanvas = AnchorCanvasIsExample ? new XrealScreen.Core.Workspace.Resolution(3840, 1080) : current!.Value;
         int framePx = FrameStyle == FrameStyle.SeeThrough ? 0 : FrameStyles.FramePixels;
-        AnchorRects = AnchorSplit.Place(AnchorCanvas, count, gap, AnchorAspect, framePx, width);
+        AnchorRects = AnchorSplit.Place(AnchorCanvas, count, gap, AnchorAspect, framePx, width, columns);
         if (!_loading && !_screenColorsCustom)
         {
             FillDefaultScreenColors();
@@ -804,7 +816,23 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     partial void OnUltrawideModeIndexChanged(int value) => Recompute();
 
-    partial void OnPresetIndexChanged(int value) => Recompute();
+    partial void OnPresetIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(MaxScreenCount));
+        OnPropertyChanged(nameof(ShowAnchorChoices));
+        OnPropertyChanged(nameof(ShowScreenStepper));
+        if (ScreenCount > MaxScreenCount)
+        {
+            ScreenCount = MaxScreenCount;
+            return;
+        }
+
+        Recompute();
+        if (IsGlassesAnchor)
+        {
+            OnAnchorSettingChanged();
+        }
+    }
 
     partial void OnDistanceMetersChanged(double value) => Recompute();
 
@@ -824,7 +852,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         int rows = (count + WorkspaceLayout.GridColumns - 1) / WorkspaceLayout.GridColumns;
         string arrangement = settings.Preset == LayoutPreset.Grid && count > WorkspaceLayout.GridColumns
             ? $"grid {WorkspaceLayout.GridColumns} × {rows}"
-            : "one row";
+            : settings.Preset == LayoutPreset.Grid
+                ? "one row — a fourth screen starts the row below"
+                : "one row";
         Summary = $"{count} × {res} ({UltrawideModes.GetDisplayName(UltrawideMode)}) · {arrangement} · spans ±{left:F0}° · virtual monitors created in M2";
         RebuildPrimaryScreenNames();
         LayoutChanged?.Invoke(this, EventArgs.Empty);

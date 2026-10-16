@@ -91,7 +91,7 @@
                         Header="Screens"
                         MaxColumns="3"
                         SelectedIndex="{x:Bind Workspace.ScreenCountIndex, Mode=TwoWay}"
-                        Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
+                        Visibility="{x:Bind Workspace.ShowAnchorChoices, Mode=OneWay}">
                         <x:String>1 screen</x:String>
                         <x:String>2 screens</x:String>
                         <x:String>3 screens</x:String>
@@ -106,7 +106,7 @@
                         HorizontalAlignment="Left"
                         MinWidth="200"
                         Value="{x:Bind Workspace.ScreenCount, Mode=TwoWay}"
-                        Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}" />
+                        Visibility="{x:Bind Workspace.ShowScreenStepper, Mode=OneWay}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
                         <Button
@@ -145,7 +145,7 @@
                         Margin="0,-8,0,0"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         TextWrapping="Wrap"
-                        Text="Four or more screens sit in a grid, three across, with the next row below. The desktop monitors follow that grid, so the mouse matches the glasses. Arc keeps every screen in one row." />
+                        Text="Choose Grid, then add a fourth screen. Four, five, or six screens sit in rows of three, in the glasses and on the desktop, so the mouse matches. One to three stay in one row. Arc keeps every screen in one row." />
 
                     <Slider
                         Header="Viewing distance (m) — also live while running, or Ctrl+Alt+Plus/Minus"
