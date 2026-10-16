@@ -53,6 +53,10 @@ public class DisplayTests
     }
 
     [Fact]
+    public void Locator_FindsXrealOneByEdid() =>
+        Assert.Equal(GlassesModel.One, GlassesDisplayLocator.Identify(Monitor("MRG", 0x4101, @"\\.\DISPLAY3")));
+
+    [Fact]
     public void Locator_UnknownXrealProduct_FallsBackToManufacturer() =>
         Assert.Equal(GlassesModel.Unknown, GlassesDisplayLocator.Identify(Monitor("MRG", 0x9999, @"\\.\DISPLAY9")));
 

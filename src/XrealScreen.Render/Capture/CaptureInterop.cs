@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -33,6 +34,97 @@ internal static unsafe partial class CaptureInterop
 
     /// <summary>HMONITOR for a point on the desktop (e.g. a monitor's top-left from CCD), or zero.</summary>
     public static IntPtr MonitorAt(int x, int y) => MonitorFromPoint(new POINT { X = x, Y = y }, 0 /* MONITOR_DEFAULTTONULL */);
+
+    /// <summary>HMONITOR whose GDI name is <paramref name="deviceName"/> (for example <c>\\.\DISPLAY9</c>), or zero.</summary>
+    public static IntPtr MonitorForDevice(string deviceName)
+    {
+        var search = new DeviceSearch(deviceName);
+        var handle = GCHandle.Alloc(search);
+        try
+        {
+            // FALSE means the callback stopped the walk (monitor found) or the walk failed.
+            // The found handle is the result that matters; a failed walk leaves it zero.
+            int walked = EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, &OnMonitor, GCHandle.ToIntPtr(handle));
+            return walked != 0 || search.Found != IntPtr.Zero ? search.Found : IntPtr.Zero;
+        }
+        finally
+        {
+            handle.Free();
+        }
+    }
+
+    public static string DeviceName(IntPtr hmonitor)
+    {
+        var info = new MONITORINFOEXW { cbSize = (uint)sizeof(MONITORINFOEXW) };
+        return GetMonitorInfo(hmonitor, &info) ? MonitorName(&info) : "";
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static int OnMonitor(IntPtr hmonitor, IntPtr hdc, RECT* rect, IntPtr data)
+    {
+        var search = (DeviceSearch)GCHandle.FromIntPtr(data).Target!;
+        var info = new MONITORINFOEXW { cbSize = (uint)sizeof(MONITORINFOEXW) };
+        if (GetMonitorInfo(hmonitor, &info) && string.Equals(MonitorName(&info), search.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            search.SetFound(hmonitor);
+            return 0;
+        }
+
+        return 1;
+    }
+
+    /// <summary>
+    /// GDI device name from <c>MONITORINFOEXW.szDevice</c>.
+    /// A fixed buffer can be indexed only through a pointer to the struct.
+    /// </summary>
+    private static string MonitorName(MONITORINFOEXW* info)
+    {
+        char* name = info->szDevice;
+        int length = 0;
+        while (length < 32 && name[length] != '\0')
+        {
+            length++;
+        }
+
+        return new string(name, 0, length);
+    }
+
+    private sealed class DeviceSearch(string name)
+    {
+        private IntPtr _found;
+
+        public string Name { get; } = name;
+
+        public IntPtr Found => Volatile.Read(ref _found);
+
+        public void SetFound(IntPtr value) => Volatile.Write(ref _found, value);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct MONITORINFOEXW
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+        public unsafe fixed char szDevice[32];
+    }
+
+    [LibraryImport("user32.dll")]
+    private static partial int EnumDisplayMonitors(IntPtr hdc, IntPtr clip, delegate* unmanaged[Stdcall]<IntPtr, IntPtr, RECT*, IntPtr, int> proc, IntPtr data);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetMonitorInfoW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static unsafe partial bool GetMonitorInfo(IntPtr hmonitor, MONITORINFOEXW* info);
 
     public static IDirect3DDevice CreateWinRtDevice(ID3D11Device device)
     {

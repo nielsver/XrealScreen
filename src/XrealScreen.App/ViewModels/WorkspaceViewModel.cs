@@ -45,15 +45,15 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public bool IsGlassesAnchor => KindIndex == 0;
 
-    public IReadOnlyList<string> AnchorAspectNames { get; } = ["16:9 (recommended)", "16:10", "Fill the height"];
+    public IReadOnlyList<string> AnchorAspectNames { get; } = ["16:9", "16:10", "Full image (recommended)"];
 
-    /// <summary>Index = (int)AnchorAspect.</summary>
+    /// <summary>Index = (int)AnchorAspect. 2 = Fill, the whole glasses image.</summary>
     [ObservableProperty]
-    public partial int AnchorAspectIndex { get; set; }
+    public partial int AnchorAspectIndex { get; set; } = 2;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AnchorGapText))]
-    public partial double AnchorGapPixels { get; set; } = 10;
+    public partial double AnchorGapPixels { get; set; } = 16;
 
     public string AnchorGapText => $"{Math.Round(AnchorGapPixels):F0} px";
 

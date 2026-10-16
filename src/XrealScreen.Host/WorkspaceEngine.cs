@@ -152,6 +152,15 @@ public sealed class WorkspaceEngine : IAsyncDisposable
 
     private void Info(string message) => Log?.Invoke(this, message);
 
+    /// <summary>HMONITOR for a monitor. The top-left pixel can belong to the neighbour, so the centre is tried first.</summary>
+    private static IntPtr MonitorHandle(DisplayMonitor monitor)
+    {
+        int cx = monitor.X + Math.Max(0, monitor.Resolution.Width / 2);
+        int cy = monitor.Y + Math.Max(0, monitor.Resolution.Height / 2);
+        IntPtr center = MonitorCapture.MonitorAt(cx, cy);
+        return center != IntPtr.Zero ? center : MonitorCapture.MonitorAt(monitor.X, monitor.Y);
+    }
+
     private Task RunAsync(WorkspaceOptions o, CancellationToken stop) =>
         o.Kind == WorkspaceKind.GlassesAnchor ? RunAnchorAsync(o, stop) : RunTrackingAsync(o, stop);
 
@@ -184,7 +193,16 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             }
 
             changedDesktop = true;
-            var rects = AnchorSplit.Split(glasses.Resolution, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect);
+            // Leave a frame so the gradient is visible around the screens, not only in the seams.
+            const int framePx = 36;
+            var signal = glasses.Resolution;
+            bool framed = signal.Width > framePx * 2 + 32 && signal.Height > framePx * 2 + 32;
+            var canvas = framed ? new Resolution(signal.Width - framePx * 2, signal.Height - framePx * 2) : signal;
+            int originX = (signal.Width - canvas.Width) / 2;
+            int originY = (signal.Height - canvas.Height) / 2;
+            var rects = AnchorSplit.Split(canvas, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect)
+                .Select(r => new PixelRect(r.X + originX, r.Y + originY, r.Width, r.Height))
+                .ToList();
             var virtuals = new List<VirtualDisplay>();
             foreach (var rect in rects)
             {
@@ -200,7 +218,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             Info($"glasses: {glasses.Resolution} @ {glasses.RefreshHz} Hz — held still by the glasses (Anchor mode)");
 
             using var gd = GraphicsDevice.CreateForMonitor(MonitorCapture.MonitorAt(glasses.X, glasses.Y));
-            using var scene = new WorkspaceScene(gd) { ClearColor = new Vortice.Mathematics.Color4(0f, 0f, 0f, 1f) };
+            using var scene = new WorkspaceScene(gd) { GradientBackdrop = true };
             await MonitorCapture.RequestBorderlessAsync().ConfigureAwait(false);
             for (int i = 0; i < virtuals.Count; i++)
             {
@@ -212,7 +230,37 @@ public sealed class WorkspaceEngine : IAsyncDisposable
                 }
 
                 var surface = scene.AddFlatScreen(rects[i], glasses.Resolution.Width, glasses.Resolution.Height, m.Resolution.Width, m.Resolution.Height);
-                var capture = new MonitorCapture(gd.Device, MonitorCapture.MonitorAt(m.X, m.Y));
+                // A brand-new indirect monitor can be in the desktop topology before Windows.Graphics.Capture
+                // will accept its HMONITOR (E_INVALIDARG). The point lookup also hits the glasses when the
+                // new screen still shares their origin, so the device name is the handle we capture.
+                MonitorCapture? capture = null;
+                for (int attempt = 1; attempt <= 4 && capture is null; attempt++)
+                {
+                    IntPtr byPoint = MonitorHandle(m);
+                    IntPtr byName = MonitorCapture.MonitorForDevice(m.GdiDeviceName);
+                    IntPtr hmon = byName != IntPtr.Zero ? byName : byPoint;
+                    Info($"capture {m.GdiDeviceName} at ({m.X},{m.Y}) {m.Resolution} byPoint=0x{byPoint:X} ({MonitorCapture.DeviceName(byPoint)}) byName=0x{byName:X} attempt {attempt}");
+                    if (hmon == IntPtr.Zero)
+                    {
+                        await Task.Delay(400, stop).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    try
+                    {
+                        capture = new MonitorCapture(gd.Device, hmon);
+                    }
+                    catch (ArgumentException ex) when (attempt < 4)
+                    {
+                        Info($"capture {m.GdiDeviceName} not ready: {ex.Message}");
+                        await Task.Delay(500, stop).ConfigureAwait(false);
+                    }
+                }
+
+                if (capture is null)
+                {
+                    throw new InvalidOperationException($"Windows.Graphics.Capture rejected {m.GdiDeviceName}.");
+                }
                 capture.FrameArrived += f =>
                 {
                     surface.Update(f.Texture, f.Width, f.Height);
@@ -253,7 +301,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             // Never let a session failure escape to the caller (it crashed the app, [verified-hw]).
             LastError = ex;
             LastStopReason = WorkspaceStopReason.Error;
-            Info($"error: {ex.GetType().Name}: {ex.Message}");
+            Info($"error: {ex}");
         }
         finally
         {
@@ -484,7 +532,7 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             // Never let a session failure escape to the caller (it crashed the app, [verified-hw]).
             LastError = ex;
             LastStopReason = WorkspaceStopReason.Error;
-            Info($"error: {ex.GetType().Name}: {ex.Message}");
+            Info($"error: {ex}");
         }
         finally
         {

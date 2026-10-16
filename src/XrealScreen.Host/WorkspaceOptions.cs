@@ -40,11 +40,11 @@ public sealed record WorkspaceOptions
     /// <summary>Move app windows off the glasses monitor (the workspace covers it) onto the workspace at start.</summary>
     public bool MoveWindowsFromGlasses { get; init; } = true;
 
-    /// <summary>Glasses anchor: pixels between the screens.</summary>
-    public int AnchorGapPixels { get; init; } = 10;
+    /// <summary>Glasses anchor: pixels between the screens. The seam is drawn, not see-through.</summary>
+    public int AnchorGapPixels { get; init; } = 16;
 
-    /// <summary>Glasses anchor: screen shape (screens are as large as possible with this aspect).</summary>
-    public AnchorAspect AnchorAspect { get; init; } = AnchorAspect.Ratio16x9;
+    /// <summary>Glasses anchor: screen shape. Fill uses the whole glasses image.</summary>
+    public AnchorAspect AnchorAspect { get; init; } = AnchorAspect.Fill;
 
     public UltrawideMode Mode { get; init; } = UltrawideMode.Off;
 

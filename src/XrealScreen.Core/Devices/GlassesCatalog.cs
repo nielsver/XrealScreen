@@ -52,6 +52,7 @@ public static class GlassesCatalog
     /// <summary>Known glasses monitors by EDID. Product code -1 = any product of that manufacturer.</summary>
     public static IReadOnlyList<GlassesDisplay> Displays { get; } =
     [
+        new(XrealEdidManufacturer, 0x4101, GlassesModel.One, "[verified-hw] XREAL One PID 0x0438, EDID MRG4101, 3840×1080, 2026-10-16"),
         new(XrealEdidManufacturer, 0x4102, GlassesModel.XReal1S, "[verified-hw] 1S fw 15.01.03.522"),
         new(XrealEdidManufacturer, -1, GlassesModel.Unknown, "[hypothesis] other XREAL models use the same manufacturer ID"),
     ];

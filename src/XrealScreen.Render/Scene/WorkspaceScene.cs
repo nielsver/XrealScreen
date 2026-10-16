@@ -24,13 +24,22 @@ public sealed class WorkspaceScene : IDisposable
         Texture2D Tex : register(t0);
         SamplerState Samp : register(s0);
         float4 PS(PsIn i) : SV_Target { return float4(Tex.Sample(Samp, i.uv).rgb, 1); }
+        PsIn VSBackdrop(VsIn i) { PsIn o; o.pos = float4(i.pos.xy, 0, 1); o.uv = i.uv; return o; }
+        float4 PSBackdrop(PsIn i) : SV_Target {
+            float3 leftColor = float3(0.12, 0.04, 0.42);
+            float3 rightColor = float3(0.00, 0.55, 0.72);
+            return float4(lerp(leftColor, rightColor, saturate(i.uv.x)), 1);
+        }
         """;
 
     private readonly GraphicsDevice _gd;
     private readonly ID3D11VertexShader _vs;
     private readonly ID3D11PixelShader _ps;
+    private readonly ID3D11VertexShader _backdropVs;
+    private readonly ID3D11PixelShader _backdropPs;
     private readonly ID3D11InputLayout _layout;
     private readonly ID3D11Buffer _frameBuffer;
+    private readonly ID3D11Buffer _backdrop;
     private readonly ID3D11SamplerState _sampler;
     private readonly ID3D11RasterizerState _rasterizer;
     private readonly List<ScreenSurface> _screens = [];
@@ -43,6 +52,11 @@ public sealed class WorkspaceScene : IDisposable
         ReadOnlyMemory<byte> psCode = Compiler.Compile(Shader, "PS", "workspace.hlsl", "ps_5_0");
         _vs = device.CreateVertexShader(vsCode.Span);
         _ps = device.CreatePixelShader(psCode.Span);
+        ReadOnlyMemory<byte> backdropVsCode = Compiler.Compile(Shader, "VSBackdrop", "workspace.hlsl", "vs_5_0");
+        ReadOnlyMemory<byte> backdropPsCode = Compiler.Compile(Shader, "PSBackdrop", "workspace.hlsl", "ps_5_0");
+        _backdropVs = device.CreateVertexShader(backdropVsCode.Span);
+        _backdropPs = device.CreatePixelShader(backdropPsCode.Span);
+        _backdrop = device.CreateBuffer(BackdropQuad(), BindFlags.VertexBuffer);
         _layout = device.CreateInputLayout(
         [
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
@@ -54,6 +68,9 @@ public sealed class WorkspaceScene : IDisposable
     }
 
     public Color4 ClearColor { get; set; } = new(0f, 0f, 0f, 1f);
+
+    /// <summary>Draws a left-to-right linear gradient behind the screens (glasses-anchor frame and seams).</summary>
+    public bool GradientBackdrop { get; set; }
 
     public IReadOnlyList<ScreenSurface> Screens => _screens;
 
@@ -108,6 +125,16 @@ public sealed class WorkspaceScene : IDisposable
         ctx.PSSetShader(_ps);
         ctx.PSSetSampler(0, _sampler);
 
+        if (GradientBackdrop)
+        {
+            ctx.VSSetShader(_backdropVs);
+            ctx.PSSetShader(_backdropPs);
+            ctx.IASetVertexBuffer(0, _backdrop, VertexStride);
+            ctx.Draw(6, 0);
+            ctx.VSSetShader(_vs);
+            ctx.PSSetShader(_ps);
+        }
+
         foreach (var screen in _screens)
         {
             ctx.IASetVertexBuffer(0, screen.Vertices, VertexStride);
@@ -125,11 +152,21 @@ public sealed class WorkspaceScene : IDisposable
 
         _rasterizer.Dispose();
         _sampler.Dispose();
+        _backdrop.Dispose();
         _frameBuffer.Dispose();
         _layout.Dispose();
+        _backdropPs.Dispose();
+        _backdropVs.Dispose();
         _ps.Dispose();
         _vs.Dispose();
     }
+
+    /// <summary>Clip-space quad. U grows to the right, V grows downward.</summary>
+    private static float[] BackdropQuad() =>
+    [
+        -1f, 1f, 0f, 0f, 0f,  1f, 1f, 0f, 1f, 0f,  -1f, -1f, 0f, 0f, 1f,
+        -1f, -1f, 0f, 0f, 1f,  1f, 1f, 0f, 1f, 0f,   1f, -1f, 0f, 1f, 1f,
+    ];
 }
 
 /// <summary>One virtual monitor in the scene: its mesh and the texture its captured frames are copied into.</summary>

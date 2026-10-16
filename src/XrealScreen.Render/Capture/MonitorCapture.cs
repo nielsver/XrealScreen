@@ -54,6 +54,12 @@ public sealed class MonitorCapture : IDisposable
     /// <summary>HMONITOR at a desktop point (e.g. a monitor's top-left from CCD), or zero.</summary>
     public static IntPtr MonitorAt(int x, int y) => CaptureInterop.MonitorAt(x, y);
 
+    /// <summary>HMONITOR for a GDI device name such as <c>\\.\DISPLAY9</c>, or zero.</summary>
+    public static IntPtr MonitorForDevice(string deviceName) => CaptureInterop.MonitorForDevice(deviceName);
+
+    /// <summary>GDI device name of an HMONITOR, or empty.</summary>
+    public static string DeviceName(IntPtr hmonitor) => CaptureInterop.DeviceName(hmonitor);
+
     /// <summary>Asks Windows for borderless capture (no yellow frame). Returns true when allowed.</summary>
     public static async Task<bool> RequestBorderlessAsync()
     {

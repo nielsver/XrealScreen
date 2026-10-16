@@ -30,7 +30,7 @@ Windows 11, .NET SDK 10.0.402, 16 October 2026. Details are in [docs/findings/ar
 | WinUI app build | Succeeded, 0 warnings |
 | Desktop capture | `xrs capture test` on a 3840×2160 monitor. `--png` writes the first frame. The UI text in that frame is sharp. |
 | Virtual display driver | Version 0.4.0.1 installed. A 1920×1080 virtual monitor was created, then removed. The laptop and the BenQ came back as they were. |
-| Glasses | Not connected during the check. Head tracking in the glasses is still to be confirmed on this machine. |
+| Glasses | XREAL One on `\\.\DISPLAY3`, 3840×1080 @ 60 Hz. A 3-screen glasses-anchor workspace ran at 59.5 fps, then the laptop, BenQ, and glasses came back. The USB head-tracking link was down again after that run. |
 
 ## Glasses menu
 

@@ -123,6 +123,35 @@ public sealed class WorkspaceSceneTests : IDisposable
     }
 
     [Fact]
+    public void GradientBackdrop_IsALeftToRightGradientAroundTheScreen()
+    {
+        _scene.GradientBackdrop = true;
+        var rect = new PixelRect(40, 20, 80, 60);
+        var screen = _scene.AddFlatScreen(rect, W, H, rect.Width, rect.Height);
+        _gd.Context.UpdateSubresource(Enumerable.Repeat(Red, rect.Width * rect.Height).ToArray(), screen.Texture, 0, (uint)(rect.Width * 4), 0);
+
+        _scene.Render(_rtv, W, H, Matrix4x4.Identity);
+        _gd.Context.CopyResource(_staging, _target);
+        var map = _gd.Context.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            unsafe
+            {
+                uint Px(int x, int y) => ((uint*)((byte*)map.DataPointer + y * map.RowPitch))[x];
+                uint left = Px(1, H / 2);
+                uint right = Px(W - 2, H / 2);
+                Assert.Equal(Red, Px(rect.X + rect.Width / 2, rect.Y + rect.Height / 2));
+                Assert.NotEqual(left, right);
+                Assert.True((left & 0xFF) < (right & 0xFF), "the right side of the gradient is more blue");
+            }
+        }
+        finally
+        {
+            _gd.Context.Unmap(_staging, 0);
+        }
+    }
+
+    [Fact]
     public void FlatScreens_FillTheirPixelRects()
     {
         var rects = XrealScreen.Core.Workspace.AnchorSplit.Split(new XrealScreen.Core.Workspace.Resolution(W, H), 2);
