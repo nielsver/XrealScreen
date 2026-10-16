@@ -59,4 +59,15 @@ public class AnchorSplitTests
         Assert.All(r, s => Assert.Equal(1280, s.Width));
         Assert.All(r, s => Assert.Equal(1080, s.Height));
     }
+
+    [Fact]
+    public void Place_LeavesABorderAroundTheScreens()
+    {
+        var r = AnchorSplit.Place(Wide32x9, 3, gapPixels: 16, AnchorAspect.Fill, framePx: 36);
+        Assert.Equal(3, r.Count);
+        Assert.True(r[0].X >= 36);
+        Assert.True(r[0].Y >= 36);
+        Assert.True(r[2].X + r[2].Width <= 3840 - 36);
+        Assert.True(r[0].Y + r[0].Height <= 1080 - 36);
+    }
 }

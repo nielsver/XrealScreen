@@ -1,6 +1,7 @@
 using System.Numerics;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
+using Vortice.Mathematics;
 using XrealScreen.Core.Workspace;
 using XrealScreen.Render.Scene;
 
@@ -152,6 +153,101 @@ public sealed class WorkspaceSceneTests : IDisposable
     }
 
     [Fact]
+    public void VerticalBackdrop_ChangesFromTopToBottom()
+    {
+        _scene.GradientBackdrop = true;
+        _scene.BackdropStyle = 1;
+        var pixels = Pixels();
+        uint top = pixels[2 + 2 * W];
+        uint bottom = pixels[2 + (H - 3) * W];
+        Assert.True((top & 0xFF) < (bottom & 0xFF), "the bottom of a vertical gradient is more blue");
+    }
+
+    [Fact]
+    public void SolidBackdrop_UsesTheLeftColorOnBothSides()
+    {
+        _scene.GradientBackdrop = true;
+        _scene.BackdropStyle = 2;
+        var pixels = Pixels();
+        Assert.Equal(pixels[1 + (H / 2) * W], pixels[(W - 2) + (H / 2) * W]);
+    }
+
+    [Fact]
+    public void GlowBackdrop_IsStrongerAtTheEdgeThanNearTheMiddle()
+    {
+        _scene.GradientBackdrop = true;
+        _scene.BackdropStyle = 4;
+        var pixels = Pixels();
+        uint edge = pixels[1 + (H / 2) * W];
+        uint inner = pixels[30 + (H / 2) * W];
+        Assert.True((edge & 0xFF) > (inner & 0xFF), "the rim is brighter than a point closer to the middle");
+    }
+
+    [Fact]
+    public void EachScreen_KeepsItsOwnColor()
+    {
+        _scene.GradientBackdrop = true;
+        _scene.BackdropStyle = 2;
+        _scene.BackdropScreenCount = 2;
+        _scene.BackdropSplit1 = 0.5f;
+        _scene.GradientLeft = new Color4(1f, 0f, 0f, 1f);
+        _scene.GradientRight = new Color4(1f, 0f, 0f, 1f);
+        _scene.BackdropColorA1 = new Color4(0f, 0f, 1f, 1f);
+        _scene.BackdropColorB1 = new Color4(0f, 0f, 1f, 1f);
+        var pixels = Pixels();
+        uint left = pixels[4 + (H / 2) * W];
+        uint right = pixels[(W - 5) + (H / 2) * W];
+        Assert.True(((left >> 16) & 0xFF) > (left & 0xFF), "screen 1 is red");
+        Assert.True((right & 0xFF) > ((right >> 16) & 0xFF), "screen 2 is blue");
+    }
+
+    [Fact]
+    public void FlatScreen_FloatsWithRoundedCornersAndAShadow()
+    {
+        _scene.GradientBackdrop = true;
+        _scene.BackdropStyle = 2;
+        _scene.GradientLeft = new Color4(1f, 1f, 1f, 1f);
+        _scene.GradientRight = new Color4(1f, 1f, 1f, 1f);
+        var rect = new PixelRect(40, 20, 80, 60);
+        var screen = _scene.AddFlatScreen(rect, W, H, rect.Width, rect.Height);
+        _gd.Context.UpdateSubresource(Enumerable.Repeat(Red, rect.Width * rect.Height).ToArray(), screen.Texture, 0, (uint)(rect.Width * 4), 0);
+
+        var pixels = Pixels();
+        uint Px(int x, int y) => pixels[x + y * W];
+        Assert.Equal(Red, Px(rect.X + rect.Width / 2, rect.Y + rect.Height / 2));
+        Assert.NotEqual(Red, Px(rect.X, rect.Y));
+        uint outside = Px(2, 2);
+        uint beside = Px(rect.X - 8, rect.Y + rect.Height / 2);
+        int Lum(uint p) => (int)((p >> 16) & 0xFF) + (int)((p >> 8) & 0xFF) + (int)(p & 0xFF);
+        Assert.True(Lum(beside) < Lum(outside), "the shadow beside the screen is darker than the open frame");
+    }
+
+    private uint[] Pixels()
+    {
+        _scene.Render(_rtv, W, H, Matrix4x4.Identity);
+        _gd.Context.CopyResource(_staging, _target);
+        var map = _gd.Context.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            var pixels = new uint[W * H];
+            unsafe
+            {
+                for (int y = 0; y < H; y++)
+                {
+                    var row = new Span<uint>((byte*)map.DataPointer + y * map.RowPitch, W);
+                    row.CopyTo(pixels.AsSpan(y * W, W));
+                }
+            }
+
+            return pixels;
+        }
+        finally
+        {
+            _gd.Context.Unmap(_staging, 0);
+        }
+    }
+
+    [Fact]
     public void FlatScreens_FillTheirPixelRects()
     {
         var rects = XrealScreen.Core.Workspace.AnchorSplit.Split(new XrealScreen.Core.Workspace.Resolution(W, H), 2);
@@ -170,10 +266,11 @@ public sealed class WorkspaceSceneTests : IDisposable
             unsafe
             {
                 uint Px(int x, int y) => ((uint*)((byte*)map.DataPointer + y * map.RowPitch))[x];
-                Assert.Equal(Red, Px(0, 0));
-                Assert.Equal(Red, Px(W / 2 - 1, H - 1));
-                Assert.Equal(Green, Px(W / 2, 0));
-                Assert.Equal(Green, Px(W - 1, H - 1));
+                Assert.Equal(Red, Px(rects[0].X + rects[0].Width / 2, H / 2));
+                Assert.Equal(Green, Px(rects[1].X + rects[1].Width / 2, H / 2));
+                Assert.Equal(Red, Px(rects[0].X, H / 2));
+                Assert.NotEqual(Red, Px(rects[0].X, rects[0].Y));
+                Assert.NotEqual(Green, Px(rects[1].X + rects[1].Width - 1, rects[1].Y));
             }
         }
         finally

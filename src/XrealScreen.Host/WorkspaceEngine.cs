@@ -64,6 +64,9 @@ public sealed class WorkspaceEngine : IAsyncDisposable
     /// <summary>Moves the screens closer/farther while running (0.5–4 m).</summary>
     public void SetDistance(float meters) => _setDistance?.Invoke(meters);
 
+    /// <summary>Frame style and colors read every anchor frame. Null uses the options captured at start.</summary>
+    public LiveBackdrop? LiveBackdrop { get; set; }
+
     public event EventHandler<WorkspaceState>? StateChanged;
 
     /// <summary>Progress/diagnostic messages (any thread).</summary>
@@ -193,16 +196,11 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             }
 
             changedDesktop = true;
-            // Leave a frame so the gradient is visible around the screens, not only in the seams.
-            const int framePx = 36;
+            // A frame leaves room for the color around the screens. See-through uses the whole image.
+            FrameStyle frame = FrameStyles.Resolve(o.AnchorFrame, o.AnchorGradient);
+            int framePx = frame == FrameStyle.SeeThrough ? 0 : FrameStyles.FramePixels;
             var signal = glasses.Resolution;
-            bool framed = signal.Width > framePx * 2 + 32 && signal.Height > framePx * 2 + 32;
-            var canvas = framed ? new Resolution(signal.Width - framePx * 2, signal.Height - framePx * 2) : signal;
-            int originX = (signal.Width - canvas.Width) / 2;
-            int originY = (signal.Height - canvas.Height) / 2;
-            var rects = AnchorSplit.Split(canvas, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect)
-                .Select(r => new PixelRect(r.X + originX, r.Y + originY, r.Width, r.Height))
-                .ToList();
+            var rects = AnchorSplit.Place(signal, o.ScreenCount, o.AnchorGapPixels, o.AnchorAspect, framePx);
             var virtuals = new List<VirtualDisplay>();
             foreach (var rect in rects)
             {
@@ -218,7 +216,23 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             Info($"glasses: {glasses.Resolution} @ {glasses.RefreshHz} Hz — held still by the glasses (Anchor mode)");
 
             using var gd = GraphicsDevice.CreateForMonitor(MonitorCapture.MonitorAt(glasses.X, glasses.Y));
-            using var scene = new WorkspaceScene(gd) { GradientBackdrop = true };
+            var look = ScreenFrameColors.Create(o, rects, signal.Width, signal.Height);
+            using var scene = new WorkspaceScene(gd)
+            {
+                GradientBackdrop = look.Draw,
+                BackdropStyle = look.Style,
+                BackdropScreenCount = look.ScreenCount,
+                BackdropAxis = look.Axis,
+                BackdropSplit1 = look.Split1,
+                BackdropSplit2 = look.Split2,
+                GradientLeft = look.A0,
+                GradientRight = look.B0,
+                BackdropColorA1 = look.A1,
+                BackdropColorB1 = look.B1,
+                BackdropColorA2 = look.A2,
+                BackdropColorB2 = look.B2,
+                Live = LiveBackdrop,
+            };
             await MonitorCapture.RequestBorderlessAsync().ConfigureAwait(false);
             for (int i = 0; i < virtuals.Count; i++)
             {

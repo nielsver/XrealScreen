@@ -79,6 +79,13 @@ public static class LookFormat
 
     public static bool? Checked(int value, int expected) => value == expected;
 
+    /// <summary>True when the screen count, rounded, is <paramref name="expected"/>.</summary>
+    public static bool? CountChecked(double count, int expected)
+    {
+        int n = double.IsNaN(count) ? 1 : (int)Math.Round(count);
+        return n == expected;
+    }
+
     public static bool Below(double value, double max) => !double.IsNaN(value) && value < max;
 
     public static bool Above(double value, double min) => !double.IsNaN(value) && value > min;

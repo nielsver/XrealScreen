@@ -28,6 +28,13 @@ public sealed partial class StageHomePage : Page
         toggle.IsChecked = true; // clicking the selected segment keeps it selected
     }
 
+    private void ScreenCount_Click(object sender, RoutedEventArgs e)
+    {
+        var toggle = (ToggleButton)sender;
+        Workspace.ScreenCount = int.Parse((string)toggle.Tag, System.Globalization.CultureInfo.InvariantCulture);
+        toggle.IsChecked = true;
+    }
+
     private void Fewer_Click(object sender, RoutedEventArgs e) => LookFormat.StepScreens(-1);
 
     private void More_Click(object sender, RoutedEventArgs e) => LookFormat.StepScreens(1);

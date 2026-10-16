@@ -17,8 +17,11 @@
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="12">
-                    <TextBlock TextWrapping="Wrap" Text="XREAL One-series glasses (One, One Pro, 1S) connect over USB-C: video as a normal monitor, and head-tracking data over a USB network adapter (169.254.2.1)." />
-                    <Button Command="{x:Bind Device.CheckCommand}" Content="Check connection" Style="{StaticResource AccentButtonStyle}" />
+                    <TextBlock TextWrapping="Wrap" Text="Connect with glasses checks the picture, the USB network, every port, the firmware, and a short head-tracking sample. Send setup switches the glasses picture to the mode this workspace uses: 3840×1080 for glasses anchor, or a normal picture for head tracking. Anchor and Follow stay on the glasses' X button." />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button AutomationProperties.Name="Connect with glasses" Command="{x:Bind Device.CheckCommand}" Content="Connect with glasses" Style="{StaticResource AccentButtonStyle}" />
+                        <Button AutomationProperties.Name="Send setup to glasses" Command="{x:Bind Device.SendSetupCommand}" Content="Send setup to glasses" />
+                    </StackPanel>
                     <ItemsControl ItemsSource="{x:Bind Device.Results}" />
                 </StackPanel>
             </Border>

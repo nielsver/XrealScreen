@@ -160,8 +160,12 @@
                 <Border Grid.Column="1" Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="8">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Glasses" />
-                        <TextBlock Text="{x:Bind Device.StatusTitle, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <Button Command="{x:Bind Device.CheckCommand}" Content="Check connection" />
+                        <TextBlock Text="{x:Bind Device.StatusTitle, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Bind Device.StatusMessage, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button AutomationProperties.Name="Connect with glasses" Command="{x:Bind Device.CheckCommand}" Content="Connect with glasses" />
+                            <Button AutomationProperties.Name="Send setup to glasses" Command="{x:Bind Device.SendSetupCommand}" Content="Send setup to glasses" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>

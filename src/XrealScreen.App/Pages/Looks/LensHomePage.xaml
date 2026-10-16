@@ -199,10 +199,16 @@
                                     <TextBlock Text="Preview tracking" />
                                 </StackPanel>
                             </Button>
-                            <Button Command="{x:Bind Device.CheckCommand}" Style="{StaticResource LensPillButtonStyle}">
+                            <Button AutomationProperties.Name="Connect with glasses" Command="{x:Bind Device.CheckCommand}" Style="{StaticResource LensPillButtonStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon FontSize="14" Glyph="&#xE703;" />
-                                    <TextBlock Text="Check glasses" />
+                                    <TextBlock Text="Connect" />
+                                </StackPanel>
+                            </Button>
+                            <Button AutomationProperties.Name="Send setup to glasses" Command="{x:Bind Device.SendSetupCommand}" Style="{StaticResource LensPillButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="14" Glyph="&#xE898;" />
+                                    <TextBlock Text="Send setup" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>

@@ -47,6 +47,7 @@
                     <StackPanel Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
                         <controls:AnchorPreview x:Name="AnchorLayoutPreview" Height="200" />
                         <Grid x:Name="AnchorStageHost" Visibility="Collapsed" />
+                        <controls:GradientFrameSettings />
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Slider
                                 Header="Space between screens"
@@ -67,6 +68,15 @@
                             MaxColumns="3"
                             SelectedIndex="{x:Bind Workspace.AnchorAspectIndex, Mode=TwoWay}" />
                     </StackPanel>
+                    <RadioButtons
+                        Header="Screens"
+                        MaxColumns="3"
+                        SelectedIndex="{x:Bind Workspace.ScreenCountIndex, Mode=TwoWay}"
+                        Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
+                        <x:String>1 screen</x:String>
+                        <x:String>2 screens</x:String>
+                        <x:String>3 screens</x:String>
+                    </RadioButtons>
                     <NumberBox
                         x:Name="ScreenCountBox"
                         Header="Number of screens"
@@ -75,7 +85,8 @@
                         SpinButtonPlacementMode="Inline"
                         HorizontalAlignment="Left"
                         MinWidth="200"
-                        Value="{x:Bind Workspace.ScreenCount, Mode=TwoWay}" />
+                        Value="{x:Bind Workspace.ScreenCount, Mode=TwoWay}"
+                        Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
                         <Button

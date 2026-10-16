@@ -9,6 +9,7 @@ CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 var root = new RootCommand("xrs — XrealScreen developer/hardware tool (see docs/testing/hardware-test-M1.md)");
 root.Subcommands.Add(DeviceCommands.CreateDevices());
 root.Subcommands.Add(DeviceCommands.CreateProbe());
+root.Subcommands.Add(DeviceCommands.CreateLink());
 root.Subcommands.Add(ImuCommands.Create());
 root.Subcommands.Add(DisplayCommands.Create());
 root.Subcommands.Add(VddCommands.Create());

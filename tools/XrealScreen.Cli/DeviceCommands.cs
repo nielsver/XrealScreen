@@ -36,6 +36,31 @@ internal static class DeviceCommands
         return command;
     }
 
+    public static Command CreateLink()
+    {
+        var tracking = new Option<bool>("--tracking") { Description = "Send the head-tracking picture instead of the glasses-anchor picture." };
+        var setup = new Command("setup", "Send the workspace picture mode to the glasses, then run the same checks.") { tracking };
+        setup.SetAction(async (parse, ct) => await PrintLinkAsync(sendSetup: true, parse.GetValue(tracking), ct).ConfigureAwait(false));
+
+        var command = new Command("link", "Check the glasses picture, USB network, ports, firmware and a short IMU sample.") { setup };
+        command.SetAction(async (_, ct) => await PrintLinkAsync(sendSetup: false, tracking: false, ct).ConfigureAwait(false));
+        return command;
+    }
+
+    private static async Task<int> PrintLinkAsync(bool sendSetup, bool tracking, CancellationToken ct)
+    {
+        var report = sendSetup
+            ? await XrealScreen.Host.GlassesLink.SendSetupAsync(!tracking, ct).ConfigureAwait(false)
+            : await XrealScreen.Host.GlassesLink.CheckAsync(glassesAnchor: true, ct).ConfigureAwait(false);
+        Console.WriteLine(report.Title);
+        foreach (string line in report.Lines)
+        {
+            Console.WriteLine("  " + line);
+        }
+
+        return report.Title is "Glasses not connected" ? 2 : 0;
+    }
+
     private static async Task<int> ProbeAsync(OneEndpoints endpoints, double seconds, CancellationToken ct)
     {
         Console.WriteLine("1) USB network adapter (expect PC address 169.254.2.x)");

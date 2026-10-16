@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="XrealScreen.App.Controls.FrameLookButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    HorizontalAlignment="Stretch">
+
+    <Button
+        x:Name="RootButton"
+        Padding="0"
+        HorizontalAlignment="Stretch"
+        HorizontalContentAlignment="Stretch"
+        Background="Transparent"
+        BorderThickness="0"
+        Click="Root_Click">
+        <Border x:Name="Ring" Padding="6" BorderThickness="2" CornerRadius="10">
+            <StackPanel Spacing="6">
+                <Grid Height="52">
+                    <Border x:Name="SwatchHost" CornerRadius="4" />
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="4">
+                        <Border Width="16" Height="28" Background="#F2F4F7FB" CornerRadius="2" />
+                        <Border Width="16" Height="28" Background="#F2F4F7FB" CornerRadius="2" />
+                        <Border Width="16" Height="28" Background="#F2F4F7FB" CornerRadius="2" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock
+                    x:Name="CaptionText"
+                    HorizontalAlignment="Center"
+                    FontSize="12"
+                    TextAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Button>
+</UserControl>

@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="XrealScreen.App.Controls.GradientFrameSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:XrealScreen.App.Controls">
+
+    <StackPanel Spacing="12">
+        <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Looks" />
+        <TextBlock
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="Tap a picture. The frame in the preview matches it."
+            TextWrapping="Wrap" />
+        <Grid ColumnSpacing="8" RowSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <controls:FrameLookButton
+                Grid.Row="0"
+                Grid.Column="0"
+                Caption="Indigo"
+                LookChosen="Look_Chosen"
+                LookName="Indigo"
+                Selected="{x:Bind Workspace.IndigoSelected, Mode=OneWay}">
+                <controls:FrameLookButton.Swatch>
+                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop Offset="0" Color="#1F0A6B" />
+                        <GradientStop Offset="1" Color="#008CB8" />
+                    </LinearGradientBrush>
+                </controls:FrameLookButton.Swatch>
+            </controls:FrameLookButton>
+
+            <controls:FrameLookButton
+                Grid.Row="0"
+                Grid.Column="1"
+                Caption="Clear"
+                LookChosen="Look_Chosen"
+                LookName="Clear"
+                Selected="{x:Bind Workspace.ClearSelected, Mode=OneWay}">
+                <controls:FrameLookButton.Swatch>
+                    <SolidColorBrush Color="#14181F" />
+                </controls:FrameLookButton.Swatch>
+            </controls:FrameLookButton>
+
+            <controls:FrameLookButton
+                Grid.Row="0"
+                Grid.Column="2"
+                Caption="Night"
+                LookChosen="Look_Chosen"
+                LookName="Night"
+                Selected="{x:Bind Workspace.NightSelected, Mode=OneWay}">
+                <controls:FrameLookButton.Swatch>
+                    <SolidColorBrush Color="#1B1F2A" />
+                </controls:FrameLookButton.Swatch>
+            </controls:FrameLookButton>
+
+            <controls:FrameLookButton
+                Grid.Row="1"
+                Grid.Column="0"
+                Caption="Sunset"
+                LookChosen="Look_Chosen"
+                LookName="Sunset"
+                Selected="{x:Bind Workspace.SunsetSelected, Mode=OneWay}">
+                <controls:FrameLookButton.Swatch>
+                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop Offset="0" Color="#E85D04" />
+                        <GradientStop Offset="1" Color="#7B2CBF" />
+                    </LinearGradientBrush>
+                </controls:FrameLookButton.Swatch>
+            </controls:FrameLookButton>
+
+            <controls:FrameLookButton
+                Grid.Row="1"
+                Grid.Column="1"
+                Caption="Sea"
+                LookChosen="Look_Chosen"
+                LookName="Sea"
+                Selected="{x:Bind Workspace.SeaSelected, Mode=OneWay}">
+                <controls:FrameLookButton.Swatch>
+                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                        <GradientStop Offset="0" Color="#042F40" />
+                        <GradientStop Offset="1" Color="#48CAE4" />
+                    </LinearGradientBrush>
+                </controls:FrameLookButton.Swatch>
+            </controls:FrameLookButton>
+
+            <controls:FrameLookButton
+                Grid.Row="1"
+                Grid.Column="2"
+                Caption="Glow"
+                LookChosen="Look_Chosen"
+                LookName="Glow"
+                Selected="{x:Bind Workspace.GlowSelected, Mode=OneWay}">
+                <controls:FrameLookButton.Swatch>
+                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.85" RadiusY="0.85">
+                        <GradientStop Offset="0" Color="#10141C" />
+                        <GradientStop Offset="1" Color="#7B61FF" />
+                    </RadialGradientBrush>
+                </controls:FrameLookButton.Swatch>
+            </controls:FrameLookButton>
+        </Grid>
+
+        <TextBlock
+            AutomationProperties.Name="{x:Bind Workspace.SelectedLookCaption, Mode=OneWay}"
+            Style="{ThemeResource BodyStrongTextBlockStyle}"
+            Text="{x:Bind Workspace.SelectedLookCaption, Mode=OneWay}" />
+        <TextBlock
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Workspace.FrameStyleHelp, Mode=OneWay}"
+            TextWrapping="Wrap" />
+
+        <StackPanel Spacing="8" Visibility="{x:Bind Workspace.FrameUsesColors, Mode=OneWay}">
+            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Colors on each screen" />
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="Fine-tune one screen. A look above replaces these."
+                TextWrapping="Wrap" />
+
+            <TextBlock Text="Screen 1" />
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen 1 first color">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="36" Height="36" VerticalAlignment="Center" Background="{x:Bind Workspace.Screen1BrushA, Mode=OneWay}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Workspace.FirstColorLabel, Mode=OneWay}" />
+                            <TextBlock FontFamily="Cascadia Mono" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Workspace.Screen1HexA, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                    <Button.Flyout>
+                        <Flyout>
+                            <ColorPicker Width="312" Color="{x:Bind Workspace.Screen1ColorA, Mode=TwoWay}" IsAlphaEnabled="False" IsColorChannelTextInputVisible="True" IsHexInputVisible="True" IsMoreButtonVisible="False" />
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <Button Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen 1 second color" Visibility="{x:Bind Workspace.FrameUsesSecondColor, Mode=OneWay}">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="36" Height="36" VerticalAlignment="Center" Background="{x:Bind Workspace.Screen1BrushB, Mode=OneWay}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind Workspace.SecondColorLabel, Mode=OneWay}" />
+                            <TextBlock FontFamily="Cascadia Mono" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Workspace.Screen1HexB, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                    <Button.Flyout>
+                        <Flyout>
+                            <ColorPicker Width="312" Color="{x:Bind Workspace.Screen1ColorB, Mode=TwoWay}" IsAlphaEnabled="False" IsColorChannelTextInputVisible="True" IsHexInputVisible="True" IsMoreButtonVisible="False" />
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
+
+            <StackPanel Spacing="8" Visibility="{x:Bind Workspace.ShowScreen2, Mode=OneWay}">
+                <TextBlock Text="Screen 2" />
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen 2 first color">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" VerticalAlignment="Center" Background="{x:Bind Workspace.Screen2BrushA, Mode=OneWay}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Workspace.FirstColorLabel, Mode=OneWay}" />
+                                <TextBlock FontFamily="Cascadia Mono" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Workspace.Screen2HexA, Mode=OneWay}" />
+                            </StackPanel>
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout>
+                                <ColorPicker Width="312" Color="{x:Bind Workspace.Screen2ColorA, Mode=TwoWay}" IsAlphaEnabled="False" IsColorChannelTextInputVisible="True" IsHexInputVisible="True" IsMoreButtonVisible="False" />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen 2 second color" Visibility="{x:Bind Workspace.FrameUsesSecondColor, Mode=OneWay}">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" VerticalAlignment="Center" Background="{x:Bind Workspace.Screen2BrushB, Mode=OneWay}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Workspace.SecondColorLabel, Mode=OneWay}" />
+                                <TextBlock FontFamily="Cascadia Mono" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Workspace.Screen2HexB, Mode=OneWay}" />
+                            </StackPanel>
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout>
+                                <ColorPicker Width="312" Color="{x:Bind Workspace.Screen2ColorB, Mode=TwoWay}" IsAlphaEnabled="False" IsColorChannelTextInputVisible="True" IsHexInputVisible="True" IsMoreButtonVisible="False" />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="8" Visibility="{x:Bind Workspace.ShowScreen3, Mode=OneWay}">
+                <TextBlock Text="Screen 3" />
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen 3 first color">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" VerticalAlignment="Center" Background="{x:Bind Workspace.Screen3BrushA, Mode=OneWay}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Workspace.FirstColorLabel, Mode=OneWay}" />
+                                <TextBlock FontFamily="Cascadia Mono" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Workspace.Screen3HexA, Mode=OneWay}" />
+                            </StackPanel>
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout>
+                                <ColorPicker Width="312" Color="{x:Bind Workspace.Screen3ColorA, Mode=TwoWay}" IsAlphaEnabled="False" IsColorChannelTextInputVisible="True" IsHexInputVisible="True" IsMoreButtonVisible="False" />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Grid.Column="1" HorizontalAlignment="Stretch" AutomationProperties.Name="Screen 3 second color" Visibility="{x:Bind Workspace.FrameUsesSecondColor, Mode=OneWay}">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" VerticalAlignment="Center" Background="{x:Bind Workspace.Screen3BrushB, Mode=OneWay}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Workspace.SecondColorLabel, Mode=OneWay}" />
+                                <TextBlock FontFamily="Cascadia Mono" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Workspace.Screen3HexB, Mode=OneWay}" />
+                            </StackPanel>
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout>
+                                <ColorPicker Width="312" Color="{x:Bind Workspace.Screen3ColorB, Mode=TwoWay}" IsAlphaEnabled="False" IsColorChannelTextInputVisible="True" IsHexInputVisible="True" IsMoreButtonVisible="False" />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+
+        <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Glasses" />
+        <Slider
+            AutomationProperties.Name="Glasses brightness"
+            Header="Brightness"
+            Maximum="9"
+            Minimum="0"
+            StepFrequency="1"
+            Value="{x:Bind Workspace.GlassesBrightness, Mode=TwoWay}" />
+        <Slider
+            AutomationProperties.Name="Glasses dimmer"
+            Header="Dimmer — clear, middle, dark"
+            Maximum="2"
+            Minimum="0"
+            StepFrequency="1"
+            Value="{x:Bind Workspace.GlassesDimmer, Mode=TwoWay}" />
+        <TextBlock
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Workspace.GlassesCommandStatus, Mode=OneWay}"
+            TextWrapping="Wrap" />
+    </StackPanel>
+</UserControl>

@@ -30,7 +30,7 @@ public enum WorkspaceKind
 /// <summary>Everything a workspace session needs. Defaults = what was verified in the glasses on 2026-09-26.</summary>
 public sealed record WorkspaceOptions
 {
-    public WorkspaceKind Kind { get; init; } = WorkspaceKind.AppTracking;
+    public WorkspaceKind Kind { get; init; } = WorkspaceKind.GlassesAnchor;
 
     public int ScreenCount { get; init; } = 3;
 
@@ -45,6 +45,33 @@ public sealed record WorkspaceOptions
 
     /// <summary>Glasses anchor: screen shape. Fill uses the whole glasses image.</summary>
     public AnchorAspect AnchorAspect { get; init; } = AnchorAspect.Fill;
+
+    /// <summary>
+    /// Glasses anchor: draw a left-to-right gradient around the screens.
+    /// Null means on, so an older settings file keeps the gradient. <see cref="AnchorFrame"/> wins when set.
+    /// </summary>
+    public bool? AnchorGradient { get; init; }
+
+    /// <summary>Color around the glasses-anchor screens. Null falls back to <see cref="AnchorGradient"/>.</summary>
+    public FrameStyle? AnchorFrame { get; init; }
+
+    /// <summary>Left end of the gradient, <c>#RRGGBB</c>. Null uses <see cref="RgbHex.DefaultLeft"/>.</summary>
+    public string? AnchorGradientLeft { get; init; }
+
+    /// <summary>Right end of the shared gradient, <c>#RRGGBB</c>. Null uses <see cref="RgbHex.DefaultRight"/>.</summary>
+    public string? AnchorGradientRight { get; init; }
+
+    /// <summary>
+    /// Per-screen frame colors, two <c>#RRGGBB</c> values per screen (first, second), screens 1–3 in order.
+    /// Null keeps the shared pair, sliced across the screens for a linear frame.
+    /// </summary>
+    public string?[]? AnchorScreenColors { get; init; }
+
+    /// <summary>Glasses display brightness 0–9. Null leaves the glasses as they are until the user moves the slider.</summary>
+    public int? GlassesBrightness { get; init; }
+
+    /// <summary>Electrochromic dimmer: 0 clear, 1 middle, 2 dark. Null leaves the glasses as they are.</summary>
+    public int? GlassesDimmer { get; init; }
 
     public UltrawideMode Mode { get; init; } = UltrawideMode.Off;
 

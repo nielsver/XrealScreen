@@ -75,7 +75,7 @@
                 <Border Style="{StaticResource PillStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontSize="13" Foreground="{StaticResource StageMutedBrush}" Glyph="&#xE703;" />
-                        <TextBlock MaxWidth="240" FontSize="13" Foreground="{StaticResource StageTextBrush}" Text="{x:Bind Device.StatusTitle, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock MaxWidth="420" FontSize="13" Foreground="{StaticResource StageTextBrush}" Text="{x:Bind Device.StatusTitle, Mode=OneWay}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource PillStyle}">
@@ -85,6 +85,17 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                <Button AutomationProperties.Name="Connect with glasses" Command="{x:Bind Device.CheckCommand}" Content="Connect with glasses" Style="{StaticResource StageDockButtonStyle}" />
+                <Button AutomationProperties.Name="Send setup to glasses" Command="{x:Bind Device.SendSetupCommand}" Content="Send setup to glasses" Style="{StaticResource StageDockButtonStyle}" />
+            </StackPanel>
+            <TextBlock
+                MaxWidth="460"
+                HorizontalAlignment="Right"
+                FontSize="12"
+                Foreground="{StaticResource StageMutedBrush}"
+                Text="{x:Bind Device.StatusMessage, Mode=OneWay}"
+                TextWrapping="Wrap" />
             <InfoBar
                 MaxWidth="460"
                 IsClosable="False"
@@ -194,7 +205,44 @@
 
                 <Rectangle Width="1" Height="30" Margin="6,0" VerticalAlignment="Center" Fill="{StaticResource StageLineBrush}" />
 
-                <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
+                <Border
+                    Padding="3"
+                    VerticalAlignment="Center"
+                    Background="#59000000"
+                    CornerRadius="12"
+                    Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <ToggleButton
+                            AutomationProperties.Name="1 screen"
+                            Click="ScreenCount_Click"
+                            Content="1"
+                            IsChecked="{x:Bind looks:LookFormat.CountChecked(Workspace.ScreenCount, 1), Mode=OneWay}"
+                            Style="{StaticResource StageSegmentStyle}"
+                            Tag="1"
+                            ToolTipService.ToolTip="One screen" />
+                        <ToggleButton
+                            AutomationProperties.Name="2 screens"
+                            Click="ScreenCount_Click"
+                            Content="2"
+                            IsChecked="{x:Bind looks:LookFormat.CountChecked(Workspace.ScreenCount, 2), Mode=OneWay}"
+                            Style="{StaticResource StageSegmentStyle}"
+                            Tag="2"
+                            ToolTipService.ToolTip="Two screens" />
+                        <ToggleButton
+                            AutomationProperties.Name="3 screens"
+                            Click="ScreenCount_Click"
+                            Content="3"
+                            IsChecked="{x:Bind looks:LookFormat.CountChecked(Workspace.ScreenCount, 3), Mode=OneWay}"
+                            Style="{StaticResource StageSegmentStyle}"
+                            Tag="3"
+                            ToolTipService.ToolTip="Three screens" />
+                    </StackPanel>
+                </Border>
+                <StackPanel
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}">
                     <Button
                         Width="34"
                         Height="34"
@@ -235,8 +283,10 @@
                     <Button.Flyout>
                         <Flyout Placement="Top">
                             <StackPanel Width="380" Spacing="10">
+                                <controls:GradientFrameSettings />
+                                <Button HorizontalAlignment="Stretch" Command="{x:Bind Device.CheckCommand}" Content="Connect with glasses" />
+                                <Button HorizontalAlignment="Stretch" Command="{x:Bind Device.SendSetupCommand}" Content="Send setup to glasses" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Command="{x:Bind Device.CheckCommand}" Content="Check glasses" />
                                     <Button Click="Import_Click" Content="Import…" />
                                     <Button Click="Export_Click" Content="Export…" />
                                 </StackPanel>

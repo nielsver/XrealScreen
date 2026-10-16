@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace XrealScreen.Core.Workspace;
 
 /// <summary>A pixel rectangle inside the glasses' video signal.</summary>
@@ -99,5 +101,48 @@ public static class AnchorSplit
         return result;
 
         static int Even(double v) => Math.Max(2, (int)Math.Floor(v / 2) * 2);
+    }
+
+    /// <summary>
+    /// Same split as <see cref="Split"/>, shifted so a frame of <paramref name="framePx"/> stays around the screens.
+    /// The rectangles are in the full glasses image.
+    /// </summary>
+    public static IReadOnlyList<PixelRect> Place(Resolution signal, int count, int gapPixels, AnchorAspect aspect, int framePx)
+    {
+        framePx = Math.Max(0, framePx);
+        bool framed = framePx > 0 && signal.Width > framePx * 2 + 32 && signal.Height > framePx * 2 + 32;
+        var canvas = framed ? new Resolution(signal.Width - framePx * 2, signal.Height - framePx * 2) : signal;
+        int ox = (signal.Width - canvas.Width) / 2;
+        int oy = (signal.Height - canvas.Height) / 2;
+        return Split(canvas, count, gapPixels, aspect)
+            .Select(r => new PixelRect(r.X + ox, r.Y + oy, r.Width, r.Height))
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Where one screen's colors stop and the next screen's colors start, as fractions of the image.
+    /// The cut sits in the gap between the screens. The second split is 1 when there is no third screen.
+    /// </summary>
+    public static (float Split1, float Split2, bool Stacked) Bands(int width, int height, IReadOnlyList<PixelRect> rects)
+    {
+        bool stacked = height > width;
+        float full = stacked ? height : width;
+        float split1 = 1f;
+        float split2 = 1f;
+        if (rects.Count >= 2 && full > 0)
+        {
+            split1 = Midpoint(rects[0], rects[1], stacked) / full;
+        }
+
+        if (rects.Count >= 3 && full > 0)
+        {
+            split2 = Midpoint(rects[1], rects[2], stacked) / full;
+        }
+
+        return (split1, split2, stacked);
+
+        static float Midpoint(PixelRect a, PixelRect b, bool stacked) => stacked
+            ? (a.Y + a.Height + b.Y) / 2f
+            : (a.X + a.Width + b.X) / 2f;
     }
 }

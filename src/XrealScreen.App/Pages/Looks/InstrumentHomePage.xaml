@@ -160,6 +160,14 @@
                                 <Button Grid.Column="1" Command="{x:Bind Session.TakeScreenshotCommand}" Content="CAPTURE" Style="{StaticResource InstOutlineButtonStyle}" />
                                 <Button Grid.Column="2" Command="{x:Bind Tracking.StartCommand}" Content="TRACK" Style="{StaticResource InstOutlineButtonStyle}" ToolTipService.ToolTip="Preview head tracking without starting the workspace" />
                             </Grid>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button AutomationProperties.Name="Connect with glasses" Command="{x:Bind Device.CheckCommand}" Content="CONNECT" Style="{StaticResource InstOutlineButtonStyle}" />
+                                <Button Grid.Column="1" AutomationProperties.Name="Send setup to glasses" Command="{x:Bind Device.SendSetupCommand}" Content="SEND SETUP" Style="{StaticResource InstOutlineButtonStyle}" />
+                            </Grid>
                             <TextBlock
                                 FontSize="13"
                                 Foreground="{StaticResource InstMutedBrush}"

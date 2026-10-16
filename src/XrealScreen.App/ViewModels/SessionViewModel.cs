@@ -66,6 +66,8 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         _autoSaveTimer.Interval = TimeSpan.FromMilliseconds(500);
         _autoSaveTimer.IsRepeating = false;
         _autoSaveTimer.Tick += (_, _) => SaveIfChanged();
+        _engine.LiveBackdrop = new LiveBackdrop();
+        _workspace.FrameLookChanged += (_, _) => _workspace.WriteLive(_engine.LiveBackdrop!);
         _workspace.PropertyChanged += (_, _) => ScheduleAutoSave();
         _tracking.PropertyChanged += (_, _) => ScheduleAutoSave();
 
@@ -553,6 +555,13 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         Kind = _workspace.KindIndex == 0 ? WorkspaceKind.GlassesAnchor : WorkspaceKind.AppTracking,
         AnchorGapPixels = (int)Math.Round(_workspace.AnchorGapPixels),
         AnchorAspect = _workspace.AnchorAspect,
+        AnchorGradient = _workspace.AnchorGradient,
+        AnchorFrame = _workspace.FrameStyle,
+        AnchorGradientLeft = _workspace.GradientLeftHex,
+        AnchorGradientRight = _workspace.GradientRightHex,
+        AnchorScreenColors = _workspace.SavedScreenColors(),
+        GlassesBrightness = (int)Math.Round(_workspace.GlassesBrightness),
+        GlassesDimmer = (int)Math.Round(_workspace.GlassesDimmer),
         ScreenCount = (int)Math.Clamp(Math.Round(double.IsNaN(_workspace.ScreenCount) ? 1 : _workspace.ScreenCount), 1, WorkspaceLayout.MaxScreens),
         PrimaryScreen = Math.Clamp(_workspace.PrimaryScreenIndex, 0, WorkspaceLayout.MaxScreens),
         MoveWindowsFromGlasses = _workspace.MoveWindowsFromGlasses,
@@ -575,9 +584,16 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
     private void ApplySettings(WorkspaceOptions o)
     {
         _base = o;
+        _workspace.BeginSettingsLoad();
         _workspace.KindIndex = o.Kind == WorkspaceKind.GlassesAnchor ? 0 : 1;
         _workspace.AnchorGapPixels = o.AnchorGapPixels;
         _workspace.AnchorAspectIndex = (int)o.AnchorAspect;
+        _workspace.FrameStyleIndex = (int)FrameStyles.Resolve(o.AnchorFrame, o.AnchorGradient);
+        _workspace.SetGradientHex(o.AnchorGradientLeft, o.AnchorGradientRight);
+        _workspace.ApplyScreenColors(o.AnchorScreenColors);
+        _workspace.ApplyGlasses(o.GlassesBrightness, o.GlassesDimmer);
+        _workspace.EndSettingsLoad();
+        _workspace.WriteLive(_engine.LiveBackdrop!);
         _workspace.MarkScreenSettingsApplied();
         _workspace.ScreenCount = o.ScreenCount;
         _workspace.PrimaryScreenIndex = Math.Clamp(o.PrimaryScreen, 0, WorkspaceLayout.MaxScreens);
@@ -593,6 +609,7 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         _tracking.DeadZoneDegrees = o.AutoCenter.DeadZoneDegrees;
         _tracking.SmoothingSeconds = o.AutoCenter.SmoothingSeconds;
         _tracking.MaxFollowSpeed = o.AutoCenter.MaxFollowSpeedDegrees;
+        _workspace.MarkScreenSettingsApplied();
     }
 
     private void ScheduleAutoSave()
