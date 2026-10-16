@@ -22,7 +22,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     public IReadOnlyList<string> KindNames { get; } =
     [
         "Glasses anchor — most stable. Glasses menu: Anchor mode + UltraWide 32:9, 16:18 or 21:9. 1–3 screens, or up to 6 in a grid.",
-        "App head tracking — curved screens, up to 6. Glasses menu: Follow mode, UltraWide Off, Stabilizer off.",
+        "App head tracking — curved screens, up to 6. Glasses menu: Follow mode, UltraWide 32:9 (3840×1080), Stabilizer off.",
     ];
 
     [ObservableProperty]
@@ -807,8 +807,8 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     /// <summary>Pixel size of each head-tracked screen, in screen order. Empty in glasses anchor.</summary>
     public IReadOnlyList<Resolution> HeadResolutions { get; private set; } = [];
 
-    /// <summary>Native glasses picture head tracking fills. UltraWide Off, 1920×1200.</summary>
-    public static Resolution HeadPicture { get; } = new(1920, 1200);
+    /// <summary>Full glasses width head tracking fills. UltraWide 32:9, 3840×1080.</summary>
+    public static Resolution HeadPicture { get; } = new(3840, 1080);
 
     public string HeadPixelSize(int screenId)
     {
@@ -913,7 +913,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
             Resolution size = HeadResolutions[0];
             int widthPercent = (int)Math.Round(AnchorSplit.NormalizeWidthScale(AnchorWidth) * 100);
             int heightPercent = (int)Math.Round(AnchorSplit.NormalizeHeightScale(AnchorHeight) * 100);
-            Summary = $"{count} × {size.Width}×{size.Height} · {arrangement} · {widthPercent}% of the glasses width, {heightPercent}% of the height";
+            Summary = $"{count} × {size.Width}×{size.Height} on {HeadPicture.Width}×{HeadPicture.Height} · {arrangement} · {widthPercent}% of the width, {heightPercent}% of the height";
         }
         else
         {

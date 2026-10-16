@@ -48,7 +48,7 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         TextWrapping="Wrap"
                         Visibility="{x:Bind Workspace.IsAppTracking, Mode=OneWay}"
-                        Text="Full picture uses the whole width and height of each screen's share of the glasses. The other shapes fit inside that share. Six screens in a grid are two rows of three, and they stay inside the picture." />
+                        Text="Full picture uses each screen's share of the 3840×1080 glasses image, so 100% width reaches the real left and right edges. The other shapes fit inside that share. Six screens in a grid are two rows of three." />
 
                     <StackPanel Spacing="12" Visibility="{x:Bind Workspace.IsGlassesAnchor, Mode=OneWay}">
                         <controls:AnchorPreview x:Name="AnchorLayoutPreview" Height="200" />
@@ -119,7 +119,7 @@
                             Margin="0,-8,0,0"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap"
-                            Text="100% width and 100% height fill the glasses picture. Head tracking shares that picture across the screens, so six of them stay in view. Lower the width or the height to leave space. Space around the screens adds a border on every side. Apply to use a new size." />
+                            Text="100% width and 100% height fill the glasses picture. Head tracking uses the full 3840×1080 width, shared across the screens, so six of them stay in view and reach the real side edges. Lower the width or the height to leave space. Space around the screens adds a border on every side. Apply to use a new size." />
                     </StackPanel>
                     <RadioButtons
                         Header="Screen shape (screens fill the space and keep this aspect ratio)"

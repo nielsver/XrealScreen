@@ -18,7 +18,7 @@ internal static class RenderCommands
         var source = new Option<TrackingSource>("--source") { Description = "Head tracking: Glasses | Simulated | Fixed (no tracking, diagnostic).", DefaultValueFactory = _ => TrackingSource.Glasses };
         var seconds = new Option<double>("--seconds") { Description = "Stop after this long (Ctrl+Alt+Q stops earlier).", DefaultValueFactory = _ => 120 };
         var follow = new Option<bool>("--follow") { Description = "Auto center: follow the head beyond a 20° dead-zone." };
-        var hz = new Option<int>("--hz") { Description = "Glasses refresh to request (UltraWide Off offers 60/90/120).", DefaultValueFactory = _ => 120 };
+        var hz = new Option<int>("--hz") { Description = "Glasses refresh to request. 3840×1080 is 60 Hz. UltraWide Off offers 60/90/120.", DefaultValueFactory = _ => 120 };
         var predict = new Option<double>("--predict-ms") { Description = "Pose prediction ahead of the late latch.", DefaultValueFactory = _ => 20 };
         var lead = new Option<double>("--latch-lead-ms") { Description = "Late latch: read the pose this many ms before the next glasses vblank (0 = right after vblank).", DefaultValueFactory = _ => 0 };
         var beta = new Option<float>("--beta") { Description = "Madgwick tilt-correction gain.", DefaultValueFactory = _ => 0.02f };

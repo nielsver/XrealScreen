@@ -127,6 +127,24 @@ public class WorkspaceTests
     }
 
     [Fact]
+    public void Fit_SixGrid_FillsTheReal3840x1080Edges()
+    {
+        var picture = new Resolution(3840, 1080);
+        var fitted = WorkspaceLayout.FitView(picture, 6, LayoutPreset.Grid, 1, 1, 0, 0, 3f);
+
+        Assert.Equal(6, fitted.Count);
+        Assert.Equal(new PixelRect(0, 0, 1280, 540), fitted[0].Pixels);
+        Assert.Equal(new PixelRect(2560, 0, 1280, 540), fitted[2].Pixels);
+        Assert.Equal(new PixelRect(2560, 540, 1280, 540), fitted[5].Pixels);
+        Assert.Equal(0, fitted.Min(s => s.Pixels.X));
+        Assert.Equal(0, fitted.Min(s => s.Pixels.Y));
+        Assert.Equal(3840, fitted.Max(s => s.Pixels.X + s.Pixels.Width));
+        Assert.Equal(1080, fitted.Max(s => s.Pixels.Y + s.Pixels.Height));
+        Assert.Equal(22.5f, EdgeYaw(fitted[0].Placement, 1), 2);
+        Assert.Equal(-22.5f, EdgeYaw(fitted[2].Placement, -1), 2);
+    }
+
+    [Fact]
     public void Fit_HalfWidth_LeavesSpaceOnBothSides()
     {
         var fitted = WorkspaceLayout.FitView(HeadPicture, 1, LayoutPreset.Arc, 0.5, 1, 0, 0, 1.5f);

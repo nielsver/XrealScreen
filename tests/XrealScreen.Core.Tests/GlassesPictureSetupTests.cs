@@ -30,7 +30,7 @@ public class GlassesPictureSetupTests
     }
 
     [Fact]
-    public void Tracking_PrefersNative1920x1200At120()
+    public void Tracking_PrefersFullWidth3840x1080()
     {
         DisplayMode? chosen = GlassesPictureSetup.Choose(false,
         [
@@ -39,15 +39,27 @@ public class GlassesPictureSetupTests
             Mode(3840, 1080, 60),
         ]);
 
+        Assert.Equal(Mode(3840, 1080, 60), chosen);
+    }
+
+    [Fact]
+    public void Tracking_PrefersNative1920x1200At120_WhenTheWidePictureIsMissing()
+    {
+        DisplayMode? chosen = GlassesPictureSetup.Choose(false,
+        [
+            Mode(1920, 1080, 120),
+            Mode(1920, 1200, 120),
+            Mode(1920, 1200, 60),
+        ]);
+
         Assert.Equal(Mode(1920, 1200, 120), chosen);
     }
 
     [Fact]
-    public void Tracking_Prefers1920x1080At120_AndSkipsUltrawide()
+    public void Tracking_Prefers1920x1080At120_WhenTheWidePictureIsMissing()
     {
         DisplayMode? chosen = GlassesPictureSetup.Choose(false,
         [
-            Mode(3840, 1080, 60),
             Mode(1920, 1200, 60),
             Mode(1920, 1080, 90),
             Mode(1920, 1080, 120),

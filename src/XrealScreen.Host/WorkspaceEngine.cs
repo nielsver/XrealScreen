@@ -376,9 +376,9 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             {
                 var atRate = modes.FirstOrDefault(m => m.Resolution == picture.Resolution && m.RefreshHz == o.GlassesRefreshHz);
                 wanted = atRate != default ? atRate : picture;
-                if (wanted.Resolution is not { Width: 1920, Height: 1200 })
+                if (wanted.Resolution is not { Width: 3840, Height: 1080 })
                 {
-                    Info($"head tracking picture {wanted}. The full glasses picture is 1920×1200 at 120 Hz, which needs UltraWide Off in the glasses menu.");
+                    Info($"head tracking picture {wanted}. The full width is 3840×1080, which needs UltraWide 32:9 in the glasses menu.");
                 }
             }
             else

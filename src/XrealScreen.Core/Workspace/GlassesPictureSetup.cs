@@ -6,20 +6,22 @@ namespace XrealScreen.Core.Workspace;
 public static class GlassesPictureSetup
 {
     /// <summary>
-    /// Glasses anchor wants the 32:9 image (3840×1080 at 60 Hz). Head tracking wants the full
-    /// 1920×1200 picture at 120 Hz, then 1920×1080 at 120 Hz. Returns null when the glasses offer neither.
+    /// Glasses anchor and head tracking both want the full 32:9 width (3840×1080 at 60 Hz).
+    /// A 1920-wide mode stops before the real left and right edges of that picture.
+    /// When 3840×1080 is not offered, head tracking uses 1920×1200 at 120 Hz, then 1920×1080 at 120 Hz.
+    /// Returns null when the glasses offer no usable picture.
     /// </summary>
     public static DisplayMode? Choose(bool glassesAnchor, IReadOnlyList<DisplayMode> modes)
     {
         ArgumentNullException.ThrowIfNull(modes);
+        var wide = modes.Where(m => m.Resolution.Width == 3840 && m.Resolution.Height == 1080).ToList();
+        if (wide.Count > 0)
+        {
+            return wide.OrderBy(m => Math.Abs(m.RefreshHz - 60)).ThenByDescending(m => m.BitsPerPixel).First();
+        }
+
         if (glassesAnchor)
         {
-            var wide = modes.Where(m => m.Resolution.Width == 3840 && m.Resolution.Height == 1080).ToList();
-            if (wide.Count > 0)
-            {
-                return wide.OrderBy(m => Math.Abs(m.RefreshHz - 60)).ThenByDescending(m => m.BitsPerPixel).First();
-            }
-
             var ultra = modes.Where(m => AnchorSplit.IsUltrawideSignal(m.Resolution)).ToList();
             return ultra.Count == 0
                 ? null
