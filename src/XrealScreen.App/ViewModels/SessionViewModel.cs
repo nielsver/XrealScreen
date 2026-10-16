@@ -520,8 +520,8 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
             _openHook.Start();
             StatusTitle = "Workspace running";
             StatusMessage = _workspace.KindIndex == 0
-                ? "Screens are ready. An app you click on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
-                : "Screens are ready. An app you click on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
+                ? "Screens are ready. A new app opened while the pointer is on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Long-press X on the glasses recenters. Ctrl+Alt+Q stops."
+                : "Screens are ready. A new app opened while the pointer is on a virtual screen opens there. Ctrl+Alt+1, 2 or 3 sends the window you are using. Ctrl+Alt+0 finds the cursor. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.";
             Severity = InfoBarSeverity.Success;
         }
         else if (state is WorkspaceState.Stopped or WorkspaceState.Faulted)

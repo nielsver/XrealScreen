@@ -659,6 +659,12 @@ public sealed class WorkspaceEngine : IAsyncDisposable
         {
             MoveWindowsFromGlasses(o, topology, virtuals);
         }
+
+        int rescued = DeskWindows.RescueStrays(topology.GetActiveMonitors(), glassesAreCovered: true);
+        if (rescued > 0)
+        {
+            Info($"brought {rescued} window(s) back onto the desk monitor");
+        }
     }
 
     private void MoveWindowsFromGlasses(WorkspaceOptions o, CcdDisplayTopology topology, List<VirtualDisplay> virtuals)
@@ -737,6 +743,12 @@ public sealed class WorkspaceEngine : IAsyncDisposable
     {
         try
         {
+            int returned = DeskWindows.ReturnVirtualWindowsHome(topology.GetActiveMonitors(), Volatile.Read(ref _virtualBounds));
+            if (returned > 0)
+            {
+                Info($"moved {returned} window(s) off the virtual screens before removing them");
+            }
+
             await provider.RemoveAllOwnedAsync(CancellationToken.None).ConfigureAwait(false);
             await Task.Delay(1000, CancellationToken.None).ConfigureAwait(false);
             var saved = await store.LoadAsync(CancellationToken.None).ConfigureAwait(false);
@@ -749,6 +761,12 @@ public sealed class WorkspaceEngine : IAsyncDisposable
             foreach (var (gdi, original) in desktopRestore)
             {
                 topology.TrySetMode(gdi, original);
+            }
+
+            int rescued = DeskWindows.RescueStrays(topology.GetActiveMonitors(), glassesAreCovered: false);
+            if (rescued > 0)
+            {
+                Info($"brought {rescued} window(s) back onto the desk monitor");
             }
 
             Info($"cleanup: virtual monitors removed, layout restored{(desktopRestore.Count > 0 ? ", desktop refresh restored" : "")}");

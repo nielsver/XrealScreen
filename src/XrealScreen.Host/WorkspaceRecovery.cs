@@ -1,3 +1,4 @@
+using System.Drawing;
 using XrealScreen.Core.Abstractions;
 using XrealScreen.Display;
 using XrealScreen.Display.VirtualDisplayRs;
@@ -24,28 +25,47 @@ public static class WorkspaceRecovery
             leftovers = (await provider.GetAllAsync(cancellationToken).ConfigureAwait(false)).Count(VirtualDisplayRsProvider.IsOwned);
         }
 
-        if (leftovers == 0 && !store.Exists)
-        {
-            return null;
-        }
-
+        bool hadSnapshot = store.Exists;
         if (leftovers > 0)
         {
+            var before = topology.GetActiveMonitors();
+            DeskWindows.ReturnVirtualWindowsHome(before, VirtualBounds(before));
             await provider.RemoveAllOwnedAsync(cancellationToken).ConfigureAwait(false);
             await Task.Delay(1500, cancellationToken).ConfigureAwait(false);
         }
 
-        var layout = await store.LoadAsync(cancellationToken).ConfigureAwait(false);
-        if (layout is not null)
+        DisplayLayout? layout = null;
+        if (hadSnapshot)
         {
-            topology.ApplyLayout(layout);
-            await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-            RestoreRefreshRates(topology, layout);
-            store.Delete();
+            layout = await store.LoadAsync(cancellationToken).ConfigureAwait(false);
+            if (layout is not null)
+            {
+                topology.ApplyLayout(layout);
+                await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                RestoreRefreshRates(topology, layout);
+                store.Delete();
+            }
         }
 
-        return $"Restored your monitors after an unexpected stop ({leftovers} leftover virtual screen(s) removed{(layout is null ? string.Empty : ", layout and refresh rates restored")}).";
+        int rescued = DeskWindows.RescueStrays(topology.GetActiveMonitors(), glassesAreCovered: false);
+        if (leftovers == 0 && !hadSnapshot && rescued == 0)
+        {
+            return null;
+        }
+
+        if (leftovers == 0 && !hadSnapshot)
+        {
+            return $"Brought {rescued} window(s) back onto your monitor.";
+        }
+
+        string broughtBack = rescued > 0 ? $", {rescued} window(s) brought back" : string.Empty;
+        return $"Restored your monitors after an unexpected stop ({leftovers} leftover virtual screen(s) removed{(layout is null ? string.Empty : ", layout and refresh rates restored")}{broughtBack}).";
     }
+
+    private static List<Rectangle> VirtualBounds(IReadOnlyList<DisplayMonitor> monitors) =>
+        monitors.Where(m => m.EdidManufacturer == "CHY")
+            .Select(m => new Rectangle(m.X, m.Y, m.Resolution.Width, m.Resolution.Height))
+            .ToList();
 
     private static void RestoreRefreshRates(CcdDisplayTopology topology, DisplayLayout layout)
     {

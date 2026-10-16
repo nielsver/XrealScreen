@@ -8,21 +8,26 @@ namespace XrealScreen.App;
 
 /// <summary>
 /// While a workspace is running, an app opened from a virtual screen opens on that screen.
-/// The pointer is the signal: a click on a virtual screen leaves the cursor there.
+/// Only windows created after the workspace started are moved. A window already on the desk stays there.
 /// </summary>
 internal sealed unsafe partial class AppOpenHook : IDisposable
 {
     private const uint EventForeground = 0x0003;
+    private const uint EventCreate = 0x8000;
     private const uint EventShow = 0x8002;
     private const uint SkipOwnProcess = 0x0002;
     private const int VkLeftButton = 0x01;
+    private const long WatchFor = 10_000;
 
     private static AppOpenHook? _current;
 
+    private readonly object _gate = new();
     private readonly DispatcherQueue _dispatcher;
     private readonly Func<IReadOnlyList<Rectangle>> _screens;
+    private readonly Dictionary<nint, long> _born = [];
     private readonly HashSet<nint> _pending = [];
     private nint _foreground;
+    private nint _create;
     private nint _show;
 
     public AppOpenHook(DispatcherQueue dispatcher, Func<IReadOnlyList<Rectangle>> screens)
@@ -31,7 +36,7 @@ internal sealed unsafe partial class AppOpenHook : IDisposable
         _screens = screens;
     }
 
-    public unsafe void Start()
+    public void Start()
     {
         if (_foreground != 0)
         {
@@ -40,6 +45,7 @@ internal sealed unsafe partial class AppOpenHook : IDisposable
 
         _current = this;
         _foreground = SetWinEventHook(EventForeground, EventForeground, 0, &OnEvent, 0, 0, SkipOwnProcess);
+        _create = SetWinEventHook(EventCreate, EventCreate, 0, &OnEvent, 0, 0, SkipOwnProcess);
         _show = SetWinEventHook(EventShow, EventShow, 0, &OnEvent, 0, 0, SkipOwnProcess);
     }
 
@@ -50,17 +56,15 @@ internal sealed unsafe partial class AppOpenHook : IDisposable
             _current = null;
         }
 
-        if (_foreground != 0)
+        lock (_gate)
         {
-            UnhookWinEvent(_foreground);
-            _foreground = 0;
+            _born.Clear();
+            _pending.Clear();
         }
 
-        if (_show != 0)
-        {
-            UnhookWinEvent(_show);
-            _show = 0;
-        }
+        Unhook(ref _foreground);
+        Unhook(ref _create);
+        Unhook(ref _show);
     }
 
     public void Dispose() => Stop();
@@ -73,39 +77,111 @@ internal sealed unsafe partial class AppOpenHook : IDisposable
             return;
         }
 
+        if (eventType == EventCreate)
+        {
+            _current?.NoteCreated(hwnd);
+            return;
+        }
+
         _current?.Schedule(hwnd);
+    }
+
+    private void NoteCreated(nint hwnd)
+    {
+        lock (_gate)
+        {
+            _born[hwnd] = Environment.TickCount64;
+        }
     }
 
     private void Schedule(nint hwnd)
     {
-        if (!_pending.Add(hwnd))
+        lock (_gate)
         {
-            return;
+            if (!_born.ContainsKey(hwnd) || !_pending.Add(hwnd))
+            {
+                return;
+            }
         }
 
         var timer = _dispatcher.CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(160);
         timer.IsRepeating = false;
-        timer.Tick += (_, _) =>
-        {
-            _pending.Remove(hwnd);
-            Place(hwnd);
-        };
+        timer.Tick += (_, _) => Place(hwnd);
         timer.Start();
     }
 
     private void Place(nint hwnd)
     {
-        if ((GetAsyncKeyState(VkLeftButton) & 0x8000) != 0 || !GetCursorPos(out POINT point))
+        if (!StillWatching(hwnd))
         {
             return;
         }
 
-        Rectangle? screen = AppOpenPlacement.ScreenAt(new Point(point.X, point.Y), _screens());
-        if (screen is { } target)
+        if ((GetAsyncKeyState(VkLeftButton) & 0x8000) != 0)
         {
-            WindowMover.TryMoveOnto(hwnd, target);
+            return;
         }
+
+        Rectangle? screen = null;
+        if (GetCursorPos(out POINT point))
+        {
+            screen = AppOpenPlacement.ScreenAt(new Point(point.X, point.Y), _screens());
+        }
+
+        if (AppOpenPlacement.ShouldMoveNewWindow(createdAfterStart: true, buttonDown: false, screen))
+        {
+            if (WindowMover.TryPlaceOpened(hwnd, screen!.Value) != WindowOpenMove.NotReady)
+            {
+                Forget(hwnd);
+            }
+
+            return;
+        }
+
+        if (WindowMover.IsSettledAppWindow(hwnd))
+        {
+            Forget(hwnd);
+        }
+    }
+
+    private bool StillWatching(nint hwnd)
+    {
+        lock (_gate)
+        {
+            _pending.Remove(hwnd);
+            if (!_born.TryGetValue(hwnd, out long bornAt))
+            {
+                return false;
+            }
+
+            if (Environment.TickCount64 - bornAt > WatchFor)
+            {
+                _born.Remove(hwnd);
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    private void Forget(nint hwnd)
+    {
+        lock (_gate)
+        {
+            _born.Remove(hwnd);
+        }
+    }
+
+    private static void Unhook(ref nint hook)
+    {
+        if (hook == 0)
+        {
+            return;
+        }
+
+        UnhookWinEvent(hook);
+        hook = 0;
     }
 
     [StructLayout(LayoutKind.Sequential)]

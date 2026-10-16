@@ -226,6 +226,57 @@ public class WorkspaceArrangementTests
         Assert.Equal(new System.Drawing.Rectangle(0, 0, 1600, 1000), AppOpenPlacement.MoveTarget(window, screen));
     }
 
+    [Fact]
+    public void AppOpen_ExistingDeskWindow_StaysOnTheDesk()
+    {
+        var virtualScreen = new System.Drawing.Rectangle(3840, 0, 1920, 1080);
+        Assert.False(AppOpenPlacement.ShouldMoveNewWindow(createdAfterStart: false, buttonDown: false, virtualScreen));
+        Assert.True(AppOpenPlacement.ShouldMoveNewWindow(createdAfterStart: true, buttonDown: false, virtualScreen));
+        Assert.False(AppOpenPlacement.ShouldMoveNewWindow(createdAfterStart: true, buttonDown: true, virtualScreen));
+        Assert.False(AppOpenPlacement.ShouldMoveNewWindow(createdAfterStart: true, buttonDown: false, null));
+    }
+
+    [Fact]
+    public void Rescue_WindowOnTheDesk_Stays_WindowInTheVoid_ParksOnTheDesk()
+    {
+        var desk = new System.Drawing.Rectangle(0, 0, 3840, 2160);
+        var virtualScreen = new System.Drawing.Rectangle(3840, 0, 1280, 1080);
+        System.Drawing.Rectangle[] safe = [desk, virtualScreen];
+
+        Assert.True(AppOpenPlacement.CenterIsInside(new System.Drawing.Rectangle(200, 100, 800, 600), safe));
+        Assert.True(AppOpenPlacement.CenterIsInside(new System.Drawing.Rectangle(4000, 40, 800, 600), safe));
+        Assert.False(AppOpenPlacement.CenterIsInside(new System.Drawing.Rectangle(20000, 100, 800, 600), safe));
+        Assert.False(AppOpenPlacement.CenterIsInside(new System.Drawing.Rectangle(-32000, -32000, 160, 40), safe));
+        Assert.Equal(new System.Drawing.Rectangle(1520, 780, 800, 600), AppOpenPlacement.ParkOnDesk(new System.Drawing.Rectangle(20000, 100, 800, 600), desk));
+        Assert.Equal(new System.Drawing.Rectangle(0, 0, 1920, 1080), AppOpenPlacement.ParkOnDesk(new System.Drawing.Rectangle(9000, 0, 4000, 3000), new System.Drawing.Rectangle(0, 0, 1920, 1080)));
+    }
+
+    [Fact]
+    public void PreferredDesk_RealPrimaryWins_GlassesAndVirtualAreSkipped()
+    {
+        DeskCandidate[] monitors =
+        [
+            new(IsPrimary: false, Skip: false, Area: 1920L * 1200),
+            new(IsPrimary: true, Skip: false, Area: 3840L * 2160),
+            new(IsPrimary: false, Skip: true, Area: 3840L * 1080),
+            new(IsPrimary: false, Skip: true, Area: 1280L * 1080),
+        ];
+        Assert.Equal(1, AppOpenPlacement.PreferredDesk(monitors));
+    }
+
+    [Fact]
+    public void PreferredDesk_WhenThePrimaryIsTheGlasses_UsesTheLargestRealMonitor()
+    {
+        DeskCandidate[] monitors =
+        [
+            new(IsPrimary: false, Skip: false, Area: 1920L * 1200),
+            new(IsPrimary: true, Skip: true, Area: 3840L * 1080),
+            new(IsPrimary: false, Skip: false, Area: 3840L * 2160),
+        ];
+        Assert.Equal(2, AppOpenPlacement.PreferredDesk(monitors));
+        Assert.Equal(-1, AppOpenPlacement.PreferredDesk([new DeskCandidate(true, true, 100)]));
+    }
+
     [Theory]
     [InlineData(100, 50, 400, 300, 3940, 50, 400, 300)] // same offset on the target
     [InlineData(1800, 900, 400, 300, 5360, 780, 400, 300)] // pushed back inside

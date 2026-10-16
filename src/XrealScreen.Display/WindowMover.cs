@@ -59,35 +59,92 @@ public static partial class WindowMover
     /// Moves <paramref name="hwnd"/> onto <paramref name="screen"/> when it opened somewhere else.
     /// A window already on that screen is left alone, including one the user maximized there.
     /// </summary>
-    public static bool TryMoveOnto(nint hwnd, Rectangle screen)
+    public static bool TryMoveOnto(nint hwnd, Rectangle screen) =>
+        TryPlaceOpened(hwnd, screen) == WindowOpenMove.Moved;
+
+    /// <summary>
+    /// Same as <see cref="TryMoveOnto"/>, plus whether the window is ready.
+    /// <see cref="WindowOpenMove.NotReady"/> means it is still opening and should be tried again.
+    /// </summary>
+    public static WindowOpenMove TryPlaceOpened(nint hwnd, Rectangle screen)
     {
         if (hwnd == 0 || !IsAppWindow(hwnd) || !GetWindowRect(hwnd, out var rect))
         {
-            return false;
+            return WindowOpenMove.NotReady;
         }
 
         var window = Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
         if (window.Width < 40 || window.Height < 40)
         {
-            return false;
+            return WindowOpenMove.NotReady;
         }
 
         Rectangle? target = AppOpenPlacement.MoveTarget(window, screen);
         if (target is not { } place)
         {
-            return false;
+            return WindowOpenMove.LeftAlone;
         }
 
         var placement = new WINDOWPLACEMENT { Length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
-        if (!GetWindowPlacement(hwnd, ref placement)
-            || placement.ShowCmd is SW_SHOWMINIMIZED or SW_MINIMIZE or SW_SHOWMINNOACTIVE)
+        if (!GetWindowPlacement(hwnd, ref placement))
         {
-            return false;
+            return WindowOpenMove.NotReady;
+        }
+
+        if (placement.ShowCmd is SW_SHOWMINIMIZED or SW_MINIMIZE or SW_SHOWMINNOACTIVE)
+        {
+            return WindowOpenMove.LeftAlone;
         }
 
         placement.NormalPosition = new RECT(place.Left, place.Top, place.Right, place.Bottom);
         placement.ShowCmd = placement.ShowCmd == SW_SHOWMAXIMIZED ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
-        return SetWindowPlacement(hwnd, ref placement);
+        return SetWindowPlacement(hwnd, ref placement) ? WindowOpenMove.Moved : WindowOpenMove.LeftAlone;
+    }
+
+    /// <summary>
+    /// Parks visible app windows whose center is outside <paramref name="safe"/> onto <paramref name="desk"/>.
+    /// Minimized windows stay minimized, because their rectangle sits far off the desktop.
+    /// </summary>
+    /// <returns>Number of windows moved.</returns>
+    public static int RescueOffScreen(Rectangle desk, IReadOnlyList<Rectangle> safe)
+    {
+        ArgumentNullException.ThrowIfNull(safe);
+        if (desk.Width < 1 || desk.Height < 1)
+        {
+            return 0;
+        }
+
+        int moved = 0;
+        foreach (nint hwnd in TopLevelAppWindows())
+        {
+            if (!GetWindowRect(hwnd, out var rect))
+            {
+                continue;
+            }
+
+            var window = Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
+            if (window.Width < 40 || window.Height < 40 || AppOpenPlacement.CenterIsInside(window, safe))
+            {
+                continue;
+            }
+
+            var placement = new WINDOWPLACEMENT { Length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
+            if (!GetWindowPlacement(hwnd, ref placement)
+                || placement.ShowCmd is SW_SHOWMINIMIZED or SW_MINIMIZE or SW_SHOWMINNOACTIVE)
+            {
+                continue;
+            }
+
+            Rectangle place = AppOpenPlacement.ParkOnDesk(window, desk);
+            placement.NormalPosition = new RECT(place.Left, place.Top, place.Right, place.Bottom);
+            placement.ShowCmd = placement.ShowCmd == SW_SHOWMAXIMIZED ? SW_SHOWMAXIMIZED : SW_SHOWNOACTIVATE;
+            if (SetWindowPlacement(hwnd, ref placement))
+            {
+                moved++;
+            }
+        }
+
+        return moved;
     }
 
     /// <summary>Moves the foreground window onto <paramref name="to"/> (see <see cref="GameDisplay.FitOnto"/>); maximized windows stay maximized.</summary>
@@ -172,6 +229,9 @@ public static partial class WindowMover
         ((List<nint>)GCHandle.FromIntPtr(state).Target!).Add(hwnd);
         return 1;
     }
+
+    /// <summary>True when <paramref name="hwnd"/> is a visible titled app window. False while it is still being created.</summary>
+    public static bool IsSettledAppWindow(nint hwnd) => hwnd != 0 && IsAppWindow(hwnd);
 
     private static readonly string[] ShellClasses = ["Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd"];
 
@@ -293,4 +353,17 @@ public static partial class WindowMover
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
+}
+
+/// <summary>Result of moving a window that was just opened.</summary>
+public enum WindowOpenMove
+{
+    /// <summary>The window has no title or size yet. Try again when it is shown.</summary>
+    NotReady,
+
+    /// <summary>Already on the screen, minimized, or Windows refused the move.</summary>
+    LeftAlone,
+
+    /// <summary>The window was placed on the virtual screen.</summary>
+    Moved,
 }
