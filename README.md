@@ -1,78 +1,107 @@
-# XrealScreen (Screen-XREAL-1S)
+# XrealScreen
 
-![Two virtual screens in the XREAL 1S glasses (Glasses anchor, 32:9) — Visual Studio on the left, a console on the right](images/glasses-workspace.png)
+![Two virtual screens in the glasses — Visual Studio on the left, a console on the right](images/glasses-workspace.png)
 
-*What the glasses show: a Glasses anchor workspace with two virtual screens (captured with the app's Screenshot function, Ctrl+Alt+P). Black areas are see-through in the glasses.*
+*A glasses-anchor workspace. Black areas are see-through in the glasses.*
 
-A Windows 11 app that turns **XREAL 1S** (also One / One Pro) AR glasses into a virtual multi-monitor workspace.
+Turn XREAL One, One Pro, and 1S glasses into a Windows 11 multi-monitor workspace. Up to three pixel-sharp virtual screens held still by the glasses, or head-tracked curved screens. Real Windows monitors, saved workspaces, and your desktop restored when you stop.
 
-## Features
-- **Two workspace types**
-  - **Glasses anchor** (most stable): the glasses hold their own UltraWide image still (OSD Anchor + UltraWide 32:9, 21:9 or 16:18); XrealScreen splits it into 1–3 pixel-exact virtual screens with an adjustable gap and shape.
-  - **App head tracking**: up to 6 curved screens in an arc or grid, head-tracked by the app (stabilizer presets, tracking axes, neck model, auto center with dead-zone, adjustable distance).
-- **Real virtual monitors**: Windows sees extra monitors, so you drag windows onto them as usual. Your monitor layout and refresh rates are always restored when the workspace stops, even after a crash.
-- **Saved workspaces**: save, load, delete, **import and export** your setups. All settings are saved automatically and loaded at start.
-- **Automatic start**: start a chosen workspace when XrealScreen starts and/or **when the glasses are connected**. A Glasses anchor workspace waits (with a message on the Home page and in the tray) until the glasses are in UltraWide mode, then starts by itself.
-- **Primary monitor**: make any virtual screen the Windows primary monitor while the workspace runs; windows left on the glasses display are moved onto the workspace.
-- **Screenshots of the glasses**: Home **Screenshot** button, tray menu or **Ctrl+Alt+P** save exactly what the glasses show to `Pictures\XrealScreen`.
-- **Head look for games** (Games page): steer games like Skyrim with your head. Head movement becomes mouse movement (no driver), as **Look** (1:1 camera) or **Joystick** (turn your head to keep turning). The glasses become the primary monitor while it runs, so games open there; Ctrl+Alt+H on/off, Ctrl+Alt+C recenter, Ctrl+Alt+G moves a windowed game to the glasses.
-- **For developers**: a .NET SDK (`XrealScreen.Sdk`) for head tracking from the glasses, and a local API (JSON-RPC over a named pipe) to control the running app from any language. See [For developers](#for-developers).
-- **Tray and hotkeys**: runs in the tray; Ctrl+Alt+W starts/stops the workspace, Ctrl+Alt+P takes a screenshot; start with Windows; **Exit** quits for real.
-- **Four looks** (Settings → Look, switch any time): **Stage** (default) shows your screens in a dark room at their real angles with every action in one dock; **Lens** has a round Start button and live head readouts; **Instrument** is a light, precise look with a degree-scale field map; **Classic** is the standard Windows look (Fluent, Mica, light/dark). WinUI 3, .NET 10.
+Built for everyday coding: a compiler, an editor, and a browser, each on its own screen, with text that stays readable.
 
-> **Status: preview.** Both workspace types run end to end on the XREAL 1S; the installer (signed MSIX + virtual display driver) is being tested. See [docs/STATUS.md](docs/STATUS.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+## What you get
+
+- **Glasses anchor.** The glasses hold one UltraWide image still (OSD Anchor + UltraWide 32:9, 21:9, or 16:18). XrealScreen splits that image into 1–3 screens at the glasses' own pixels, with an adjustable gap and shape. This is the coding layout.
+- **App head tracking.** Up to six curved screens in an arc or a grid. The app reads the glasses' IMU at about 1000 Hz, fuses it, and draws the panels in 3D. Distance, curvature, stabilizer strength, tracking axes, and recenter are settings. Turn the glasses' own Stabilizer off for this mode, or the picture moves twice.
+- **Real Windows monitors.** You drag windows onto them the same way as a physical display. Stopping the workspace, or `xrs recover` after a crash, puts your previous monitors and refresh rates back.
+- **Saved workspaces.** Save, load, delete, import, and export. Settings reload at start. A workspace can start with the app, with Windows, or when the glasses are plugged in.
+- **Primary screen.** Any virtual screen can be the Windows primary monitor while the workspace runs.
+- **Screenshots.** Home, the tray, or Ctrl+Alt+P saves what the glasses show to `Pictures\XrealScreen`.
+- **Head look for games.** The Games page turns head movement into mouse movement (Look or Joystick). Ctrl+Alt+H toggles it, Ctrl+Alt+C recenters, Ctrl+Alt+G moves the active window to the glasses.
+- **Four looks.** Stage (default), Lens, Instrument, and Classic. Switch them live under Settings.
+- **A developer tool and an API.** `xrs` probes the glasses, lists monitors, captures a desktop, and recovers a crashed session. `XrealScreen.Sdk` reads the head pose. A JSON-RPC pipe controls a running app from any language.
+
+## Checked on this PC
+
+Windows 11, .NET SDK 10.0.402, 16 October 2026. Details are in [docs/findings/arrealone-pc.md](docs/findings/arrealone-pc.md).
+
+| Check | Result |
+| --- | --- |
+| `dotnet test --solution XrealScreen.slnx -p:Platform=x64` | 169 passed |
+| WinUI app build | Succeeded, 0 warnings |
+| Desktop capture | `xrs capture test` on a 3840×2160 monitor. `--png` writes the first frame. The UI text in that frame is sharp. |
+| Virtual display driver | Version 0.4.0.1 installed. A 1920×1080 virtual monitor was created, then removed. The laptop and the BenQ came back as they were. |
+| Glasses | Not connected during the check. Head tracking in the glasses is still to be confirmed on this machine. |
+
+## Glasses menu
+
+| Workspace | On the glasses |
+| --- | --- |
+| Glasses anchor | **Anchor**, and **UltraWide** 32:9, 21:9, or 16:18 |
+| App head tracking | **Follow**, UltraWide **off**, Stabilizer **off** |
+
+## How it works
+
+The glasses connect over USB-C. Windows sees a normal monitor for the picture. Head tracking arrives on the glasses' USB network adapter (`169.254.2.1`, IMU on TCP port 52998). No XREAL Eye camera is used.
+
+XrealScreen creates the extra monitors with [virtual-display-rs](https://github.com/MolotovCherry/virtual-display-rs) 0.4, an Indirect Display Driver. It captures them with Windows.Graphics.Capture and draws them with Direct3D 11. Glasses-anchor mode places the screens into the glasses' anchored UltraWide image. App head tracking draws curved panels from the fused pose.
+
+The driver package in this tree is signed with a test certificate created on the build machine. Installing it trusts that certificate in the machine Root and TrustedPublisher stores. Windows test-signing mode is not required and is not turned on. The private key is not in git.
+
+Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Current milestone notes: [docs/STATUS.md](docs/STATUS.md).
+
+## Build and run
+
+Requirements: Windows 11, .NET SDK 10.0.401 or newer, Windows SDK 10.0.26100.
+
+```powershell
+dotnet build XrealScreen.slnx -p:Platform=x64
+dotnet test --solution XrealScreen.slnx -p:Platform=x64
+dotnet run --project src/XrealScreen.App -p:Platform=x64
+```
+
+The app is an MSIX package. Run it with `dotnet run`, from Visual Studio with the **XrealScreen.App (Package)** profile, or from the Start menu after install. Starting the bare `.exe` fails. Do not rebuild the app project while a workspace is running. If Windows closes the app, `xrs recover` restores the monitors.
+
+The virtual display driver is built with `installer\driver\Build-Driver.ps1` (Rust, WDK 10.0.26100, LLVM 18) and installed with `installer\Install-Driver.ps1`. See [installer/README.md](installer/README.md).
+
+## `xrs`
+
+```powershell
+dotnet run --project tools/XrealScreen.Cli -p:Platform=x64 -- probe
+dotnet run --project tools/XrealScreen.Cli -p:Platform=x64 -- display list
+dotnet run --project tools/XrealScreen.Cli -p:Platform=x64 -- capture test \\.\DISPLAY2 --png $env:TEMP\desktop.png
+dotnet run --project tools/XrealScreen.Cli -p:Platform=x64 -- vdd state
+dotnet run --project tools/XrealScreen.Cli -p:Platform=x64 -- recover
+```
+
+`capture test --png` saves the first Windows.Graphics.Capture frame. That is how the 3840×2160 desktop check was made. Frames are not written unless you pass `--png` or use the screenshot command.
 
 ## Screenshots
-**Looks** (the Home page in each look; pick one under Settings → Look)
+
+**Looks.** Pick one under Settings.
 
 | Stage (default) | Lens | Instrument |
-|-----------------|------|------------|
-| ![Stage look: the screens in a dark room at their real angles, with a dock for Start, Recenter, workspace type and number of screens](images/look-stage.png) | ![Lens look: round Start button, live yaw/pitch/roll readouts, layout and saved workspaces](images/look-lens.png) | ![Instrument look: status strip, field map on a degree scale, Start panel and presets table](images/look-instrument.png) |
+| --- | --- | --- |
+| ![Stage look: screens in a dark room, with a dock for Start, Recenter, workspace type and number of screens](images/look-stage.png) | ![Lens look: round Start button and live yaw, pitch, and roll](images/look-lens.png) | ![Instrument look: degree-scale field map and presets](images/look-instrument.png) |
 
-The pages below are shown in the **Classic** look.
+The pages below use the Classic look.
 
 | Home | Screens |
-|------|---------|
-| ![Home page: start/stop, saved workspaces, layout preview](images/home.png) | ![Screens page: workspace type, screen split preview, primary monitor](images/screens.png) |
+| --- | --- |
+| ![Home page: start, stop, saved workspaces, layout preview](images/home.png) | ![Screens page: workspace type, split preview, primary monitor](images/screens.png) |
 
 | Tracking | Settings |
-|----------|----------|
+| --- | --- |
 | ![Tracking page: axes, stabilizer, neck model, auto center](images/tracking.png) | ![Settings page: automatic start, tray, theme](images/settings.png) |
 
 **Games**
 
-<img src="images/games.png" width="49%" alt="Games page: head look for games — start/stop, glasses as primary monitor, Look or Joystick mode, sensitivity">
+<img src="images/games.png" width="49%" alt="Games page: head look, Look or Joystick mode, sensitivity">
 
-## Setting up the glasses
-| Workspace type | Glasses menu |
-|----------------|--------------|
-| Glasses anchor | **Anchor** mode + **UltraWide 32:9, 21:9 or 16:18** |
-| App head tracking | **Follow** mode, UltraWide **Off**, Stabilizer **off** |
+## Developers
 
-Details: [docs/findings/xreal-1s-hardware.md](docs/findings/xreal-1s-hardware.md).
-
-## How it works
-The glasses connect over USB-C: video arrives as a normal Windows monitor, and head-tracking (IMU) data arrives over a USB network adapter. XrealScreen creates virtual monitors with an open-source Indirect Display Driver ([virtual-display-rs](https://github.com/MolotovCherry/virtual-display-rs)), captures them with Windows.Graphics.Capture and draws them on the glasses with Direct3D 11 — either split pixel-exact into the glasses' anchored UltraWide image, or head-tracked in 3D from the fused IMU pose. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-The official XREAL SDK is Unity/Android-only, so it is not used at runtime ([docs/findings/xreal-sdk.md](docs/findings/xreal-sdk.md)).
-
-## Install
-See [installer/README.md](installer/README.md) (`installer\Build-Package.ps1` builds a signed self-contained MSIX with the driver and install scripts).
-
-## Build
-Requirements: Windows 11, .NET SDK 10.0.401+, Windows SDK 10.0.26100.
-```powershell
-dotnet build XrealScreen.slnx -p:Platform=x64
-dotnet test --solution XrealScreen.slnx
-dotnet build src/XrealScreen.App -p:Platform=x64
-dotnet run --project src/XrealScreen.App -p:Platform=x64
-```
-The app is packaged (MSIX): run it from Visual Studio with the **XrealScreen.App (Package)** profile, `dotnet run`, or the Start menu — starting the .exe directly fails. Don't build the app project while it runs a workspace (Windows closes the app; `xrs recover` restores the monitors).
-
-## For developers
-- **[.NET SDK](docs/sdk/dotnet-sdk.md)** (`XrealScreen.Sdk`): read the head pose straight from the glasses (~1000 Hz, auto-reconnect), head-to-mouse for games, glasses monitor helpers. The XrealScreen app is not needed.
-- **[Local API](docs/sdk/local-api.md)**: control the running app from any language with JSON-RPC 2.0 over `\\.\pipe\XrealScreen.Api`. You get the pose stream, workspaces, head look and screenshots. There is a .NET client (`XrealScreen.Sdk.Client`) plus Python and PowerShell samples.
-- Overview, packages and quick start: [docs/sdk/README.md](docs/sdk/README.md). Samples are in [`samples/`](samples/). Build the NuGet packages with `.\tools\Pack-Sdk.ps1`.
+- [.NET SDK](docs/sdk/dotnet-sdk.md) (`XrealScreen.Sdk`): pose stream at about 1000 Hz, reconnect, head-to-mouse. The app does not have to be running.
+- [Local API](docs/sdk/local-api.md): JSON-RPC 2.0 on `\\.\pipe\XrealScreen.Api`.
+- Samples live in [`samples/`](samples/). Pack the NuGet packages with `.\tools\Pack-Sdk.ps1`.
 
 ```csharp
 var glasses = new XrealGlasses();
@@ -80,18 +109,6 @@ await foreach (var pose in glasses.ReadPosesAsync(ct))
     Console.WriteLine($"yaw {pose.Yaw:F1}  pitch {pose.Pitch:F1}");
 ```
 
-## Developer tool (`xrs`)
-```powershell
-dotnet run --project tools/XrealScreen.Cli -- --help
-dotnet run --project tools/XrealScreen.Cli -- probe            # glasses connection and IMU stream
-dotnet run --project tools/XrealScreen.Cli -- display list     # monitors, glasses and virtual screens
-dotnet run --project tools/XrealScreen.Cli -- capture glasses  # screenshot of the glasses
-dotnet run --project tools/XrealScreen.Cli -- recover          # clean up after a crashed session
-```
-Hardware test steps: [docs/testing/hardware-test-M1.md](docs/testing/hardware-test-M1.md).
-
-## Contributing / AI agents
-Start with [CLAUDE.md](CLAUDE.md) or [AGENTS.md](AGENTS.md).
-
 ## License
-MIT — see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Not affiliated with or endorsed by XREAL.
+
+MIT. See [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Not affiliated with or endorsed by XREAL.
