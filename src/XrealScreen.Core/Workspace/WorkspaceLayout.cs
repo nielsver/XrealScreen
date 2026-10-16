@@ -35,7 +35,18 @@ public sealed record WorkspaceSettings
 public static class WorkspaceLayout
 {
     public const int MaxScreens = 6;
-    private const int GridColumns = 3;
+
+    /// <summary>Screens per row in <see cref="LayoutPreset.Grid"/>. A short last row is centered.</summary>
+    public const int GridColumns = 3;
+
+    /// <summary>
+    /// Crossing from three or fewer screens to four or more selects the grid, so the extra screens
+    /// sit in a second row instead of wrapping behind the user. An arc chosen after that is kept.
+    /// </summary>
+    public static LayoutPreset PresetForCount(int previousCount, int count, LayoutPreset current) =>
+        count > GridColumns && previousCount <= GridColumns && current == LayoutPreset.Arc
+            ? LayoutPreset.Grid
+            : current;
 
     /// <summary>Computes placements so the whole workspace is centered on yaw 0 / pitch 0.</summary>
     public static IReadOnlyList<ScreenPlacement> Compute(IReadOnlyList<ScreenSpec> screens, WorkspaceSettings settings)

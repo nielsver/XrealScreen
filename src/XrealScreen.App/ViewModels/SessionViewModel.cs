@@ -643,14 +643,14 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
         _workspace.SetGradientHex(o.AnchorGradientLeft, o.AnchorGradientRight);
         _workspace.ApplyScreenColors(o.AnchorScreenColors);
         _workspace.ApplyGlasses(o.GlassesBrightness, o.GlassesDimmer);
+        _workspace.ScreenCount = o.ScreenCount;
+        _workspace.PresetIndex = o.Preset == LayoutPreset.Grid ? 1 : 0;
         _workspace.EndSettingsLoad();
         _workspace.WriteLive(_engine.LiveBackdrop!);
         _workspace.MarkScreenSettingsApplied();
-        _workspace.ScreenCount = o.ScreenCount;
         _workspace.PrimaryScreenIndex = Math.Clamp(o.PrimaryScreen, 0, WorkspaceLayout.MaxScreens);
         _workspace.MoveWindowsFromGlasses = o.MoveWindowsFromGlasses;
         _workspace.UltrawideModeIndex = Math.Max(0, UltrawideModes.All.ToList().IndexOf(o.Mode));
-        _workspace.PresetIndex = o.Preset == LayoutPreset.Grid ? 1 : 0;
         _workspace.DistanceMeters = o.DistanceMeters;
         _tracking.SourceIndex = o.Source switch { TrackingSource.Simulated => 0, TrackingSource.Fixed => 2, _ => 1 };
         _tracking.StabilizerIndex = o.Stabilizer switch { "off" => 0, "balanced" => 1, "ultra" => 3, _ => 2 };

@@ -93,6 +93,102 @@ public class WorkspaceArrangementTests
         Assert.Equal(1920, P("glasses").X);
     }
 
+    [Fact]
+    public void Grid_SixScreens_TwoRowsOfThree_GlassesToTheRight()
+    {
+        var monitors = new List<DisplayMonitor> { M("D1", "desk", 0, 1920, primary: true), M("G", "glasses", 1920, 1920) };
+        for (int i = 1; i <= 6; i++)
+        {
+            monitors.Add(M($"V{i}", $"v{i}", 4000 + i * 1920, 1920));
+        }
+
+        var layout = WorkspaceArrangement.Arrange(monitors, ["V1", "V2", "V3", "V4", "V5", "V6"], "G", gridColumns: 3);
+        MonitorPlacement P(string path) => layout.Monitors.Single(m => m.DevicePath == path);
+
+        Assert.Equal(0, P("desk").X);
+        Assert.Equal((1920, 0), (P("v1").X, P("v1").Y));
+        Assert.Equal((3840, 0), (P("v2").X, P("v2").Y));
+        Assert.Equal((5760, 0), (P("v3").X, P("v3").Y));
+        Assert.Equal((1920, 1080), (P("v4").X, P("v4").Y));
+        Assert.Equal((3840, 1080), (P("v5").X, P("v5").Y));
+        Assert.Equal((5760, 1080), (P("v6").X, P("v6").Y));
+        Assert.Equal((7680, 0), (P("glasses").X, P("glasses").Y));
+        AssertNoOverlap(layout);
+    }
+
+    [Fact]
+    public void Grid_FiveScreens_ShortRowIsCentered()
+    {
+        var monitors = new List<DisplayMonitor> { M("D1", "desk", 0, 1920, primary: true), M("G", "glasses", 1920, 1920) };
+        for (int i = 1; i <= 5; i++)
+        {
+            monitors.Add(M($"V{i}", $"v{i}", 8000, 1920));
+        }
+
+        var layout = WorkspaceArrangement.Arrange(monitors, ["V1", "V2", "V3", "V4", "V5"], "G", gridColumns: 3);
+        MonitorPlacement P(string path) => layout.Monitors.Single(m => m.DevicePath == path);
+
+        Assert.Equal(1920, P("v1").X);
+        Assert.Equal(2880, P("v4").X); // centered under the top row
+        Assert.Equal(4800, P("v5").X);
+        Assert.Equal(1080, P("v4").Y);
+        Assert.Equal(7680, P("glasses").X);
+        AssertNoOverlap(layout);
+    }
+
+    [Fact]
+    public void Grid_SixScreens_GlassesPrimary_SitsLeftOfTheDesk()
+    {
+        var monitors = new List<DisplayMonitor>
+        {
+            M("D1", "desk", -1920, 1920),
+            M("G", "glasses", 0, 1920, primary: true),
+        };
+        for (int i = 1; i <= 6; i++)
+        {
+            monitors.Add(M($"V{i}", $"v{i}", 2000, 1920));
+        }
+
+        var layout = WorkspaceArrangement.Arrange(monitors, ["V1", "V2", "V3", "V4", "V5", "V6"], "G", gridColumns: 3);
+        MonitorPlacement P(string path) => layout.Monitors.Single(m => m.DevicePath == path);
+
+        Assert.Equal(0, P("glasses").X);
+        Assert.Equal(-1920, P("desk").X);
+        Assert.Equal(-7680, P("v1").X);
+        Assert.Equal(-7680, P("v4").X);
+        Assert.Equal(1080, P("v4").Y);
+        Assert.Equal(-3840, P("v3").X);
+        AssertNoOverlap(layout);
+    }
+
+    [Fact]
+    public void Arc_SixScreens_StaysOneRow()
+    {
+        var monitors = new List<DisplayMonitor> { M("D1", "desk", 0, 1920, primary: true), M("G", "glasses", 1920, 1920) };
+        for (int i = 1; i <= 6; i++)
+        {
+            monitors.Add(M($"V{i}", $"v{i}", 9000, 1920));
+        }
+
+        var layout = WorkspaceArrangement.Arrange(monitors, ["V1", "V2", "V3", "V4", "V5", "V6"], "G");
+        Assert.All(layout.Monitors, m => Assert.Equal(0, m.Y));
+        Assert.Equal(1920 + 6 * 1920, layout.Monitors.Single(m => m.DevicePath == "glasses").X);
+    }
+
+    private static void AssertNoOverlap(DisplayLayout layout)
+    {
+        var boxes = layout.Monitors.Select(m => (m.X, m.Y, Right: m.X + m.Width, Bottom: m.Y + m.Height)).ToList();
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            for (int j = i + 1; j < boxes.Count; j++)
+            {
+                bool overlaps = boxes[i].X < boxes[j].Right && boxes[j].X < boxes[i].Right
+                    && boxes[i].Y < boxes[j].Bottom && boxes[j].Y < boxes[i].Bottom;
+                Assert.False(overlaps, $"monitors {i} and {j} overlap");
+            }
+        }
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(5)]

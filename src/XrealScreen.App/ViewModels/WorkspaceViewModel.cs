@@ -762,6 +762,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public UltrawideMode UltrawideMode => UltrawideModes.All[Math.Clamp(UltrawideModeIndex, 0, UltrawideModes.All.Count - 1)];
 
+    /// <summary>Last screen count that was accepted. Used so only the step from 3 to 4 selects the grid.</summary>
+    private int _committedScreenCount;
+
     partial void OnScreenCountChanged(double value)
     {
         if (value > MaxScreenCount)
@@ -770,7 +773,18 @@ public sealed partial class WorkspaceViewModel : ObservableObject
             return;
         }
 
-        Recompute();
+        int count = double.IsNaN(value) ? 1 : (int)Math.Round(value);
+        var preset = WorkspaceLayout.PresetForCount(_committedScreenCount, count, PresetIndex == 1 ? LayoutPreset.Grid : LayoutPreset.Arc);
+        _committedScreenCount = count;
+        if (!_loading && preset == LayoutPreset.Grid && PresetIndex != 1)
+        {
+            PresetIndex = 1; // OnPresetIndexChanged recomputes
+        }
+        else
+        {
+            Recompute();
+        }
+
         OnPropertyChanged(nameof(ScreenCountIndex));
         if (IsGlassesAnchor)
         {
@@ -797,7 +811,11 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
         var res = UltrawideModes.GetResolution(UltrawideMode);
         float left = Placements.Max(p => p.YawDegrees + p.WidthMeters / p.DistanceMeters * 90f / MathF.PI);
-        Summary = $"{count} × {res} ({UltrawideModes.GetDisplayName(UltrawideMode)}) · spans ±{left:F0}° · virtual monitors created in M2";
+        int rows = (count + WorkspaceLayout.GridColumns - 1) / WorkspaceLayout.GridColumns;
+        string arrangement = settings.Preset == LayoutPreset.Grid && count > WorkspaceLayout.GridColumns
+            ? $"grid {WorkspaceLayout.GridColumns} × {rows}"
+            : "one row";
+        Summary = $"{count} × {res} ({UltrawideModes.GetDisplayName(UltrawideMode)}) · {arrangement} · spans ±{left:F0}° · virtual monitors created in M2";
         RebuildPrimaryScreenNames();
         LayoutChanged?.Invoke(this, EventArgs.Empty);
     }

@@ -122,6 +122,11 @@
                         MinWidth="200"
                         ItemsSource="{x:Bind Workspace.PresetNames}"
                         SelectedIndex="{x:Bind Workspace.PresetIndex, Mode=TwoWay}" />
+                    <TextBlock
+                        Margin="0,-8,0,0"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Text="Four or more screens sit in a grid, three across, with the next row below. The desktop monitors follow that grid, so the mouse matches the glasses. Arc keeps every screen in one row." />
 
                     <Slider
                         Header="Viewing distance (m) — also live while running, or Ctrl+Alt+Plus/Minus"

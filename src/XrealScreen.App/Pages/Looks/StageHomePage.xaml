@@ -269,7 +269,8 @@
                         Click="More_Click"
                         Content="+"
                         CornerRadius="10"
-                        IsEnabled="{x:Bind looks:LookFormat.Below(Workspace.ScreenCount, Workspace.MaxScreenCount), Mode=OneWay}" />
+                        IsEnabled="{x:Bind looks:LookFormat.Below(Workspace.ScreenCount, Workspace.MaxScreenCount), Mode=OneWay}"
+                        ToolTipService.ToolTip="Adds a screen. Four or more sit in a grid, three across." />
                 </StackPanel>
 
                 <Button

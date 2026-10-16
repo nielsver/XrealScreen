@@ -714,7 +714,12 @@ public sealed class WorkspaceEngine : IAsyncDisposable
         {
             try
             {
-                topology.ApplyLayout(WorkspaceArrangement.Arrange(topology.GetActiveMonitors(), names, glasses.GdiDeviceName, primaryIndex));
+                int columns = o.Preset == LayoutPreset.Grid ? WorkspaceLayout.GridColumns : 0;
+                topology.ApplyLayout(WorkspaceArrangement.Arrange(topology.GetActiveMonitors(), names, glasses.GdiDeviceName, primaryIndex, columns));
+                if (columns > 1 && names.Count > columns)
+                {
+                    Info($"desktop order: grid, {columns} across");
+                }
                 await Task.Delay(1000, stop).ConfigureAwait(false);
                 return;
             }
