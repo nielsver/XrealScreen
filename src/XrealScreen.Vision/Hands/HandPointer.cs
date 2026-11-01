@@ -15,7 +15,9 @@ public enum PointerAction
 /// <param name="HasPointer">False when no hand is tracked (leave the pointer where it is).</param>
 /// <param name="ScrollNotches">Mouse-wheel notches to send (positive = up), from a thumb + middle-finger pinch moved up/down.</param>
 /// <param name="DwellProgress">0..1 while the pointer is held still towards a dwell click (for a progress ring); 0 otherwise.</param>
-public readonly record struct PointerFrame(bool HasPointer, double U, double V, PointerAction Action, int ScrollNotches, double DwellProgress = 0);
+/// <param name="ClickWait">Seconds until a new click is possible (<see cref="HandPointerOptions.RepeatGuard"/>); 0 = ready.</param>
+/// <param name="DwellNeedsMove">The pointer must move before the next dwell click can start.</param>
+public readonly record struct PointerFrame(bool HasPointer, double U, double V, PointerAction Action, int ScrollNotches, double DwellProgress = 0, double ClickWait = 0, bool DwellNeedsMove = false);
 
 /// <summary>How a click is made.</summary>
 public enum ClickMode
@@ -68,6 +70,12 @@ public sealed record HandPointerOptions
 
     /// <summary>Fraction of the pointer–hand offset removed per frame at <see cref="FullSpeed"/> (less when slower).</summary>
     public double CatchUp { get; init; } = 0.3;
+
+    /// <summary>
+    /// The pointer never lags the hand by more than this (screen units), so slow movements still reach the screen edges
+    /// (E3 test 2026-11-01: the top could not be reached while the hand left the camera view).
+    /// </summary>
+    public double MaxOffset { get; init; } = 0.05;
 
     /// <summary>One Euro smoothing of the pointer (on top of the landmark smoothing), in screen units (0..1).</summary>
     public float MinCutoffHz { get; init; } = 1.0f;
@@ -229,7 +237,8 @@ public sealed class HandPointer
         }
 
         _last = timeSeconds < _frozenUntil ? _frozenAt : (u, v);
-        return new PointerFrame(true, Clamp(_last.U), Clamp(_last.V), action, notches, dwell);
+        double wait = Math.Max(0, _lastUp + _options.RepeatGuard.TotalSeconds - timeSeconds);
+        return new PointerFrame(true, Clamp(_last.U), Clamp(_last.V), action, notches, dwell, wait, Click != ClickMode.Pinch && !_dwellArmed);
     }
 
     /// <summary>Hand position → pointer position with the precision zone (slow = fine control, fast = 1:1 and catch up).</summary>
@@ -250,6 +259,13 @@ public sealed class HandPointer
         double ou = _out.U + gain * du, ov = _out.V + gain * dv;
         ou += pull * (u - ou);
         ov += pull * (v - ov);
+        double offset = Math.Sqrt((u - ou) * (u - ou) + (v - ov) * (v - ov));
+        if (offset > _options.MaxOffset)
+        {
+            double k = 1 - _options.MaxOffset / offset;
+            ou += k * (u - ou);
+            ov += k * (v - ov);
+        }
 
         // clamped like a mouse at the screen edge: moving back responds at once
         _out = (Clamp(ou), Clamp(ov));

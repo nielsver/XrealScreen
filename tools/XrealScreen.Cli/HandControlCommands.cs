@@ -15,6 +15,7 @@ internal static class HandControlCommands
     private const int VkControl = 0x11;
     private const int VkAlt = 0x12;
     private const int VkJ = 0x4A;
+    private const int VkEscape = 0x1B;
 
     /// <summary>Fits worse than this (screen units) are rejected; a good calibration is below ~0.05.</summary>
     private const double MaxCalibrationError = 0.1;
@@ -145,7 +146,7 @@ internal static class HandControlCommands
             frames++;
             found += f.Hand is null ? 0 : 1;
             buttonDown = f.Output.Action switch { PointerAction.ButtonDown => true, PointerAction.ButtonUp => false, _ => buttonDown && f.Hand is not null };
-            window?.SetHandPoint(f.ScreenPoint is { } sp ? new Point(sp.X - area.X, sp.Y - area.Y) : null, f.Output.DwellProgress);
+            window?.SetHandPoint(f.ScreenPoint is { } sp ? new Point(sp.X - area.X, sp.Y - area.Y) : null, f.Output.DwellProgress, f.Output.ClickWait, f.Output.DwellNeedsMove);
             window?.SetHand(f.Camera, f.Hand, f.Hand?.PinchRatio ?? float.NaN, buttonDown, engine.Calibration);
             csv?.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0:F3},{(f.Hand?.TimestampNs ?? 0) / 1e9:F3},{f.State},{(f.Hand is null ? 0 : 1)},{f.Hand?.PinchRatio ?? float.NaN:F3},{f.Hand?.PinchRatio3D ?? float.NaN:F3},{f.Hand?.Presence ?? 0:F2},{f.Output.Action},{f.Output.U:F4},{f.Output.V:F4},{f.ScreenPoint?.X},{f.ScreenPoint?.Y}"));
@@ -186,7 +187,7 @@ internal static class HandControlCommands
             }
         };
 
-        var hotkeys = PollHotkeyAsync(engine, session, cts.Token);
+        var hotkeys = PollHotkeyAsync(engine, session, cts, cts.Token);
         Console.WriteLine("Hand control running. Ctrl+Alt+J pauses/resumes, Ctrl+C (or Esc in the target window) stops.");
         int exit = 0;
         try
@@ -213,11 +214,19 @@ internal static class HandControlCommands
         return exit;
     }
 
-    private static async Task PollHotkeyAsync(HandControlEngine engine, Session session, CancellationToken ct)
+    private static async Task PollHotkeyAsync(HandControlEngine engine, Session session, CancellationTokenSource stop, CancellationToken ct)
     {
         bool wasDown = false;
         while (!ct.IsCancellationRequested)
         {
+            // Esc stops from anywhere: the target window does not always have focus (user, E3 test 2026-11-01)
+            if (MouseInjector.IsKeyDown(VkEscape))
+            {
+                Console.WriteLine("Esc: stopping.");
+                await stop.CancelAsync().ConfigureAwait(false);
+                return;
+            }
+
             bool down = MouseInjector.IsKeyDown(VkControl) && MouseInjector.IsKeyDown(VkAlt) && MouseInjector.IsKeyDown(VkJ);
             if (down && !wasDown && !session.Calibrating)
             {

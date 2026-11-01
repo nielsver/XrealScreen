@@ -20,6 +20,8 @@ internal sealed class HandTargetWindow : IDisposable
     private string _text = "";
     private Point? _handPoint;
     private double _dwell;
+    private double _clickWait;
+    private bool _needsMove;
     private Bitmap? _inset;
     private float _pinch = float.NaN;
     private bool _pressed;
@@ -93,12 +95,14 @@ internal sealed class HandTargetWindow : IDisposable
     }
 
     /// <summary>Where hand control currently points (window pixels), drawn as a ring; null hides it.</summary>
-    public void SetHandPoint(Point? windowPoint, double dwellProgress = 0)
+    public void SetHandPoint(Point? windowPoint, double dwellProgress = 0, double clickWait = 0, bool needsMove = false)
     {
         lock (_gate)
         {
             _handPoint = windowPoint;
             _dwell = dwellProgress;
+            _clickWait = clickWait;
+            _needsMove = needsMove;
         }
 
         Invalidate();
@@ -218,10 +222,12 @@ internal sealed class HandTargetWindow : IDisposable
         Point? hand;
         float pinch;
         bool pressed;
-        double dwell;
+        double dwell, clickWait;
+        bool needsMove;
         lock (_gate)
         {
             (target, radius, color, text, hand, pinch, pressed, dwell) = (_target, _radius, _targetColor, _text, _handPoint, _pinch, _pressed, _dwell);
+            (clickWait, needsMove) = (_clickWait, _needsMove);
             if (_inset is { } inset)
             {
                 // camera view bottom-right, pinch meter above it
@@ -251,6 +257,14 @@ internal sealed class HandTargetWindow : IDisposable
                 // dwell click progress: the arc fills until the click
                 using var arc = new Pen(Color.LimeGreen, 5);
                 g.DrawArc(arc, h.X - 22, h.Y - 22, 44, 44, -90, (float)(360 * Math.Min(1, dwell)));
+            }
+
+            // why a click cannot happen right now (user, E3 test 2026-11-01: waiting without a countdown was confusing)
+            string? hint = clickWait > 0 ? $"wait {clickWait:F1} s" : needsMove ? "move" : null;
+            if (hint is not null)
+            {
+                using var small = new Font(FontFamily.GenericSansSerif, 14);
+                g.DrawString(hint, small, Brushes.Silver, h.X + 26, h.Y + 10);
             }
         }
     }
