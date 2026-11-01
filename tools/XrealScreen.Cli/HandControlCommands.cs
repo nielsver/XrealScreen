@@ -127,7 +127,7 @@ internal static class HandControlCommands
 
         if (window is not null && targets > 0)
         {
-            window.Clicked += (_, hit) => session.OnClick(hit, cts);
+            window.Clicked += (p, hit, distance) => session.OnClick(p, hit, distance, cts);
         }
 
         long lastPrint = 0, frames = 0, found = 0;
@@ -345,7 +345,7 @@ internal static class HandControlCommands
             }
         }
 
-        public void OnClick(bool hit, CancellationTokenSource stop)
+        public void OnClick(Point at, bool hit, double distance, CancellationTokenSource stop)
         {
             if (Calibrating)
             {
@@ -357,14 +357,14 @@ internal static class HandControlCommands
                 if (!hit)
                 {
                     Misses++;
-                    Console.WriteLine($"  miss {Misses}");
+                    Console.WriteLine($"  miss {Misses}: {distance:F0} px from the target centre (at {at.X},{at.Y}, {_targetClock.Elapsed.TotalSeconds:F1} s)");
                     Window?.SetText(Status());
                     return;
                 }
 
                 Hits++;
                 _times.Add(_targetClock.Elapsed.TotalSeconds);
-                Console.WriteLine($"  hit {Hits}/{targets} after {_times[^1]:F1} s");
+                Console.WriteLine($"  hit {Hits}/{targets} after {_times[^1]:F1} s ({distance:F0} px from the centre)");
             }
 
             if (Hits >= targets)

@@ -28,8 +28,8 @@ internal sealed class HandTargetWindow : IDisposable
 
     private HandTargetWindow(Form form) => _form = form;
 
-    /// <summary>Clicks on the window (in window pixels) and whether they hit the current target.</summary>
-    public event Action<Point, bool>? Clicked;
+    /// <summary>Clicks on the window (in window pixels), whether they hit the current target and the distance to its centre.</summary>
+    public event Action<Point, bool, double>? Clicked;
 
     public static HandTargetWindow Open(Rectangle bounds, Action onClosed)
     {
@@ -204,13 +204,14 @@ internal sealed class HandTargetWindow : IDisposable
 
     private void OnMouseDown(MouseEventArgs e)
     {
-        bool hit;
+        double distance;
         lock (_gate)
         {
-            hit = _target is { } t && (e.X - t.X) * (e.X - t.X) + (e.Y - t.Y) * (e.Y - t.Y) <= _radius * _radius;
+            distance = _target is { } t ? Math.Sqrt((e.X - t.X) * (e.X - t.X) + (e.Y - t.Y) * (e.Y - t.Y)) : double.NaN;
+            distance = Math.Round(distance, 1);
         }
 
-        Clicked?.Invoke(e.Location, hit);
+        Clicked?.Invoke(e.Location, distance <= _radius, distance);
     }
 
     private void Paint(Graphics g)
