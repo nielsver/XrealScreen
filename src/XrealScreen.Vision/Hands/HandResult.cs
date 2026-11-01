@@ -29,9 +29,26 @@ public sealed record HandResult(HandPoint[] Landmarks, float Presence, float Han
     /// <summary>Thumb tip ↔ index tip distance divided by <see cref="Scale"/>: about 0.1–0.2 pinched, about 1 open.</summary>
     public float PinchRatio => Scale > 0 ? Distance(Landmarks[HandJoint.ThumbTip], Landmarks[HandJoint.IndexTip]) / Scale : float.NaN;
 
+    /// <summary>
+    /// Like <see cref="PinchRatio"/> but with the model's relative depth included in both distances, so turning the
+    /// hand towards or away from the camera changes it less (E3 test 2026-11-01: pinches with the hand held up to
+    /// point were often not seen in 2D).
+    /// </summary>
+    public float PinchRatio3D
+    {
+        get
+        {
+            float scale = Distance3D(Landmarks[HandJoint.Wrist], Landmarks[HandJoint.MiddleBase]);
+            return scale > 0 ? Distance3D(Landmarks[HandJoint.ThumbTip], Landmarks[HandJoint.IndexTip]) / scale : float.NaN;
+        }
+    }
+
     /// <summary>Midpoint of thumb and index tips: the point that moves the pointer.</summary>
     public (float X, float Y) PinchPoint =>
         ((Landmarks[HandJoint.ThumbTip].X + Landmarks[HandJoint.IndexTip].X) / 2, (Landmarks[HandJoint.ThumbTip].Y + Landmarks[HandJoint.IndexTip].Y) / 2);
 
     private static float Distance(HandPoint a, HandPoint b) => MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+
+    private static float Distance3D(HandPoint a, HandPoint b) =>
+        MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y) + (a.Z - b.Z) * (a.Z - b.Z));
 }

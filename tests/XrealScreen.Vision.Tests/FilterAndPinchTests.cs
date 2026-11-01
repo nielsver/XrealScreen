@@ -83,6 +83,17 @@ public class FilterAndPinchTests
     }
 
     [Fact]
+    public void Pinch_SmallOpeningAboveTheClosedLevel_Releases()
+    {
+        // pointing pose (E3 test 2026-11-01): closed ~0.08, "open" only ~0.3, never above 0.45
+        var p = new PinchDetector();
+        float[] ratios = [0.3f, 0.08f, 0.06f, 0.1f, 0.3f, 0.32f, 0.31f, 0.3f, 0.12f, 0.3f];
+        var events = ratios.Select((r, i) => p.Update(r, i * Frame)).Where(e => e != PinchEvent.None).ToList();
+
+        Assert.Equal([PinchEvent.Pressed, PinchEvent.Released, PinchEvent.Pressed], events);
+    }
+
+    [Fact]
     public void Pinch_MinHold_NeedsTheRatioClosedLongEnough()
     {
         var p = new PinchDetector { MinHold = TimeSpan.FromMilliseconds(100) };

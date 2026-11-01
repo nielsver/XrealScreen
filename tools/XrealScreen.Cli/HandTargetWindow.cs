@@ -1,5 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
+using XrealScreen.Device.XrealOne;
+using XrealScreen.Vision.Hands;
 
 namespace XrealScreen.Cli;
 
@@ -17,6 +19,9 @@ internal sealed class HandTargetWindow : IDisposable
     private Color _targetColor = Color.Orange;
     private string _text = "";
     private Point? _handPoint;
+    private Bitmap? _inset;
+    private float _pinch = float.NaN;
+    private bool _pressed;
 
     private HandTargetWindow(Form form) => _form = form;
 
@@ -97,6 +102,76 @@ internal sealed class HandTargetWindow : IDisposable
         Invalidate();
     }
 
+    /// <summary>
+    /// Camera view in the corner (camera image, hand skeleton, the knuckle that steers the pointer) and the pinch
+    /// meter, so the user sees how the hand is seen (user request, E3 test 2026-11-01). Copies what it needs.
+    /// </summary>
+    public void SetHand(EyeFrame? camera, HandResult? hand, float pinchRatio, bool pressed)
+    {
+        Bitmap? inset = camera is null ? null : DrawInset(camera, hand, pressed);
+        Bitmap? old;
+        lock (_gate)
+        {
+            old = _inset;
+            _inset = inset ?? _inset;
+            _pinch = pinchRatio;
+            _pressed = pressed;
+        }
+
+        if (inset is not null)
+        {
+            old?.Dispose();
+        }
+
+        Invalidate();
+    }
+
+    private const int InsetWidth = 378;
+
+    private static Bitmap DrawInset(EyeFrame frame, HandResult? hand, bool pressed)
+    {
+        float scale = (float)InsetWidth / frame.Width;
+        var bmp = new Bitmap(InsetWidth, (int)(frame.Height * scale), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+        var data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, bmp.PixelFormat);
+        var row = new byte[data.Stride];
+        var pixels = frame.Pixels;
+        for (int y = 0; y < bmp.Height; y++)
+        {
+            int sy = Math.Min(frame.Height - 1, (int)(y / scale));
+            for (int x = 0; x < bmp.Width; x++)
+            {
+                byte v = pixels[sy * frame.Stride + Math.Min(frame.Width - 1, (int)(x / scale))];
+                row[3 * x] = row[3 * x + 1] = row[3 * x + 2] = (byte)(v * 3 / 4);
+            }
+
+            System.Runtime.InteropServices.Marshal.Copy(row, 0, data.Scan0 + y * data.Stride, row.Length);
+        }
+
+        bmp.UnlockBits(data);
+        if (hand is not null)
+        {
+            using var g = Graphics.FromImage(bmp);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using var bone = new Pen(Color.FromArgb(0, 200, 255), 2);
+            foreach (var (a, b) in HandPreviewWindow.Bones)
+            {
+                g.DrawLine(bone, hand.Landmarks[a].X * scale, hand.Landmarks[a].Y * scale, hand.Landmarks[b].X * scale, hand.Landmarks[b].Y * scale);
+            }
+
+            using var tips = new SolidBrush(pressed ? Color.LimeGreen : Color.Orange);
+            foreach (int j in new[] { HandJoint.ThumbTip, HandJoint.IndexTip })
+            {
+                g.FillEllipse(tips, hand.Landmarks[j].X * scale - 5, hand.Landmarks[j].Y * scale - 5, 10, 10);
+            }
+
+            var k = hand.Landmarks[HandJoint.IndexBase];
+            using var knuckle = new Pen(Color.White, 3);
+            g.DrawEllipse(knuckle, k.X * scale - 9, k.Y * scale - 9, 18, 18);
+        }
+
+        return bmp;
+    }
+
     private void Invalidate()
     {
         try
@@ -129,9 +204,19 @@ internal sealed class HandTargetWindow : IDisposable
         Color color;
         string text;
         Point? hand;
+        float pinch;
+        bool pressed;
         lock (_gate)
         {
-            (target, radius, color, text, hand) = (_target, _radius, _targetColor, _text, _handPoint);
+            (target, radius, color, text, hand, pinch, pressed) = (_target, _radius, _targetColor, _text, _handPoint, _pinch, _pressed);
+            if (_inset is { } inset)
+            {
+                // camera view bottom-right, pinch meter above it
+                int x = _form.ClientSize.Width - inset.Width - 20, y = _form.ClientSize.Height - inset.Height - 20;
+                g.DrawImage(inset, x, y);
+                g.DrawRectangle(Pens.Gray, x - 1, y - 1, inset.Width + 1, inset.Height + 1);
+                DrawPinchMeter(g, new Rectangle(x, y - 70, inset.Width, 26), pinch, pressed);
+            }
         }
 
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -151,6 +236,27 @@ internal sealed class HandTargetWindow : IDisposable
         }
     }
 
+    /// <summary>Bar from "fingers together" (left) to "open" (right); the marker is where a pinch counts.</summary>
+    private static void DrawPinchMeter(Graphics g, Rectangle r, float ratio, bool pressed)
+    {
+        const float max = 1.2f;
+        float close = new PinchDetector().CloseRatio;
+        using var font = new Font(FontFamily.GenericSansSerif, 13);
+        g.DrawString(float.IsNaN(ratio) ? "pinch: no hand" : pressed ? "PINCH" : "pinch: bring thumb and index together", font, pressed ? Brushes.LimeGreen : Brushes.White, r.X, r.Y - 26);
+        g.FillRectangle(Brushes.DimGray, r);
+        if (!float.IsNaN(ratio))
+        {
+            int w = (int)(r.Width * Math.Clamp(1 - ratio / max, 0, 1));
+            using var fill = new SolidBrush(pressed ? Color.LimeGreen : Color.Orange);
+            g.FillRectangle(fill, r.X, r.Y, w, r.Height);
+        }
+
+        // fill grows to the right as the fingers close; the white marker is the "pinch counts" point
+        int mx = r.X + (int)(r.Width * (1 - close / max));
+        using var marker = new Pen(Color.White, 3);
+        g.DrawLine(marker, mx, r.Y - 4, mx, r.Bottom + 4);
+    }
+
     public void Dispose()
     {
         try
@@ -162,6 +268,12 @@ internal sealed class HandTargetWindow : IDisposable
         }
         catch (InvalidOperationException)
         {
+        }
+
+        lock (_gate)
+        {
+            _inset?.Dispose();
+            _inset = null;
         }
     }
 

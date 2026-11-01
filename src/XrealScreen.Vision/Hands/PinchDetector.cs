@@ -19,6 +19,7 @@ public sealed class PinchDetector
     private bool _openingSeen;
     private double _openingSince;
     private double _lastHandSeconds;
+    private float _closedMin;
 
     // Live test 2026-10-31 (1S + Eye, 15 fps): pinched 0.06–0.12, relaxed open hand 0.4–0.55, lowest idle value 0.29.
     // 0.25 / 0.45 found 11 of 11 pinches with 0 false clicks in an idle minute; 0.35 / 0.6 missed one and false-clicked once.
@@ -34,6 +35,12 @@ public sealed class PinchDetector
     /// frames (live test 2026-10-31: press–release–press within 0.1–0.3 s), so one open frame must not release.
     /// </summary>
     public TimeSpan MinRelease { get; init; } = TimeSpan.FromMilliseconds(150);
+
+    /// <summary>
+    /// Also release when the ratio rose this much above its lowest value since the press (held for <see cref="MinRelease"/>),
+    /// so small openings between clicks count when the hand pose keeps the ratio low (E3 test 2026-11-01).
+    /// </summary>
+    public float ReleaseRise { get; init; } = 0.2f;
 
     public TimeSpan LostRelease { get; init; } = TimeSpan.FromMilliseconds(300);
 
@@ -57,7 +64,8 @@ public sealed class PinchDetector
         _lastHandSeconds = timeSeconds;
         if (IsPressed)
         {
-            if (ratio > OpenRatio)
+            _closedMin = Math.Min(_closedMin, ratio);
+            if (ratio > Math.Min(OpenRatio, _closedMin + ReleaseRise))
             {
                 if (!_openingSeen)
                 {
@@ -91,6 +99,7 @@ public sealed class PinchDetector
             if (timeSeconds - _closingSince >= MinHold.TotalSeconds)
             {
                 IsPressed = true;
+                _closedMin = ratio;
                 _closingSeen = false;
                 return PinchEvent.Pressed;
             }
