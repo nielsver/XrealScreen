@@ -12,18 +12,20 @@ internal static class HandsCommands
 {
     public static Command Create()
     {
-        var hands = new Command("hands", "Hand tracking on the XREAL Eye grayscale feed: eval <file.xrcam> | live.");
+        var hands = new Command("hands", "Hand tracking on the XREAL Eye grayscale feed: eval <file.xrcam> | live | control | targets.");
         hands.Subcommands.Add(CreateEval());
         hands.Subcommands.Add(CreateLive());
+        hands.Subcommands.Add(HandControlCommands.CreateControl());
+        hands.Subcommands.Add(HandControlCommands.CreateTargets());
         return hands;
     }
 
-    private static Option<string> ModelsOption() => new("--models")
+    internal static Option<string> ModelsOption() => new("--models")
     {
         Description = "Folder with palm.onnx + landmarks.onnx (default: XREALSCREEN_HAND_MODELS or artifacts\\models\\hands).",
     };
 
-    private static string? ResolveModels(string? option)
+    internal static string? ResolveModels(string? option)
     {
         foreach (var candidate in new[] { option, Environment.GetEnvironmentVariable("XREALSCREEN_HAND_MODELS") })
         {

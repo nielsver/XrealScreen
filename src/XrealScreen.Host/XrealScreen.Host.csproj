@@ -10,6 +10,7 @@
     <ProjectReference Include="..\XrealScreen.Device.Simulated\XrealScreen.Device.Simulated.csproj" />
     <ProjectReference Include="..\XrealScreen.Display\XrealScreen.Display.csproj" />
     <ProjectReference Include="..\XrealScreen.Render\XrealScreen.Render.csproj" />
+    <ProjectReference Include="..\XrealScreen.Vision\XrealScreen.Vision.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="XrealScreen.Host.Tests" />

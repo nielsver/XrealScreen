@@ -11,6 +11,7 @@ public static class HandJoint
     public const int IndexBase = 5;
     public const int IndexTip = 8;
     public const int MiddleBase = 9;
+    public const int MiddleTip = 12;
     public const int Count = 21;
 }
 
