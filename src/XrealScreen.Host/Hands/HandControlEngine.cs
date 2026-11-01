@@ -21,6 +21,9 @@ public enum HandControlState
 
     /// <summary>Tracking runs but nothing is sent (calibration, preview).</summary>
     OutputOff,
+
+    /// <summary>The camera stream failed (glasses asleep, network not ready); retrying after <see cref="HandControlOptions.RetryDelay"/>.</summary>
+    Reconnecting,
 }
 
 /// <summary>One processed camera frame, for status displays, previews and calibration.</summary>
@@ -42,11 +45,15 @@ public sealed record HandControlOptions
     public TimeSpan PauseAfterRealInput { get; init; } = TimeSpan.FromSeconds(2);
 
     public HandPointerOptions PointerOptions { get; init; } = new();
+
+    /// <summary>Wait between camera reconnects (E3 test 2026-11-01: the first connect can time out while the glasses wake).</summary>
+    public TimeSpan RetryDelay { get; init; } = TimeSpan.FromSeconds(1);
 }
 
 /// <summary>
 /// Hand control (ADR-0016, M9 E3): Eye camera → <see cref="HandTracker"/> → <see cref="HandPointer"/> → pointer input.
 /// The camera socket is open only while <see cref="RunAsync"/> runs; stop it to turn hand control off.
+/// A failed camera stream is reopened until <see cref="RunAsync"/> is cancelled.
 /// </summary>
 public sealed class HandControlEngine(HandControlOptions options, IPointerOutput? output = null)
 {
@@ -71,22 +78,39 @@ public sealed class HandControlEngine(HandControlOptions options, IPointerOutput
         FrameProcessed?.Invoke(new HandControlFrame(HandControlState.Starting, null, default, null, 0, null));
         try
         {
-            await foreach (var frame in source.ReadAsync(cancellationToken).ConfigureAwait(false))
+            while (true)
             {
-                using (frame)
+                try
                 {
-                    long t0 = Stopwatch.GetTimestamp();
-                    var hand = tracker.Process(frame.Pixels, frame.Width, frame.Height, frame.Stride, frame.TimestampNs);
-                    pointer ??= new HandPointer(Calibration ?? HandCalibration.Default(frame.Width, frame.Height), options.PointerOptions);
-                    if (Calibration is { } c && !ReferenceEquals(pointer.Calibration, c))
+                    await foreach (var frame in source.ReadAsync(cancellationToken).ConfigureAwait(false))
                     {
-                        pointer.Calibration = c;
-                    }
+                        using (frame)
+                        {
+                            long t0 = Stopwatch.GetTimestamp();
+                            var hand = tracker.Process(frame.Pixels, frame.Width, frame.Height, frame.Stride, frame.TimestampNs);
+                            pointer ??= new HandPointer(Calibration ?? HandCalibration.Default(frame.Width, frame.Height), options.PointerOptions);
+                            if (Calibration is { } c && !ReferenceEquals(pointer.Calibration, c))
+                            {
+                                pointer.Calibration = c;
+                            }
 
-                    var p = pointer.Update(hand, frame.TimestampNs / 1e9);
-                    var (state, screen) = Send(p);
-                    FrameProcessed?.Invoke(new HandControlFrame(state, hand, p, screen, Stopwatch.GetElapsedTime(t0).TotalMilliseconds, frame));
+                            var p = pointer.Update(hand, frame.TimestampNs / 1e9);
+                            var (state, screen) = Send(p);
+                            FrameProcessed?.Invoke(new HandControlFrame(state, hand, p, screen, Stopwatch.GetElapsedTime(t0).TotalMilliseconds, frame));
+                        }
+                    }
                 }
+                catch (IOException) when (!cancellationToken.IsCancellationRequested)
+                {
+                }
+
+                // stream ended or failed: start over with a fresh hand and pointer state
+                cancellationToken.ThrowIfCancellationRequested();
+                ReleaseButton();
+                tracker.Reset();
+                pointer?.Reset();
+                FrameProcessed?.Invoke(new HandControlFrame(HandControlState.Reconnecting, null, default, null, 0, null));
+                await Task.Delay(options.RetryDelay, cancellationToken).ConfigureAwait(false);
             }
         }
         finally

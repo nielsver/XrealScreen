@@ -133,6 +133,12 @@ internal static class HandControlCommands
         var clock = Stopwatch.StartNew();
         engine.FrameProcessed += f =>
         {
+            if (f.State == HandControlState.Reconnecting)
+            {
+                Console.WriteLine("Camera stream lost; reconnecting (is the XREAL Eye attached and the glasses awake?).");
+                return;
+            }
+
             frames++;
             found += f.Hand is null ? 0 : 1;
             buttonDown = f.Output.Action switch { PointerAction.ButtonDown => true, PointerAction.ButtonUp => false, _ => buttonDown && f.Hand is not null };
