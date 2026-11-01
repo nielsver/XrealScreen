@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Hand tracking on the XREAL Eye grayscale feed (M9 E2, ADR-0016): MediaPipe hand models on ONNX Runtime. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="XrealScreen.Vision.Tests" />
+  </ItemGroup>
+</Project>

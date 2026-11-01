@@ -19,6 +19,7 @@ One file per decision: `ADR-NNNN-short-title.md`. Never rewrite an accepted ADR'
 | [0013](ADR-0013-msi-installer-falkforge.md) | MSI installer built with FalkForge (unpackaged app) | Accepted |
 | [0014](ADR-0014-app-looks.md) | Selectable app looks (Classic, Lens, Instrument, Stage) | Accepted |
 | [0015](ADR-0015-website.md) | Static website on a Linux LiteSpeed host (FTPS deploy) | Accepted |
+| [0016](ADR-0016-eye-camera-hand-control.md) | XREAL Eye camera feed and hand control (MediaPipe on ONNX Runtime, pinch to click) | Accepted |
 
 ## Template
 ```markdown

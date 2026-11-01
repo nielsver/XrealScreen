@@ -19,6 +19,8 @@
     <!-- MSI installer (ADR-0013); prerelease, pin exactly -->
     <PackageVersion Include="FalkForge.Core" Version="0.5.0-beta.8" />
     <PackageVersion Include="FalkForge.Compiler.Msi" Version="0.5.0-beta.8" />
+    <!-- Hand tracking (M9 E2, ADR-0016) -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.31.1" />
     <!-- Tests -->
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />

@@ -2,7 +2,8 @@
 <Page
     x:Class="XrealScreen.App.Pages.DevicePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:XrealScreen.App.ViewModels">
 
     <ScrollViewer>
         <StackPanel Padding="24,16,24,24" Spacing="16" MaxWidth="1100">
@@ -20,6 +21,31 @@
                     <TextBlock TextWrapping="Wrap" Text="XREAL One-series glasses (One, One Pro, 1S) connect over USB-C: video as a normal monitor, and head-tracking data over a USB network adapter (169.254.2.1)." />
                     <Button Command="{x:Bind Device.CheckCommand}" Content="Check connection" Style="{StaticResource AccentButtonStyle}" />
                     <ItemsControl ItemsSource="{x:Bind Device.Results}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Glasses" />
+                    <ItemsControl ItemsSource="{x:Bind Device.GlassesDetails}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:GlassesDetail">
+                                <Grid ColumnSpacing="16" Padding="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Label}" />
+                                    <TextBlock Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind Value}" TextWrapping="Wrap" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind Device.GlassesHint, Mode=OneWay}"
+                        TextWrapping="Wrap" />
+                    <Button Command="{x:Bind Device.ReadGlassesInfoCommand}" Content="Read glasses info" />
                 </StackPanel>
             </Border>
         </StackPanel>

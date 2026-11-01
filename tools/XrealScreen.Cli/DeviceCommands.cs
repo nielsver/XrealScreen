@@ -36,6 +36,50 @@ internal static class DeviceCommands
         return command;
     }
 
+    public static Command CreateDevice()
+    {
+        var host = new Option<string>("--host") { Description = "Glasses IP.", DefaultValueFactory = _ => OneEndpoints.Default.Host };
+        var info = new Command("info", "Show firmware, serial number and camera calibration read from the glasses (read-only; no update check).") { host };
+        info.SetAction(async (parse, ct) =>
+        {
+            GlassesInfo glasses;
+            try
+            {
+                glasses = await GlassesInfo.ReadAsync(OneEndpoints.Default with { Host = parse.GetValue(host)! }, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException or TimeoutException or InvalidDataException or OperationCanceledException && !ct.IsCancellationRequested)
+            {
+                Console.WriteLine($"Could not read the glasses: {ex.Message}");
+                return 2;
+            }
+
+            Console.WriteLine($"Software version : {glasses.SoftwareVersion}");
+            Console.WriteLine($"DSP version      : {glasses.DspVersion}");
+            Console.WriteLine($"Firmware         : {glasses.Firmware}  (XREAL's updater also shows a leading 15.x part not readable here)");
+            Console.WriteLine($"Serial number    : {glasses.SerialNumber}");
+            if (glasses.Calibration is { } c)
+            {
+                Console.WriteLine($"Calibration      : version {c.GlassesVersion}, {c.LastModified}");
+                PrintCamera("Colour camera", c.RgbCamera);
+                PrintCamera("Tracking camera", c.SlamCamera);
+            }
+            else
+            {
+                Console.WriteLine("Calibration      : not available");
+            }
+
+            return 0;
+        });
+        var device = new Command("device", "Information read from the connected glasses.");
+        device.Subcommands.Add(info);
+        return device;
+    }
+
+    private static void PrintCamera(string name, CameraCalibration? camera) =>
+        Console.WriteLine(camera is null
+            ? $"{name,-17}: none"
+            : $"{name,-17}: {camera.Width}x{camera.Height}, field of view {camera.HorizontalFovDegrees:F0}° x {camera.VerticalFovDegrees:F0}°");
+
     private static async Task<int> ProbeAsync(OneEndpoints endpoints, double seconds, CancellationToken ct)
     {
         Console.WriteLine("1) USB network adapter (expect PC address 169.254.2.x)");

@@ -8,13 +8,13 @@ Location inspected: `E:\XREAL SDK\com.xreal.xr.tar\package` (Unity 2021.3 packag
 ## Binaries
 - Only Android arm64 native binaries: `libXREALXRPlugin.so`, `libnr_api.so` (inside `nr_api.aar`), etc. [verified-local]
 - `Tools~/Windows/trackableImageTools.exe` — offline image-database tool; irrelevant. [verified-local]
-- No Windows x64 plugin, yet C# has `UNITY_STANDALONE` P/Invoke paths to library `"XREALXRPlugin"` → a Windows DLL may exist but is not public. [hypothesis]
+- No Windows x64 plugin in this package, but C# has `UNITY_STANDALONE` P/Invoke paths to `"XREALXRPlugin"`. The Windows DLLs ship in the separate experimental package (`xreal-sdk-experimental.md`). [from-sdk:facts-only] 2026-10-29
 - No LICENSE / notice files; runtime loads `nrsdk_license.bin`. → Do not redistribute, link, or copy. [verified-local]
 - docs.xreal.com offers no Windows/OpenXR SDK.
 
 ## P/Invoke surface (names only) [from-sdk:facts-only]
 `CreateSession`, `Pause`, `Resume`, `Destroy`, `GetDeviceType`, `GetDeviceCategory`, `GetTrackingType`, `SwitchTrackingType`, `GetDevicePoseFromHead`, `GetDeviceResolution`, `GetDeviceRefreshRate`, `SetGlassesEventCallback`, …
-No setters for brightness, dimming, or display mode.
+No setters for brightness, dimming, or display mode in this package; the experimental package has them (`xreal-sdk-experimental.md`).
 
 ## Enums [from-sdk:facts-only]
 `XREALDeviceType` (`Runtime/Scripts/XREALPlugin.cs`):
