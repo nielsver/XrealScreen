@@ -37,7 +37,7 @@ internal static class HandControlCommands
         var log = LogOption();
         var click = ClickOption();
         var command = new Command("control", "Hand control: the hand moves the pointer on the glasses; click by pinching or holding still (dwell); pinch-hold = drag, thumb+middle pinch moved up/down = scroll. Ctrl+Alt+J pauses.") { calibrate, seconds, models, log, click };
-        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), parse.GetValue(seconds), targets: 0, targetSize: 0, parse.GetValue(log), parse.GetValue(click), ct));
+        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), parse.GetValue(seconds), targets: 0, targetSize: 0, parse.GetValue(log), parse.GetValue(click), waitGo: false, ct));
         return command;
     }
 
@@ -49,8 +49,12 @@ internal static class HandControlCommands
         var models = HandsCommands.ModelsOption();
         var log = LogOption();
         var click = ClickOption();
-        var command = new Command("targets", "E3 check: click targets on the glasses with hand control; reports hits, misses and time.") { count, size, calibrate, models, log, click };
-        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), 0, parse.GetValue(count), parse.GetValue(size), parse.GetValue(log), parse.GetValue(click), ct));
+        var waitGo = new Option<bool>("--wait-go")
+        {
+            Description = "Wait for a line on stdin before calibration and before the first target (a spoken guide sends it when its instructions end).",
+        };
+        var command = new Command("targets", "E3 check: click targets on the glasses with hand control; reports hits, misses and time.") { count, size, calibrate, models, log, click, waitGo };
+        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), 0, parse.GetValue(count), parse.GetValue(size), parse.GetValue(log), parse.GetValue(click), parse.GetValue(waitGo), ct));
         return command;
     }
 
@@ -65,7 +69,7 @@ internal static class HandControlCommands
         Description = "Write one CSV line per frame (state, pinch ratio 2D/3D, pointer; numbers only, no image).",
     };
 
-    private static async Task<int> RunAsync(string? modelsOption, bool calibrate, double seconds, int targets, int targetSize, string? logPath, ClickMode click, CancellationToken ct)
+    private static async Task<int> RunAsync(string? modelsOption, bool calibrate, double seconds, int targets, int targetSize, string? logPath, ClickMode click, bool waitGo, CancellationToken ct)
     {
         string? models = HandsCommands.ResolveModels(modelsOption);
         if (models is null || !HandTracker.ModelsExist(models))
@@ -89,7 +93,8 @@ internal static class HandControlCommands
             saved = null;
         }
 
-        var session = new Session(targets, targetSize) { Calibrating = calibrate || (targets > 0 && saved is null) };
+        bool calibrateFirst = calibrate || (targets > 0 && saved is null);
+        var session = new Session(targets, targetSize) { Calibrating = calibrateFirst };
         Console.WriteLine(saved is null ? "No saved calibration." : $"Calibration from {saved.Created:yyyy-MM-dd HH:mm} (error {saved.RmsError:F3}).");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -115,14 +120,76 @@ internal static class HandControlCommands
         using var window = session.Calibrating || targets > 0 ? HandTargetWindow.Open(area, cts.Cancel) : null;
         session.Window = window;
 
-        if (session.Calibrating)
+        // --wait-go: each start waits for a line on stdin, so nothing starts while instructions are still spoken (user, E3 test 2026-11-01)
+        using var go = new SemaphoreSlim(0);
+        if (waitGo)
         {
-            session.ShowCalibrationTarget();
-            Console.WriteLine("Calibrating: point at each green dot on the glasses and hold still until the ring fills.");
+            _ = Task.Run(
+                () =>
+                {
+                    try
+                    {
+                        while (Console.In.ReadLine() is not null)
+                        {
+                            go.Release();
+                        }
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // the run ended while stdin was still open
+                    }
+                },
+                CancellationToken.None);
         }
-        else if (targets > 0)
+
+        async Task<bool> WaitForGoAsync(string text)
         {
-            session.NextTarget();
+            if (!waitGo)
+            {
+                return true;
+            }
+
+            window?.ShowTarget(null, null, 0, Color.Orange);
+            window?.SetText(text);
+            Console.WriteLine("Waiting for go (a line on stdin).");
+            try
+            {
+                await go.WaitAsync(cts.Token).ConfigureAwait(false);
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+        }
+
+        async Task StartTargetsAsync()
+        {
+            if (await WaitForGoAsync("Listen to the instructions - the targets start after them.").ConfigureAwait(false))
+            {
+                engine.Click = click;
+                engine.OutputEnabled = true;
+                session.NextTarget();
+            }
+        }
+
+        async Task StartAsync()
+        {
+            if (calibrateFirst)
+            {
+                session.Calibrating = false;
+                if (await WaitForGoAsync("Listen to the instructions - calibration starts after them.").ConfigureAwait(false))
+                {
+                    session.ShowCalibrationTarget();
+                    session.Calibrating = true;
+                    Console.WriteLine("Calibrating: point at each green dot on the glasses and hold still until the ring fills.");
+                }
+            }
+            else if (targets > 0)
+            {
+                engine.OutputEnabled = false;
+                await StartTargetsAsync().ConfigureAwait(false);
+            }
         }
 
         if (window is not null && targets > 0)
@@ -168,15 +235,14 @@ internal static class HandControlCommands
                 Console.WriteLine($"Calibration saved (error {rms:F3}{(rms > 0.05 ? " - high, consider calibrating again" : "")}) to {store.Path}.");
                 if (targets > 0)
                 {
-                    session.NextTarget();
+                    _ = StartTargetsAsync();
                 }
                 else
                 {
                     window?.Dispose();
+                    engine.Click = click;
+                    engine.OutputEnabled = true;
                 }
-
-                engine.OutputEnabled = true;
-                engine.Click = click;
             }
 
             if (clock.ElapsedMilliseconds - lastPrint >= 1000)
@@ -188,6 +254,7 @@ internal static class HandControlCommands
         };
 
         var hotkeys = PollHotkeyAsync(engine, session, cts, cts.Token);
+        var start = StartAsync();
         Console.WriteLine("Hand control running. Ctrl+Alt+J pauses/resumes, Ctrl+C (or Esc in the target window) stops.");
         int exit = 0;
         try
@@ -205,6 +272,7 @@ internal static class HandControlCommands
 
         await cts.CancelAsync().ConfigureAwait(false);
         await hotkeys.ConfigureAwait(false);
+        await start.ConfigureAwait(false);
         if (targets > 0 && exit == 0)
         {
             Console.WriteLine(session.Result());
