@@ -267,7 +267,7 @@ public class HandPointerTests
     {
         var pointer = new HandPointer(Identity(), new HandPointerOptions { Click = ClickMode.Dwell });
         var actions = new List<PointerAction>();
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 25; i++)
         {
             // relaxed hand: the camera reads thumb and index as closed
             actions.Add(pointer.Update(Hand(0.4f, 0.4f, 0.1f), i * Frame).Action);

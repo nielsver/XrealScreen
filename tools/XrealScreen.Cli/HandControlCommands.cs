@@ -56,7 +56,7 @@ internal static class HandControlCommands
 
     private static Option<ClickMode> ClickOption() => new("--click")
     {
-        Description = "How to click: Pinch, Dwell (hold the pointer still 0.8 s) or Both.",
+        Description = "How to click: Pinch, Dwell (hold the pointer still 1.2 s) or Both.",
         DefaultValueFactory = _ => ClickMode.Both,
     };
 

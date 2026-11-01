@@ -40,8 +40,11 @@ public sealed record HandPointerOptions
     /// </summary>
     public ClickMode Click { get; init; } = ClickMode.Both;
 
-    /// <summary>How long the pointer must stay within <see cref="DwellRadius"/> for a dwell click.</summary>
-    public TimeSpan DwellTime { get; init; } = TimeSpan.FromMilliseconds(800);
+    /// <summary>
+    /// How long the pointer must stay within <see cref="DwellRadius"/> for a dwell click. 1.2 s: with 0.8 s, slow aiming
+    /// next to a target fired clicks the user did not mean (E3 test 2026-11-01).
+    /// </summary>
+    public TimeSpan DwellTime { get; init; } = TimeSpan.FromMilliseconds(1200);
 
     /// <summary>Allowed wobble during a dwell, in screen units (0.012 ≈ 23 px on 1920).</summary>
     public double DwellRadius { get; init; } = 0.012;
@@ -78,7 +81,7 @@ public sealed record HandPointerOptions
     public double MaxOffset { get; init; } = 0.05;
 
     /// <summary>One Euro smoothing of the pointer (on top of the landmark smoothing), in screen units (0..1).</summary>
-    public float MinCutoffHz { get; init; } = 1.0f;
+    public float MinCutoffHz { get; init; } = 0.5f;
 
     public float Beta { get; init; } = 2.0f;
 
