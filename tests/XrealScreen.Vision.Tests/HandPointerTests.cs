@@ -276,6 +276,49 @@ public class HandPointerTests
         Assert.Equal([PointerAction.ButtonDown, PointerAction.ButtonUp], actions.Where(a => a != PointerAction.None));
     }
 
+    [Fact]
+    public void PrecisionZone_SlowDrift_MovesThePointerLessThanTheHand()
+    {
+        var pointer = new HandPointer(Identity(), PinchOnly);
+        PointerFrame first = default, last = default;
+        for (int i = 0; i < 30; i++)
+        {
+            // 0.03 screen/s: a "still" hand drifting
+            last = pointer.Update(Hand(0.5f + 0.002f * i, 0.5f, 1.0f), i * Frame);
+            if (i == 0)
+            {
+                first = last;
+            }
+        }
+
+        double handMoved = 0.002 * 29;
+        Assert.InRange(last.U - first.U, 0.2 * handMoved, 0.5 * handMoved);
+    }
+
+    [Fact]
+    public void PrecisionZone_FastMove_CatchesUpWithTheHand()
+    {
+        var pointer = new HandPointer(Identity(), PinchOnly);
+        double t = 0;
+        for (int i = 0; i < 30; i++, t += Frame)
+        {
+            pointer.Update(Hand(0.5f + 0.002f * i, 0.5f, 1.0f), t);   // slow drift builds an offset
+        }
+
+        PointerFrame f = default;
+        for (int i = 0; i < 8; i++, t += Frame)
+        {
+            f = pointer.Update(Hand(0.56f + 0.04f * i, 0.5f, 1.0f), t); // fast sweep to 0.84
+        }
+
+        for (int i = 0; i < 20; i++, t += Frame)
+        {
+            f = pointer.Update(Hand(0.84f, 0.5f, 1.0f), t);
+        }
+
+        Assert.InRange(f.U, 0.78, 0.86);
+    }
+
     private static readonly HandPointerOptions PinchOnly = new() { Click = ClickMode.Pinch };
 
     /// <summary>Camera coordinates equal screen units (0..1) for easy numbers.</summary>

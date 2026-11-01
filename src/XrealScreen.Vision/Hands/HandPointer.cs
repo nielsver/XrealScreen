@@ -53,6 +53,22 @@ public sealed record HandPointerOptions
     /// </summary>
     public TimeSpan RepeatGuard { get; init; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>
+    /// Precision zone (like mouse acceleration): hand movement slower than <see cref="PrecisionSpeed"/> moves the pointer
+    /// only this fraction. E3 test 2026-11-01: a "still" hand drifts ~0.04 screen/s (±26 px), more than a 40 px target allows.
+    /// 1 = plain absolute mapping.
+    /// </summary>
+    public double PrecisionGain { get; init; } = 0.3;
+
+    /// <summary>Below this hand speed (screen units/s) the full <see cref="PrecisionGain"/> applies.</summary>
+    public double PrecisionSpeed { get; init; } = 0.15;
+
+    /// <summary>At and above this speed the pointer moves 1:1 and catches up with the hand.</summary>
+    public double FullSpeed { get; init; } = 0.6;
+
+    /// <summary>Fraction of the pointer–hand offset removed per frame at <see cref="FullSpeed"/> (less when slower).</summary>
+    public double CatchUp { get; init; } = 0.3;
+
     /// <summary>One Euro smoothing of the pointer (on top of the landmark smoothing), in screen units (0..1).</summary>
     public float MinCutoffHz { get; init; } = 1.0f;
 
@@ -95,6 +111,8 @@ public sealed class HandPointer
     private bool _dwellUpPending;
     private double _lastUp = double.NegativeInfinity;
     private bool _ignoredPinch;
+    private (double U, double V, double T)? _prevHand;
+    private (double U, double V) _out;
 
     public HandPointer(HandCalibration calibration, HandPointerOptions? options = null)
     {
@@ -146,6 +164,7 @@ public sealed class HandPointer
             _u.Reset();
             _v.Reset();
             _history.Clear();
+            _prevHand = null;
             _dwellStart = double.NaN;
             bool up = clickEvent == PinchEvent.Released || _dwellUpPending;
             _dwellUpPending = false;
@@ -159,8 +178,9 @@ public sealed class HandPointer
 
         var (ax, ay) = Anchor(hand);
         var (rawU, rawV) = Calibration.Map(ax, ay);
-        double u = _u.Filter((float)rawU, timeSeconds);
-        double v = _v.Filter((float)rawV, timeSeconds);
+        double handU = _u.Filter((float)rawU, timeSeconds);
+        double handV = _v.Filter((float)rawV, timeSeconds);
+        var (u, v) = ApplyGain(handU, handV, timeSeconds);
         _history.Enqueue((timeSeconds, u, v));
         while (_history.Count > 0 && _history.Peek().T < timeSeconds - 1)
         {
@@ -189,14 +209,14 @@ public sealed class HandPointer
         int notches = 0;
         if (scrollEvent == PinchEvent.Pressed)
         {
-            _scrollAnchorV = v;
+            _scrollAnchorV = handV;
             _frozenAt = _last;
         }
 
         if (_scroll.IsPressed)
         {
             // pointer stays put while scrolling; hand up = wheel up
-            notches = (int)((_scrollAnchorV - v) / _options.ScrollStep);
+            notches = (int)((_scrollAnchorV - handV) / _options.ScrollStep);
             _scrollAnchorV -= notches * _options.ScrollStep;
             _last = _frozenAt;
             return new PointerFrame(true, Clamp(_last.U), Clamp(_last.V), action, notches);
@@ -210,6 +230,31 @@ public sealed class HandPointer
 
         _last = timeSeconds < _frozenUntil ? _frozenAt : (u, v);
         return new PointerFrame(true, Clamp(_last.U), Clamp(_last.V), action, notches, dwell);
+    }
+
+    /// <summary>Hand position → pointer position with the precision zone (slow = fine control, fast = 1:1 and catch up).</summary>
+    private (double U, double V) ApplyGain(double u, double v, double t)
+    {
+        if (_prevHand is not { } prev || t <= prev.T || _options.PrecisionGain >= 1)
+        {
+            _prevHand = (u, v, t);
+            _out = (u, v);
+            return _out;
+        }
+
+        double du = u - prev.U, dv = v - prev.V;
+        double speed = Math.Sqrt(du * du + dv * dv) / (t - prev.T);
+        double f = Math.Clamp((speed - _options.PrecisionSpeed) / (_options.FullSpeed - _options.PrecisionSpeed), 0, 1);
+        double gain = _options.PrecisionGain + (1 - _options.PrecisionGain) * f;
+        double pull = _options.CatchUp * f;
+        double ou = _out.U + gain * du, ov = _out.V + gain * dv;
+        ou += pull * (u - ou);
+        ov += pull * (v - ov);
+
+        // clamped like a mouse at the screen edge: moving back responds at once
+        _out = (Clamp(ou), Clamp(ov));
+        _prevHand = (u, v, t);
+        return _out;
     }
 
     /// <summary>Dwell click: the pointer held within <see cref="HandPointerOptions.DwellRadius"/> for the dwell time gives a down + up.</summary>
@@ -290,6 +335,7 @@ public sealed class HandPointer
         _u.Reset();
         _v.Reset();
         _history.Clear();
+        _prevHand = null;
         _frozenUntil = 0;
         _dwellStart = double.NaN;
         _dwellArmed = true;
