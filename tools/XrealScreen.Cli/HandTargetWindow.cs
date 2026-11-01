@@ -19,6 +19,7 @@ internal sealed class HandTargetWindow : IDisposable
     private Color _targetColor = Color.Orange;
     private string _text = "";
     private Point? _handPoint;
+    private double _dwell;
     private Bitmap? _inset;
     private float _pinch = float.NaN;
     private bool _pressed;
@@ -92,11 +93,12 @@ internal sealed class HandTargetWindow : IDisposable
     }
 
     /// <summary>Where hand control currently points (window pixels), drawn as a ring; null hides it.</summary>
-    public void SetHandPoint(Point? windowPoint)
+    public void SetHandPoint(Point? windowPoint, double dwellProgress = 0)
     {
         lock (_gate)
         {
             _handPoint = windowPoint;
+            _dwell = dwellProgress;
         }
 
         Invalidate();
@@ -216,9 +218,10 @@ internal sealed class HandTargetWindow : IDisposable
         Point? hand;
         float pinch;
         bool pressed;
+        double dwell;
         lock (_gate)
         {
-            (target, radius, color, text, hand, pinch, pressed) = (_target, _radius, _targetColor, _text, _handPoint, _pinch, _pressed);
+            (target, radius, color, text, hand, pinch, pressed, dwell) = (_target, _radius, _targetColor, _text, _handPoint, _pinch, _pressed, _dwell);
             if (_inset is { } inset)
             {
                 // camera view bottom-right, pinch meter above it
@@ -243,6 +246,12 @@ internal sealed class HandTargetWindow : IDisposable
         {
             using var pen = new Pen(Color.FromArgb(0, 200, 255), 3);
             g.DrawEllipse(pen, h.X - 14, h.Y - 14, 28, 28);
+            if (dwell > 0)
+            {
+                // dwell click progress: the arc fills until the click
+                using var arc = new Pen(Color.LimeGreen, 5);
+                g.DrawArc(arc, h.X - 22, h.Y - 22, 44, 44, -90, (float)(360 * Math.Min(1, dwell)));
+            }
         }
     }
 

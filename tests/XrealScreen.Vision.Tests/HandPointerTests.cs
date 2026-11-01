@@ -72,7 +72,7 @@ public class HandPointerTests
     [Fact]
     public void Pointer_FollowsTheIndexBaseThroughTheCalibration()
     {
-        var pointer = new HandPointer(Identity());
+        var pointer = new HandPointer(Identity(), PinchOnly);
 
         PointerFrame f = default;
         for (int i = 0; i < 30; i++)
@@ -88,7 +88,7 @@ public class HandPointerTests
     [Fact]
     public void Pinch_GivesButtonDownAndUp_AndFreezesThePointerAroundTheClick()
     {
-        var pointer = new HandPointer(Identity());
+        var pointer = new HandPointer(Identity(), PinchOnly);
         double t = 0;
         for (int i = 0; i < 20; i++, t += Frame)
         {
@@ -117,7 +117,7 @@ public class HandPointerTests
     [Fact]
     public void HeldPinch_Drags_AfterTheFreeze()
     {
-        var pointer = new HandPointer(Identity());
+        var pointer = new HandPointer(Identity(), PinchOnly);
         double t = 0;
         for (int i = 0; i < 20; i++, t += Frame)
         {
@@ -137,7 +137,7 @@ public class HandPointerTests
     [Fact]
     public void LostHand_WhilePressed_ReleasesTheButton()
     {
-        var pointer = new HandPointer(Identity());
+        var pointer = new HandPointer(Identity(), PinchOnly);
         double t = 0;
         pointer.Update(Hand(0.5f, 0.5f, 1.0f), t);
         pointer.Update(Hand(0.5f, 0.5f, 0.1f), t += Frame);
@@ -153,7 +153,7 @@ public class HandPointerTests
     [Fact]
     public void MiddlePinch_MovedUp_Scrolls_WithoutClicking()
     {
-        var pointer = new HandPointer(Identity());
+        var pointer = new HandPointer(Identity(), PinchOnly);
         double t = 0;
         for (int i = 0; i < 10; i++, t += Frame)
         {
@@ -171,6 +171,59 @@ public class HandPointerTests
         Assert.True(pointer.IsScrolling);
         Assert.InRange(notches, 2, 4); // hand moved 0.14 up (minus smoothing lag), 0.04 per notch
     }
+
+    [Fact]
+    public void Dwell_HoldingStill_ClicksOnce_ThenNeedsAMoveToRearm()
+    {
+        var pointer = new HandPointer(Identity(), new HandPointerOptions { Click = ClickMode.Dwell });
+        var actions = new List<PointerAction>();
+        double t = 0, lastProgress = 0;
+        for (int i = 0; i < 40; i++, t += Frame)
+        {
+            var f = pointer.Update(Hand(0.4f, 0.4f, 1.0f), t);
+            actions.Add(f.Action);
+            if (f.Action == PointerAction.None && f.DwellProgress > 0)
+            {
+                Assert.True(f.DwellProgress >= lastProgress);
+                lastProgress = f.DwellProgress;
+            }
+        }
+
+        Assert.Equal([PointerAction.ButtonDown, PointerAction.ButtonUp], actions.Where(a => a != PointerAction.None));
+
+        // move away and hold still again: a second click
+        for (int i = 0; i < 40; i++, t += Frame)
+        {
+            actions.Add(pointer.Update(Hand(0.6f, 0.4f, 1.0f), t).Action);
+        }
+
+        Assert.Equal(2, actions.Count(a => a == PointerAction.ButtonDown));
+    }
+
+    [Fact]
+    public void Dwell_MovingPointer_DoesNotClick()
+    {
+        var pointer = new HandPointer(Identity(), new HandPointerOptions { Click = ClickMode.Dwell });
+
+        for (int i = 0; i < 60; i++)
+        {
+            var f = pointer.Update(Hand(0.2f + 0.01f * i, 0.4f, 1.0f), i * Frame);
+            Assert.Equal(PointerAction.None, f.Action);
+        }
+    }
+
+    [Fact]
+    public void Dwell_InPinchMode_NeverClicks()
+    {
+        var pointer = new HandPointer(Identity(), PinchOnly);
+
+        for (int i = 0; i < 60; i++)
+        {
+            Assert.Equal(PointerAction.None, pointer.Update(Hand(0.4f, 0.4f, 1.0f), i * Frame).Action);
+        }
+    }
+
+    private static readonly HandPointerOptions PinchOnly = new() { Click = ClickMode.Pinch };
 
     /// <summary>Camera coordinates equal screen units (0..1) for easy numbers.</summary>
     private static HandCalibration Identity() => new(1, 0, 0, 0, 1, 0);

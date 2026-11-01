@@ -19,6 +19,10 @@ internal static class HandControlCommands
     /// <summary>Fits worse than this (screen units) are rejected; a good calibration is below ~0.05.</summary>
     private const double MaxCalibrationError = 0.1;
 
+    /// <summary>XREAL Eye grayscale image size (port 52997).</summary>
+    private const int EyeWidth = 504;
+    private const int EyeHeight = 378;
+
     /// <summary>Every screen corner must be reachable with the knuckle at least this far (camera pixels) inside the image.</summary>
     private const double CameraEdgeMargin = 25;
 
@@ -30,8 +34,9 @@ internal static class HandControlCommands
         var seconds = new Option<double>("--seconds") { Description = "How long to run (0 = until Ctrl+C).", DefaultValueFactory = _ => 0 };
         var models = HandsCommands.ModelsOption();
         var log = LogOption();
-        var command = new Command("control", "Hand control: the hand moves the pointer on the glasses, pinch = click (hold = drag), thumb+middle pinch moved up/down = scroll. Ctrl+Alt+J pauses.") { calibrate, seconds, models, log };
-        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), parse.GetValue(seconds), targets: 0, targetSize: 0, parse.GetValue(log), ct));
+        var click = ClickOption();
+        var command = new Command("control", "Hand control: the hand moves the pointer on the glasses; click by pinching or holding still (dwell); pinch-hold = drag, thumb+middle pinch moved up/down = scroll. Ctrl+Alt+J pauses.") { calibrate, seconds, models, log, click };
+        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), parse.GetValue(seconds), targets: 0, targetSize: 0, parse.GetValue(log), parse.GetValue(click), ct));
         return command;
     }
 
@@ -42,17 +47,24 @@ internal static class HandControlCommands
         var calibrate = new Option<bool>("--calibrate") { Description = "Calibrate first (always done when no calibration is saved)." };
         var models = HandsCommands.ModelsOption();
         var log = LogOption();
-        var command = new Command("targets", "E3 check: click targets on the glasses with hand control; reports hits, misses and time.") { count, size, calibrate, models, log };
-        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), 0, parse.GetValue(count), parse.GetValue(size), parse.GetValue(log), ct));
+        var click = ClickOption();
+        var command = new Command("targets", "E3 check: click targets on the glasses with hand control; reports hits, misses and time.") { count, size, calibrate, models, log, click };
+        command.SetAction((parse, ct) => RunAsync(parse.GetValue(models), parse.GetValue(calibrate), 0, parse.GetValue(count), parse.GetValue(size), parse.GetValue(log), parse.GetValue(click), ct));
         return command;
     }
+
+    private static Option<ClickMode> ClickOption() => new("--click")
+    {
+        Description = "How to click: Pinch, Dwell (hold the pointer still 0.8 s) or Both.",
+        DefaultValueFactory = _ => ClickMode.Both,
+    };
 
     private static Option<string> LogOption() => new("--log")
     {
         Description = "Write one CSV line per frame (state, pinch ratio 2D/3D, pointer; numbers only, no image).",
     };
 
-    private static async Task<int> RunAsync(string? modelsOption, bool calibrate, double seconds, int targets, int targetSize, string? logPath, CancellationToken ct)
+    private static async Task<int> RunAsync(string? modelsOption, bool calibrate, double seconds, int targets, int targetSize, string? logPath, ClickMode click, CancellationToken ct)
     {
         string? models = HandsCommands.ResolveModels(modelsOption);
         if (models is null || !HandTracker.ModelsExist(models))
@@ -69,6 +81,13 @@ internal static class HandControlCommands
 
         var store = new HandCalibrationStore();
         var saved = store.Load();
+        if (saved is not null && (saved.RmsError > MaxCalibrationError || !saved.Calibration.CoversScreenInsideCamera(EyeWidth, EyeHeight, CameraEdgeMargin)))
+        {
+            // a bad calibration can even swap the axes (user, E3 test 2026-11-01): never use it
+            Console.WriteLine($"Saved calibration ignored (error {saved.RmsError:F3}); using the default mapping.");
+            saved = null;
+        }
+
         var session = new Session(targets, targetSize) { Calibrating = calibrate || (targets > 0 && saved is null) };
         Console.WriteLine(saved is null ? "No saved calibration." : $"Calibration from {saved.Created:yyyy-MM-dd HH:mm} (error {saved.RmsError:F3}).");
 
@@ -78,7 +97,14 @@ internal static class HandControlCommands
             cts.CancelAfter(TimeSpan.FromSeconds(seconds));
         }
 
-        var engine = new HandControlEngine(new HandControlOptions { ModelDirectory = models, TargetArea = area, Calibration = saved?.Calibration })
+        // while calibrating, the ring follows the default mapping, never an old calibration
+        var engine = new HandControlEngine(new HandControlOptions
+        {
+            ModelDirectory = models,
+            TargetArea = area,
+            Calibration = session.Calibrating ? HandCalibration.Default(EyeWidth, EyeHeight) : saved?.Calibration,
+            PointerOptions = new HandPointerOptions { Click = click },
+        })
         {
             OutputEnabled = !session.Calibrating,
         };
@@ -110,11 +136,11 @@ internal static class HandControlCommands
             frames++;
             found += f.Hand is null ? 0 : 1;
             buttonDown = f.Output.Action switch { PointerAction.ButtonDown => true, PointerAction.ButtonUp => false, _ => buttonDown && f.Hand is not null };
-            window?.SetHandPoint(f.ScreenPoint is { } sp ? new Point(sp.X - area.X, sp.Y - area.Y) : null);
+            window?.SetHandPoint(f.ScreenPoint is { } sp ? new Point(sp.X - area.X, sp.Y - area.Y) : null, f.Output.DwellProgress);
             window?.SetHand(f.Camera, f.Hand, f.Hand?.PinchRatio ?? float.NaN, buttonDown, engine.Calibration);
             csv?.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0:F3},{(f.Hand?.TimestampNs ?? 0) / 1e9:F3},{f.State},{(f.Hand is null ? 0 : 1)},{f.Hand?.PinchRatio ?? float.NaN:F3},{f.Hand?.PinchRatio3D ?? float.NaN:F3},{f.Hand?.Presence ?? 0:F2},{f.Output.Action},{f.Output.U:F4},{f.Output.V:F4},{f.ScreenPoint?.X},{f.ScreenPoint?.Y}"));
-            if (session.Calibrating && f.Hand is { } hand && session.OnCalibrationFrame(hand, f.Output.Action) is { } points)
+            if (session.Calibrating && session.OnCalibrationFrame(f.Hand, f.Output.Action) is { } points)
             {
                 var fit = HandCalibration.Fit(points);
                 double rms = fit.RmsError(points);
@@ -235,23 +261,29 @@ internal static class HandControlCommands
         {
             var (u, v) = CalibrationTargets[_points.Count];
             Window?.ShowTarget(u, v, 36, Color.LimeGreen);
-            Window?.SetText($"Calibration {_points.Count + 1} of {CalibrationTargets.Length}: hold your hand relaxed, point the white-ring knuckle at the green dot, pinch, then open your hand.");
+            Window?.SetText($"Calibration {_points.Count + 1} of {CalibrationTargets.Length}: hold your hand relaxed, point the white-ring knuckle at the green dot, then pinch or hold still until the ring fills.");
         }
 
         /// <summary>Feeds a frame during calibration; returns all points once the last dot was pinched.</summary>
-        public List<CalibrationPoint>? OnCalibrationFrame(HandResult hand, PointerAction action)
+        public List<CalibrationPoint>? OnCalibrationFrame(HandResult? hand, PointerAction action)
         {
+            // a release can come in a frame without a hand (hand briefly lost): it still counts as "opened"
+            if (action == PointerAction.ButtonUp)
+            {
+                _openedSincePoint = true;
+            }
+
+            if (hand is null)
+            {
+                return null;
+            }
+
             var (ax, ay) = HandPointer.Anchor(hand);
             double t = hand.TimestampNs / 1e9;
             _anchors.Enqueue((t, ax, ay));
             while (_anchors.Count > 0 && _anchors.Peek().T < t - 1)
             {
                 _anchors.Dequeue();
-            }
-
-            if (action == PointerAction.ButtonUp)
-            {
-                _openedSincePoint = true;
             }
 
             // a point only counts after the hand opened again and 1 s passed, so a double pinch cannot take the next dot
@@ -331,6 +363,6 @@ internal static class HandControlCommands
             $"RESULT: {Hits} of {targets} targets hit, {Misses} misses" +
             (_times.Count > 0 ? $", median {_times.Order().ElementAt(_times.Count / 2):F1} s per target" : "") + $" (target {targetSize} px).";
 
-        private string Status() => $"Target {Hits + 1} of {targets}: point at the orange dot and pinch.   Hits {Hits}, misses {Misses}.   Esc stops.";
+        private string Status() => $"Target {Hits + 1} of {targets}: point at the orange dot, then pinch or hold still.   Hits {Hits}, misses {Misses}.   Esc stops.";
     }
 }
