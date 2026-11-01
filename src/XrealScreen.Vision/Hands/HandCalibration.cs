@@ -22,6 +22,33 @@ public sealed record HandCalibration(double A, double B, double C, double D, dou
 
     public (double U, double V) Map(double x, double y) => (A * x + B * y + C, D * x + E * y + F);
 
+    /// <summary>The camera point that maps to screen position (u, v): where the hand must be to reach it.</summary>
+    public (double X, double Y) Inverse(double u, double v)
+    {
+        double det = A * E - B * D;
+        double du = u - C, dv = v - F;
+        return ((E * du - B * dv) / det, (A * dv - D * du) / det);
+    }
+
+    /// <summary>
+    /// True when every screen corner maps to a hand position at least <paramref name="margin"/> pixels inside the
+    /// camera image. Otherwise part of the screen is unreachable: the hand leaves the camera view first
+    /// (E3 test 2026-11-01: left side unreachable after a bad calibration).
+    /// </summary>
+    public bool CoversScreenInsideCamera(int cameraWidth, int cameraHeight, double margin)
+    {
+        foreach (var (u, v) in new[] { (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0) })
+        {
+            var (x, y) = Inverse(u, v);
+            if (double.IsNaN(x) || x < margin || y < margin || x > cameraWidth - margin || y > cameraHeight - margin)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>Least-squares affine fit; needs at least 3 points that are not on one line.</summary>
     public static HandCalibration Fit(IReadOnlyList<CalibrationPoint> points)
     {

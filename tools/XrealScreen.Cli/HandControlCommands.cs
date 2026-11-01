@@ -19,6 +19,9 @@ internal static class HandControlCommands
     /// <summary>Fits worse than this (screen units) are rejected; a good calibration is below ~0.05.</summary>
     private const double MaxCalibrationError = 0.1;
 
+    /// <summary>Every screen corner must be reachable with the knuckle at least this far (camera pixels) inside the image.</summary>
+    private const double CameraEdgeMargin = 25;
+
     private static readonly (double U, double V)[] CalibrationTargets = [(0.15, 0.15), (0.85, 0.15), (0.85, 0.85), (0.15, 0.85), (0.5, 0.5)];
 
     public static Command CreateControl()
@@ -108,17 +111,18 @@ internal static class HandControlCommands
             found += f.Hand is null ? 0 : 1;
             buttonDown = f.Output.Action switch { PointerAction.ButtonDown => true, PointerAction.ButtonUp => false, _ => buttonDown && f.Hand is not null };
             window?.SetHandPoint(f.ScreenPoint is { } sp ? new Point(sp.X - area.X, sp.Y - area.Y) : null);
-            window?.SetHand(f.Camera, f.Hand, f.Hand?.PinchRatio ?? float.NaN, buttonDown);
+            window?.SetHand(f.Camera, f.Hand, f.Hand?.PinchRatio ?? float.NaN, buttonDown, engine.Calibration);
             csv?.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0:F3},{(f.Hand?.TimestampNs ?? 0) / 1e9:F3},{f.State},{(f.Hand is null ? 0 : 1)},{f.Hand?.PinchRatio ?? float.NaN:F3},{f.Hand?.PinchRatio3D ?? float.NaN:F3},{f.Hand?.Presence ?? 0:F2},{f.Output.Action},{f.Output.U:F4},{f.Output.V:F4},{f.ScreenPoint?.X},{f.ScreenPoint?.Y}"));
             if (session.Calibrating && f.Hand is { } hand && session.OnCalibrationFrame(hand, f.Output.Action) is { } points)
             {
                 var fit = HandCalibration.Fit(points);
                 double rms = fit.RmsError(points);
-                if (rms > MaxCalibrationError)
+                bool reachable = f.Camera is not { } cam || fit.CoversScreenInsideCamera(cam.Width, cam.Height, CameraEdgeMargin);
+                if (rms > MaxCalibrationError || !reachable)
                 {
                     // a wrong point (double pinch, pinch at the wrong dot) skews the whole screen: start over (E3 test 2026-11-01)
-                    Console.WriteLine($"Calibration rejected (error {rms:F3} > {MaxCalibrationError}); starting again.");
+                    Console.WriteLine($"Calibration rejected ({(reachable ? $"error {rms:F3} > {MaxCalibrationError}" : "a screen corner is outside the camera view")}); starting again.");
                     session.RestartCalibration();
                     return;
                 }

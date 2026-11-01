@@ -40,6 +40,28 @@ public class HandPointerTests
     }
 
     [Fact]
+    public void Calibration_Inverse_UndoesMap()
+    {
+        var c = new HandCalibration(0.004, 0.0005, -0.3, -0.0004, 0.005, -0.2);
+
+        var (x, y) = c.Inverse(0.3, 0.7);
+        var (u, v) = c.Map(x, y);
+
+        Assert.Equal(0.3, u, 9);
+        Assert.Equal(0.7, v, 9);
+    }
+
+    [Fact]
+    public void Calibration_ScreenCornerOutsideTheCamera_IsDetected()
+    {
+        Assert.True(HandCalibration.Default(504, 378).CoversScreenInsideCamera(504, 378, margin: 20));
+
+        // the screen's left edge needs the hand at x < 0: the user cannot reach it (the 2026-11-01 failure)
+        var skewed = new HandCalibration(1.0 / 300, 0, 0.2, 0, 1.0 / 200, -0.4);
+        Assert.False(skewed.CoversScreenInsideCamera(504, 378, margin: 20));
+    }
+
+    [Fact]
     public void Calibration_Fit_PointsOnALine_Throws()
     {
         var points = new[] { new CalibrationPoint(0, 0, 0, 0), new CalibrationPoint(1, 1, 0.5, 0.5), new CalibrationPoint(2, 2, 1, 1) };

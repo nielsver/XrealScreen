@@ -106,9 +106,9 @@ internal sealed class HandTargetWindow : IDisposable
     /// Camera view in the corner (camera image, hand skeleton, the knuckle that steers the pointer) and the pinch
     /// meter, so the user sees how the hand is seen (user request, E3 test 2026-11-01). Copies what it needs.
     /// </summary>
-    public void SetHand(EyeFrame? camera, HandResult? hand, float pinchRatio, bool pressed)
+    public void SetHand(EyeFrame? camera, HandResult? hand, float pinchRatio, bool pressed, HandCalibration? calibration)
     {
-        Bitmap? inset = camera is null ? null : DrawInset(camera, hand, pressed);
+        Bitmap? inset = camera is null ? null : DrawInset(camera, hand, pressed, calibration);
         Bitmap? old;
         lock (_gate)
         {
@@ -128,7 +128,7 @@ internal sealed class HandTargetWindow : IDisposable
 
     private const int InsetWidth = 378;
 
-    private static Bitmap DrawInset(EyeFrame frame, HandResult? hand, bool pressed)
+    private static Bitmap DrawInset(EyeFrame frame, HandResult? hand, bool pressed, HandCalibration? calibration)
     {
         float scale = (float)InsetWidth / frame.Width;
         var bmp = new Bitmap(InsetWidth, (int)(frame.Height * scale), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
@@ -148,6 +148,16 @@ internal sealed class HandTargetWindow : IDisposable
         }
 
         bmp.UnlockBits(data);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            // the camera area that covers the screen: keep the knuckle inside it
+            var c = calibration ?? HandCalibration.Default(frame.Width, frame.Height);
+            var quad = new[] { (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0) }
+                .Select(p => { var (x, y) = c.Inverse(p.Item1, p.Item2); return new PointF((float)x * scale, (float)y * scale); }).ToArray();
+            using var area = new Pen(Color.FromArgb(160, 255, 255, 255), 1) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
+            g.DrawPolygon(area, quad);
+        }
+
         if (hand is not null)
         {
             using var g = Graphics.FromImage(bmp);
