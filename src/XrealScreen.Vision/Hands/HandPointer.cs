@@ -80,6 +80,12 @@ public sealed record HandPointerOptions
     /// </summary>
     public double MaxOffset { get; init; } = 0.05;
 
+    /// <summary>
+    /// A pinch only counts while the hand moves slower than this (screen units/s). E3 test 2026-11-01 (run 8): a moving
+    /// hand hides the thumb and reads as pinched; those clicks landed 90–187 px from the target.
+    /// </summary>
+    public double PinchMaxSpeed { get; init; } = 0.2;
+
     /// <summary>One Euro smoothing of the pointer (on top of the landmark smoothing), in screen units (0..1).</summary>
     public float MinCutoffHz { get; init; } = 0.5f;
 
@@ -124,6 +130,8 @@ public sealed class HandPointer
     private bool _ignoredPinch;
     private (double U, double V, double T)? _prevHand;
     private (double U, double V) _out;
+    private double _handSpeed;
+    private (double U, double V, double T)? _prevRaw;
 
     public HandPointer(HandCalibration calibration, HandPointerOptions? options = null)
     {
@@ -163,6 +171,15 @@ public sealed class HandPointer
 
     public PointerFrame Update(HandResult? hand, double timeSeconds)
     {
+        // hand speed first: the pinch filter below needs this frame's speed
+        (double U, double V) raw = default;
+        if (hand is not null)
+        {
+            var (ax, ay) = Anchor(hand);
+            raw = Calibration.Map(ax, ay);
+            UpdateHandSpeed(raw.U, raw.V, timeSeconds);
+        }
+
         float clickRatio = hand?.PinchRatio ?? float.NaN;
         // the scroll pinch only counts while the index finger is clearly not pinching
         float scrollRatio = hand is null ? float.NaN : clickRatio > _click.OpenRatio || _scroll.IsPressed ? MiddlePinchRatio(hand) : 1f;
@@ -176,6 +193,7 @@ public sealed class HandPointer
             _v.Reset();
             _history.Clear();
             _prevHand = null;
+            _prevRaw = null;
             _dwellStart = double.NaN;
             bool up = clickEvent == PinchEvent.Released || _dwellUpPending;
             _dwellUpPending = false;
@@ -187,8 +205,7 @@ public sealed class HandPointer
             return new PointerFrame(false, _last.U, _last.V, up ? PointerAction.ButtonUp : PointerAction.None, 0);
         }
 
-        var (ax, ay) = Anchor(hand);
-        var (rawU, rawV) = Calibration.Map(ax, ay);
+        var (rawU, rawV) = raw;
         double handU = _u.Filter((float)rawU, timeSeconds);
         double handV = _v.Filter((float)rawV, timeSeconds);
         var (u, v) = ApplyGain(handU, handV, timeSeconds);
@@ -242,6 +259,22 @@ public sealed class HandPointer
         _last = timeSeconds < _frozenUntil ? _frozenAt : (u, v);
         double wait = Math.Max(0, _lastUp + _options.RepeatGuard.TotalSeconds - timeSeconds);
         return new PointerFrame(true, Clamp(_last.U), Clamp(_last.V), action, notches, dwell, wait, Click != ClickMode.Pinch && !_dwellArmed);
+    }
+
+    /// <summary>Hand speed from the unsmoothed position (the smoothed one lags at the start of a movement), lightly averaged.</summary>
+    private void UpdateHandSpeed(double u, double v, double t)
+    {
+        if (_prevRaw is { } p && t > p.T)
+        {
+            double speed = Math.Sqrt((u - p.U) * (u - p.U) + (v - p.V) * (v - p.V)) / (t - p.T);
+            _handSpeed = 0.5 * _handSpeed + 0.5 * speed;
+        }
+        else
+        {
+            _handSpeed = 0;
+        }
+
+        _prevRaw = (u, v, t);
     }
 
     /// <summary>Hand position → pointer position with the precision zone (slow = fine control, fast = 1:1 and catch up).</summary>
@@ -329,7 +362,7 @@ public sealed class HandPointer
     /// <summary>Drops pinches in dwell-only mode and pinches that start within the repeat guard (and their release).</summary>
     private PinchEvent FilterPinch(PinchEvent e, double t)
     {
-        if (e == PinchEvent.Pressed && (Click == ClickMode.Dwell || t < _lastUp + _options.RepeatGuard.TotalSeconds))
+        if (e == PinchEvent.Pressed && (Click == ClickMode.Dwell || t < _lastUp + _options.RepeatGuard.TotalSeconds || _handSpeed > _options.PinchMaxSpeed))
         {
             _ignoredPinch = true;
             return PinchEvent.None;

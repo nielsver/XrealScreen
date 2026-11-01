@@ -319,6 +319,25 @@ public class HandPointerTests
         Assert.InRange(f.U, 0.78, 0.86);
     }
 
+    [Fact]
+    public void PinchWhileTheHandMoves_IsIgnored()
+    {
+        var pointer = new HandPointer(Identity(), PinchOnly);
+        double t = 0;
+        for (int i = 0; i < 10; i++, t += Frame)
+        {
+            pointer.Update(Hand(0.2f, 0.5f, 1.0f), t);
+        }
+
+        // sweeping at 0.6 screen/s while the camera reads "pinched" (thumb hidden)
+        for (int i = 1; i < 15; i++, t += Frame)
+        {
+            Assert.NotEqual(PointerAction.ButtonDown, pointer.Update(Hand(0.2f + 0.04f * i, 0.5f, 0.1f), t).Action);
+        }
+
+        Assert.False(pointer.IsButtonDown);
+    }
+
     private static readonly HandPointerOptions PinchOnly = new() { Click = ClickMode.Pinch };
 
     /// <summary>Camera coordinates equal screen units (0..1) for easy numbers.</summary>
