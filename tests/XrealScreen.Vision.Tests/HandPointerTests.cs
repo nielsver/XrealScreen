@@ -223,6 +223,59 @@ public class HandPointerTests
         }
     }
 
+    [Fact]
+    public void PinchRightAfterAClick_IsIgnored_UntilTheRepeatGuardHasPassed()
+    {
+        var pointer = new HandPointer(Identity(), PinchOnly);
+        var downs = new List<double>();
+        double t = 0;
+        // pinch, open, pinch again 0.4 s later (a bounce), then a real pinch 1.5 s later
+        foreach (var (pinch, frames) in new[] { (1.0f, 10), (0.1f, 4), (1.0f, 4), (0.1f, 4), (1.0f, 22), (0.1f, 4), (1.0f, 4) })
+        {
+            for (int i = 0; i < frames; i++, t += Frame)
+            {
+                if (pointer.Update(Hand(0.5f, 0.5f, pinch), t).Action == PointerAction.ButtonDown)
+                {
+                    downs.Add(t);
+                }
+            }
+        }
+
+        Assert.Equal(2, downs.Count);
+        Assert.False(pointer.IsButtonDown);
+    }
+
+    [Fact]
+    public void HoldingStill_AfterAPinchClick_DoesNotDwellClickAgain()
+    {
+        var pointer = new HandPointer(Identity());
+        double t = 0;
+        int downs = 0;
+        foreach (var (pinch, frames) in new[] { (1.0f, 5), (0.1f, 4), (1.0f, 60) })
+        {
+            for (int i = 0; i < frames; i++, t += Frame)
+            {
+                downs += pointer.Update(Hand(0.5f, 0.5f, pinch), t).Action == PointerAction.ButtonDown ? 1 : 0;
+            }
+        }
+
+        Assert.Equal(1, downs);
+    }
+
+    [Fact]
+    public void DwellMode_IgnoresPinches_AndStillDwellsWithAHandThatLooksPinched()
+    {
+        var pointer = new HandPointer(Identity(), new HandPointerOptions { Click = ClickMode.Dwell });
+        var actions = new List<PointerAction>();
+        for (int i = 0; i < 20; i++)
+        {
+            // relaxed hand: the camera reads thumb and index as closed
+            actions.Add(pointer.Update(Hand(0.4f, 0.4f, 0.1f), i * Frame).Action);
+        }
+
+        Assert.Equal([PointerAction.ButtonDown, PointerAction.ButtonUp], actions.Where(a => a != PointerAction.None));
+    }
+
     private static readonly HandPointerOptions PinchOnly = new() { Click = ClickMode.Pinch };
 
     /// <summary>Camera coordinates equal screen units (0..1) for easy numbers.</summary>

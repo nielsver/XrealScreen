@@ -69,6 +69,9 @@ public sealed class HandControlEngine(HandControlOptions options, IPointerOutput
 
     public HandCalibration? Calibration { get; set; } = options.Calibration;
 
+    /// <summary>How clicks are made; can change while running (calibration uses dwell only).</summary>
+    public ClickMode Click { get; set; } = options.PointerOptions.Click;
+
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -93,6 +96,8 @@ public sealed class HandControlEngine(HandControlOptions options, IPointerOutput
                             {
                                 pointer.Calibration = c;
                             }
+
+                            pointer.Click = Click;
 
                             var p = pointer.Update(hand, frame.TimestampNs / 1e9);
                             var (state, screen) = Send(p);

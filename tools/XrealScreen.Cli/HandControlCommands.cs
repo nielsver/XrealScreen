@@ -30,7 +30,7 @@ internal static class HandControlCommands
 
     public static Command CreateControl()
     {
-        var calibrate = new Option<bool>("--calibrate") { Description = "Calibrate first (5 dots on the glasses; point and pinch on each). Saved for next time." };
+        var calibrate = new Option<bool>("--calibrate") { Description = "Calibrate first (5 dots on the glasses; point at each and hold still). Saved for next time." };
         var seconds = new Option<double>("--seconds") { Description = "How long to run (0 = until Ctrl+C).", DefaultValueFactory = _ => 0 };
         var models = HandsCommands.ModelsOption();
         var log = LogOption();
@@ -107,6 +107,9 @@ internal static class HandControlCommands
         })
         {
             OutputEnabled = !session.Calibrating,
+
+            // a relaxed hand reads close to "pinched" (E3 test 2026-11-01: 7 of 8 calibrations spoiled by stray pinches); dwell only
+            Click = session.Calibrating ? ClickMode.Dwell : click,
         };
         using var window = session.Calibrating || targets > 0 ? HandTargetWindow.Open(area, cts.Cancel) : null;
         session.Window = window;
@@ -114,7 +117,7 @@ internal static class HandControlCommands
         if (session.Calibrating)
         {
             session.ShowCalibrationTarget();
-            Console.WriteLine("Calibrating: point at each green dot on the glasses and pinch.");
+            Console.WriteLine("Calibrating: point at each green dot on the glasses and hold still until the ring fills.");
         }
         else if (targets > 0)
         {
@@ -172,6 +175,7 @@ internal static class HandControlCommands
                 }
 
                 engine.OutputEnabled = true;
+                engine.Click = click;
             }
 
             if (clock.ElapsedMilliseconds - lastPrint >= 1000)
@@ -256,7 +260,7 @@ internal static class HandControlCommands
             _openedSincePoint = false;
             Calibrating = true;
             ShowCalibrationTarget();
-            Window?.SetText("That calibration was not accurate. Again: calibration 1 of 5 - point your knuckle at the green dot, then pinch.");
+            Window?.SetText("That calibration was not accurate. Again: calibration 1 of 5 - point your knuckle at the green dot and hold still.");
         }
 
         public int Hits { get; private set; }
@@ -267,10 +271,10 @@ internal static class HandControlCommands
         {
             var (u, v) = CalibrationTargets[_points.Count];
             Window?.ShowTarget(u, v, 36, Color.LimeGreen);
-            Window?.SetText($"Calibration {_points.Count + 1} of {CalibrationTargets.Length}: hold your hand relaxed, point the white-ring knuckle at the green dot, then pinch or hold still until the ring fills.");
+            Window?.SetText($"Calibration {_points.Count + 1} of {CalibrationTargets.Length}: hold your hand relaxed, point the white-ring knuckle at the green dot, then hold still until the green ring fills (pinches are ignored while calibrating).");
         }
 
-        /// <summary>Feeds a frame during calibration; returns all points once the last dot was pinched.</summary>
+        /// <summary>Feeds a frame during calibration; returns all points once the last dot was clicked.</summary>
         public List<CalibrationPoint>? OnCalibrationFrame(HandResult? hand, PointerAction action)
         {
             // a release can come in a frame without a hand (hand briefly lost): it still counts as "opened"

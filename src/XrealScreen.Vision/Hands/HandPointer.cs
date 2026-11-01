@@ -47,6 +47,12 @@ public sealed record HandPointerOptions
     /// <summary>After a dwell click the pointer must move this far (screen units) before the next dwell can start.</summary>
     public double DwellRearm { get; init; } = 0.03;
 
+    /// <summary>
+    /// No new click this long after the last release (E3 test 2026-11-01: 3 of 5 misses were a dwell click plus a pinch,
+    /// or a bouncing pinch, right after a hit). Double-click is not supported while this is non-zero.
+    /// </summary>
+    public TimeSpan RepeatGuard { get; init; } = TimeSpan.FromSeconds(1);
+
     /// <summary>One Euro smoothing of the pointer (on top of the landmark smoothing), in screen units (0..1).</summary>
     public float MinCutoffHz { get; init; } = 1.0f;
 
@@ -87,18 +93,24 @@ public sealed class HandPointer
     private bool _dwellArmed = true;
     private (double U, double V) _dwellClickAt;
     private bool _dwellUpPending;
+    private double _lastUp = double.NegativeInfinity;
+    private bool _ignoredPinch;
 
     public HandPointer(HandCalibration calibration, HandPointerOptions? options = null)
     {
         Calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         _options = options ?? new HandPointerOptions();
+        Click = _options.Click;
         _u = new OneEuroFilter(_options.MinCutoffHz, _options.Beta);
         _v = new OneEuroFilter(_options.MinCutoffHz, _options.Beta);
     }
 
     public HandCalibration Calibration { get; set; }
 
-    public bool IsButtonDown => _click.IsPressed;
+    /// <summary>How clicks are made; can change at run time (calibration uses <see cref="ClickMode.Dwell"/>).</summary>
+    public ClickMode Click { get; set; }
+
+    public bool IsButtonDown => _click.IsPressed && !_ignoredPinch;
 
     public bool IsScrolling => _scroll.IsPressed;
 
@@ -125,7 +137,8 @@ public sealed class HandPointer
         float clickRatio = hand?.PinchRatio ?? float.NaN;
         // the scroll pinch only counts while the index finger is clearly not pinching
         float scrollRatio = hand is null ? float.NaN : clickRatio > _click.OpenRatio || _scroll.IsPressed ? MiddlePinchRatio(hand) : 1f;
-        var clickEvent = _scroll.IsPressed || _options.Click == ClickMode.Dwell ? PinchEvent.None : _click.Update(clickRatio, timeSeconds);
+        var clickEvent = _scroll.IsPressed ? PinchEvent.None : _click.Update(clickRatio, timeSeconds);
+        clickEvent = FilterPinch(clickEvent, timeSeconds);
         var scrollEvent = _click.IsPressed ? PinchEvent.None : _scroll.Update(scrollRatio, timeSeconds);
 
         if (hand is null)
@@ -136,6 +149,11 @@ public sealed class HandPointer
             _dwellStart = double.NaN;
             bool up = clickEvent == PinchEvent.Released || _dwellUpPending;
             _dwellUpPending = false;
+            if (up)
+            {
+                _lastUp = timeSeconds;
+            }
+
             return new PointerFrame(false, _last.U, _last.V, up ? PointerAction.ButtonUp : PointerAction.None, 0);
         }
 
@@ -161,6 +179,11 @@ public sealed class HandPointer
             action = PointerAction.ButtonUp;
             _frozenAt = _last;
             _frozenUntil = timeSeconds + _options.ClickFreeze.TotalSeconds;
+            _lastUp = timeSeconds;
+
+            // holding still after a pinch click must not dwell-click the same spot again
+            _dwellArmed = false;
+            _dwellClickAt = _last;
         }
 
         int notches = 0;
@@ -180,7 +203,7 @@ public sealed class HandPointer
         }
 
         double dwell = 0;
-        if (_options.Click != ClickMode.Pinch && action == PointerAction.None)
+        if (Click != ClickMode.Pinch && action == PointerAction.None)
         {
             (action, dwell) = UpdateDwell(u, v, timeSeconds);
         }
@@ -195,10 +218,11 @@ public sealed class HandPointer
         if (_dwellUpPending)
         {
             _dwellUpPending = false;
+            _lastUp = t;
             return (PointerAction.ButtonUp, 0);
         }
 
-        if (_click.IsPressed)
+        if (IsButtonDown || t < _lastUp + _options.RepeatGuard.TotalSeconds)
         {
             _dwellStart = double.NaN;
             return (PointerAction.None, 0);
@@ -238,6 +262,24 @@ public sealed class HandPointer
         return (PointerAction.ButtonDown, 1);
     }
 
+    /// <summary>Drops pinches in dwell-only mode and pinches that start within the repeat guard (and their release).</summary>
+    private PinchEvent FilterPinch(PinchEvent e, double t)
+    {
+        if (e == PinchEvent.Pressed && (Click == ClickMode.Dwell || t < _lastUp + _options.RepeatGuard.TotalSeconds))
+        {
+            _ignoredPinch = true;
+            return PinchEvent.None;
+        }
+
+        if (e == PinchEvent.Released && _ignoredPinch)
+        {
+            _ignoredPinch = false;
+            return PinchEvent.None;
+        }
+
+        return e;
+    }
+
     private static double Distance((double U, double V) a, (double U, double V) b) =>
         Math.Sqrt((a.U - b.U) * (a.U - b.U) + (a.V - b.V) * (a.V - b.V));
 
@@ -252,6 +294,8 @@ public sealed class HandPointer
         _dwellStart = double.NaN;
         _dwellArmed = true;
         _dwellUpPending = false;
+        _lastUp = double.NegativeInfinity;
+        _ignoredPinch = false;
     }
 
     private (double U, double V) PositionAt(double t, (double U, double V) fallback)
