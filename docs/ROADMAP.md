@@ -74,6 +74,7 @@ Facts: `docs/findings/xreal-eye-camera.md`. Order: E0 → E1 → E2 → E3 → E
 | XREAL SDK experimental package facts, RGB Blend Mode plan, handoff | 2026-10-29 | 20 | 44,577 | 2,208,479 | 14,855 |
 | E10 read-only probe (control scan stopped at 0x2711, listen-only 52996/camera with Gesture Control on/off), SDK AXR facts | 2026-10-31 | 72 | 187,686 | 12,869,378 | 36,545 |
 | XREAL SDK C#/Unity read as reference + E2 hand tracking (prototype, engine, tests, CLI, 3 live pinch tests) | 2026-10-31 | 103 | 227,536 | 35,296,450 | 119,671 |
+| E3 hand control in xrs (engine, calibration, dwell, precision zone, 8 spoken target tests) | 2026-11-01 | 147 | 827,618 | 43,938,484 | 153,084 |
 
 **E0 Camera feed foundation**
 Built (2026-10-29, `feature/eye-camera-e0`): `EyeFrameFramer`, pooled `EyeFrame`, `XrealEyeCameraSource` (reconnect is left to the caller, like `XrealOneImuSource`) and `.xrcam` (`XrcamWriter`/`XrcamReader`) in `Device.XrealOne`; `xrs camera snapshot | record | live`; tests on synthetic frames (no real room images in the repo); **glasses info**: `ControlWire` + `XrealControlClient` (port 52999, read-only GETs) + `GlassesInfo`/`GlassesCalibration` → `xrs device info` and a **Glasses** card on the app's Device page (software + DSP version, serial number, cameras with field of view, calibration date) — **no update check**.
@@ -97,8 +98,10 @@ Deliverables: `tools/Convert-HandModels.ps1` (MediaPipe hand landmarker → ONNX
 - [ ] Hand lost for ~1 s during fast free movement (found 62–82 % in the idle minute): improve in E3 (e.g. run the palm detector while tracking is weak, keep the region a few frames)
 
 **E3 Hand control (pointer + click)**
+Built (2026-11-01, `feature/hand-tracking-e2`): `HandCalibration` (affine, 5-point least squares; rejects error > 0.1 or a screen corner within 25 px of the camera edge), `HandPointer` (index-base anchor, One Euro 0.5 Hz, precision zone 30 % gain below 0.15 screen/s with catch-up and ≤ 0.05 lag, click = pinch or dwell 1.2 s, 1 s repeat guard, pinch ignored while the hand moves > 0.2 screen/s, thumb+middle scroll), `Host.Hands.HandControlEngine` (camera reconnect, pause on real input, `SendInputPointer`), `HandCalibrationStore`; `xrs hands control | targets [--calibrate] [--click] [--wait-go] [--log]` with a target window (camera inset, skeleton, pinch meter, dwell ring, wait hints, global Esc). Calibration ignores pinches (dwell only).
+Target tests with the user 2026-11-01 (all 10/10 hit, 40 px, 1920×1200 glasses monitor): misses 27 → 5 → 23 → 19 → 7 → 21 per run; median 4.7–20 s per target. Causes found: thumb hidden when aiming (pinch ratio of a relaxed hand 0.19–0.37, i.e. near "closed"), stray pinches while moving, dwell firing while adjusting beside the target, pointer jitter ±26 px at ~8 screen px per camera px, hand found only 40–85 % in the evening run (camera mean 65 vs 76 in the morning). The moving-pinch filter (last fix) is not yet tested on the glasses.
 Deliverables: `HandControlEngine` (SendInput like head look); 5-point calibration; pinch = click, pinch-hold = drag, pinch-drag vertical = scroll; pauses on real mouse/keyboard input and after 3 s without a hand; Ctrl+Alt+J; app **Hands** page (on/off, calibrate, sensitivity, left/right hand, preview) + tray item; camera-in-use indicator; warning to keep the glasses' Gesture Control off.
-- [ ] User can click 10 targets of 40 px on the glasses display, ≤ 1 miss — at 15 fps (Gesture Control off); if this fails, E10 (60 fps) moves before E4
+- [ ] User can click 10 targets of 40 px on the glasses display, ≤ 1 miss — at 15 fps (Gesture Control off); if this fails, E10 (60 fps) moves before E4 — not met yet (best run 7 misses, 2026-11-01)
 - [ ] Off = camera socket closed, 0 % CPU
 
 **E4 Virtual keyboard**
