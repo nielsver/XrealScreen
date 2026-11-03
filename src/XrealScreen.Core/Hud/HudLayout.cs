@@ -9,6 +9,9 @@ public enum HudPart
     Horizon,
     Ladder,
     Tape,
+
+    /// <summary>Sparse line drawings: corners, wings, heading caret, and the recenter marker.</summary>
+    Marker,
 }
 
 /// <summary>A straight stroke in normalized device coordinates, x right, y up, each axis from -1 to 1.</summary>
@@ -31,6 +34,9 @@ public sealed record HudLayoutOptions
 
     public bool ShowClock { get; init; } = true;
 
+    /// <summary>Corner brackets, wings, the heading caret, and the recenter diamond. Still only strokes.</summary>
+    public bool ShowMarkers { get; init; } = true;
+
     /// <summary>Normalized-device units per degree. 0.028 puts a ±20° ladder inside the frame.</summary>
     public float DegreesToNdc { get; init; } = 0.028f;
 }
@@ -48,12 +54,16 @@ public sealed record HudStyle
 
     public bool ShowClock { get; init; } = true;
 
+    /// <summary>Corner brackets, wings, the heading caret, and the recenter diamond.</summary>
+    public bool ShowMarkers { get; init; } = true;
+
     public HudLayoutOptions ToLayout() => new()
     {
         ShowHorizon = ShowHorizon,
         ShowLadder = ShowLadder,
         ShowTape = ShowTape,
         ShowClock = ShowClock,
+        ShowMarkers = ShowMarkers,
     };
 }
 
@@ -71,10 +81,14 @@ public static class HudLayout
     {
         options ??= new HudLayoutOptions();
         float scale = options.DegreesToNdc;
-        var lines = new List<HudSegment>(32);
+        var lines = new List<HudSegment>(64);
         var labels = new List<HudText>(24);
 
         AddReticle(lines);
+        if (options.ShowMarkers)
+        {
+            AddDrawings(lines, yawDegrees, pitchDegrees, rollDegrees, scale);
+        }
 
         if (options.ShowHorizon)
         {
@@ -132,6 +146,76 @@ public static class HudLayout
     {
         int wrapped = degrees % 360;
         return wrapped < 0 ? wrapped + 360 : wrapped;
+    }
+
+    /// <summary>Line drawings only. No filled panel, so the room stays visible.</summary>
+    private static void AddDrawings(List<HudSegment> lines, float yawDegrees, float pitchDegrees, float rollDegrees, float scale)
+    {
+        AddCorner(lines, -0.90f, 0.82f, 0.07f, -0.07f);
+        AddCorner(lines, 0.90f, 0.82f, -0.07f, -0.07f);
+        AddCorner(lines, -0.90f, -0.82f, 0.07f, 0.07f);
+        AddCorner(lines, 0.90f, -0.82f, -0.07f, 0.07f);
+
+        lines.Add(new HudSegment(HudPart.Marker, -0.18f, -0.02f, -0.07f, 0f));
+        lines.Add(new HudSegment(HudPart.Marker, 0.07f, 0f, 0.18f, -0.02f));
+        lines.Add(new HudSegment(HudPart.Marker, -0.028f, 0.90f, 0f, 0.95f));
+        lines.Add(new HudSegment(HudPart.Marker, 0.028f, 0.90f, 0f, 0.95f));
+
+        float homeX = yawDegrees * scale;
+        float homeY = (-pitchDegrees * scale) + 0.12f;
+        float radians = rollDegrees * MathF.PI / 180f;
+        float cosine = MathF.Cos(radians);
+        float sine = MathF.Sin(radians);
+        float screenX = (homeX * cosine) - (homeY * sine);
+        float screenY = (homeX * sine) + (homeY * cosine);
+        const float edge = 0.86f;
+        if (MathF.Abs(screenX) <= edge && MathF.Abs(screenY) <= edge)
+        {
+            AddDiamond(lines, screenX, screenY, 0.03f, cosine, sine);
+        }
+        else
+        {
+            AddEdgeChevron(lines, screenX, screenY);
+        }
+    }
+
+    private static void AddCorner(List<HudSegment> lines, float x, float y, float armX, float armY)
+    {
+        lines.Add(new HudSegment(HudPart.Marker, x, y, x + armX, y));
+        lines.Add(new HudSegment(HudPart.Marker, x, y, x, y + armY));
+    }
+
+    private static void AddDiamond(List<HudSegment> lines, float centerX, float centerY, float radius, float cosine, float sine)
+    {
+        Span<(float X, float Y)> points = stackalloc (float, float)[4];
+        points[0] = Rotate(centerX, centerY, 0f, radius, cosine, sine);
+        points[1] = Rotate(centerX, centerY, radius, 0f, cosine, sine);
+        points[2] = Rotate(centerX, centerY, 0f, -radius, cosine, sine);
+        points[3] = Rotate(centerX, centerY, -radius, 0f, cosine, sine);
+        for (int i = 0; i < points.Length; i++)
+        {
+            (float x0, float y0) = points[i];
+            (float x1, float y1) = points[(i + 1) % points.Length];
+            lines.Add(new HudSegment(HudPart.Marker, x0, y0, x1, y1));
+        }
+    }
+
+    private static (float X, float Y) Rotate(float centerX, float centerY, float x, float y, float cosine, float sine) =>
+        (centerX + (x * cosine) - (y * sine), centerY + (x * sine) + (y * cosine));
+
+    private static void AddEdgeChevron(List<HudSegment> lines, float towardX, float towardY)
+    {
+        float length = MathF.Max(MathF.Sqrt((towardX * towardX) + (towardY * towardY)), 0.001f);
+        float ux = towardX / length;
+        float uy = towardY / length;
+        float tipX = ux * 0.82f;
+        float tipY = uy * 0.82f;
+        float backX = tipX - (ux * 0.05f);
+        float backY = tipY - (uy * 0.05f);
+        float px = -uy * 0.03f;
+        float py = ux * 0.03f;
+        lines.Add(new HudSegment(HudPart.Marker, tipX, tipY, backX + px, backY + py));
+        lines.Add(new HudSegment(HudPart.Marker, tipX, tipY, backX - px, backY - py));
     }
 
     private static void AddReticle(List<HudSegment> lines)

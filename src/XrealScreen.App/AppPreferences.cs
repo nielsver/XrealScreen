@@ -56,6 +56,9 @@ public sealed class AppPreferences
 
     public bool HudShowClock { get; set; } = true;
 
+    /// <summary>Sparse HUD drawings: corners, wings, heading caret, recenter diamond (ADR-0017).</summary>
+    public bool HudShowMarkers { get; set; } = true;
+
     /// <summary>Hand click mode: 0 pinch, 1 hold still, 2 either (ADR-0016).</summary>
     public int HandClick { get; set; } = 2;
 

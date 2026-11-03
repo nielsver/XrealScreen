@@ -68,3 +68,4 @@
 | 2026-11-03 | Grok | Clear AR HUD (ADR-0017): black glasses frame, horizon / ladder / heading tape / clock. No camera. Wear test pending. |
 | 2026-11-03 | Grok | Merged nikryden/Screen-XREAL-1S (MIT) into this repo: Eye camera, hand tracking, glasses info, website. HUD and `xrs link` kept. |
 | 2026-11-03 | Grok | Hands page, tray item, and Ctrl+Alt+J. Camera closes on stop. Calibration stays in `xrs hands targets`. Not worn yet. |
+| 2026-11-03 | Grok | HUD drawings: corner brackets, wings, heading caret, recenter diamond. Strokes only. Wear test of the drawings pending. |

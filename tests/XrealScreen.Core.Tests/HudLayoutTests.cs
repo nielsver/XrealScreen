@@ -67,6 +67,50 @@ public class HudLayoutTests
     }
 
     [Fact]
+    public void Markers_KeepTheCornerBracketsFixedWhenTheHeadRolls()
+    {
+        static bool TopLeft(HudSegment line) =>
+            line.Part == HudPart.Marker && Near(line.X0, -0.90f) && Near(line.Y0, 0.82f);
+
+        Assert.Contains(HudLayout.Build(0, 0, 0, clock: null).Lines, TopLeft);
+        Assert.Contains(HudLayout.Build(30, 15, 40, clock: null).Lines, TopLeft);
+    }
+
+    [Fact]
+    public void TurnLeft_MovesTheHomeDiamondToTheRight()
+    {
+        static float DiamondX(float yaw)
+        {
+            var diamond = HudLayout.Build(yaw, 0, 0, clock: null).Lines
+                .Where(line => line.Part == HudPart.Marker && line.Y0 > 0.05f && line.Y0 < 0.25f && MathF.Abs(line.X0) < 0.6f)
+                .ToList();
+            Assert.NotEmpty(diamond);
+            return diamond.Average(line => (line.X0 + line.X1) / 2f);
+        }
+
+        Assert.Equal(0, DiamondX(0), precision: 2);
+        Assert.True(DiamondX(12) > 0.2f);
+    }
+
+    [Fact]
+    public void LookFarUp_ReplacesTheDiamondWithAnEdgeChevron()
+    {
+        var lines = HudLayout.Build(0, 80, 0, clock: null).Lines.Where(line => line.Part == HudPart.Marker).ToList();
+
+        Assert.Contains(lines, line => line.Y0 < -0.7f && MathF.Abs(line.X0) < 0.15f);
+        Assert.DoesNotContain(lines, line => line.Y0 is > 0.05f and < 0.25f && MathF.Abs(line.X0) < 0.2f);
+    }
+
+    [Fact]
+    public void HiddenMarkers_OmitTheDrawings()
+    {
+        var frame = HudLayout.Build(0, 0, 0, clock: null, new HudLayoutOptions { ShowMarkers = false });
+
+        Assert.DoesNotContain(frame.Lines, line => line.Part == HudPart.Marker);
+        Assert.Contains(frame.Lines, line => line.Part == HudPart.Reticle);
+    }
+
+    [Fact]
     public void Clock_AppearsOnlyWhenEnabled()
     {
         var shown = HudLayout.Build(0, 0, 0, "21:05");
@@ -75,4 +119,6 @@ public class HudLayoutTests
         Assert.Contains(shown.Labels, label => label.Text == "21:05");
         Assert.DoesNotContain(hidden.Labels, label => label.Text == "21:05");
     }
+
+    private static bool Near(float value, float expected) => MathF.Abs(value - expected) < 0.001f;
 }

@@ -36,6 +36,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         ShowLadder = App.Preferences.HudShowLadder;
         ShowTape = App.Preferences.HudShowTape;
         ShowClock = App.Preferences.HudShowClock;
+        ShowMarkers = App.Preferences.HudShowMarkers;
         _loading = false;
     }
 
@@ -53,6 +54,9 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     public partial bool ShowClock { get; set; }
+
+    [ObservableProperty]
+    public partial bool ShowMarkers { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsStopped))]
@@ -73,7 +77,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (_loading || e.PropertyName is not (nameof(Brightness) or nameof(ShowHorizon) or nameof(ShowLadder) or nameof(ShowTape) or nameof(ShowClock)))
+        if (_loading || e.PropertyName is not (nameof(Brightness) or nameof(ShowHorizon) or nameof(ShowLadder) or nameof(ShowTape) or nameof(ShowClock) or nameof(ShowMarkers)))
         {
             return;
         }
@@ -83,6 +87,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         App.Preferences.HudShowLadder = ShowLadder;
         App.Preferences.HudShowTape = ShowTape;
         App.Preferences.HudShowClock = ShowClock;
+        App.Preferences.HudShowMarkers = ShowMarkers;
         _engine?.UpdateStyle(CurrentStyle());
         _saveTimer.Stop();
         _saveTimer.Start();
@@ -172,6 +177,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         ShowLadder = ShowLadder,
         ShowTape = ShowTape,
         ShowClock = ShowClock,
+        ShowMarkers = ShowMarkers,
     };
 
     private async Task StopEngineAsync(ArHudEngine engine)

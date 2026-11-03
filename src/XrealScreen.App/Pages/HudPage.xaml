@@ -44,6 +44,8 @@
                     <ToggleSwitch Header="Pitch ladder" IsOn="{x:Bind Hud.ShowLadder, Mode=TwoWay}" />
                     <ToggleSwitch Header="Heading tape" IsOn="{x:Bind Hud.ShowTape, Mode=TwoWay}" />
                     <ToggleSwitch Header="Clock" IsOn="{x:Bind Hud.ShowClock, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Drawings" IsOn="{x:Bind Hud.ShowMarkers, Mode=TwoWay}" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Drawings are thin strokes only: corner brackets, wings, a caret on the heading, and a diamond on the direction you last recentered. Nothing fills the view." />
                 </StackPanel>
             </Border>
         </StackPanel>
