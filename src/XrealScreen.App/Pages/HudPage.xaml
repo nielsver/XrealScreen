@@ -46,7 +46,7 @@
                     <ToggleSwitch Header="Clock" IsOn="{x:Bind Hud.ShowClock, Mode=TwoWay}" />
                     <ToggleSwitch Header="Drawings" IsOn="{x:Bind Hud.ShowMarkers, Mode=TwoWay}" />
                     <ToggleSwitch Header="Look actions" IsOn="{x:Bind Hud.ShowGlance, Mode=TwoWay}" />
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Look at a mark and hold still until the line fills. Up shows what you copied. Left starts a 25 minute timer. Right plays or pauses. Down mutes. The marks stay in the room when you turn your head. The view stays clear." />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Look at a mark and hold still until the line fills. Up shows what you copied. Left starts a 25 minute timer. Right plays or pauses. Down mutes. Further up, READ, reads the text on your main monitor and shows a short note. Set XAI_API_KEY for an AI summary; without it you get the recognized text. The note stays for 15 seconds. The marks stay in the room when you turn your head. The view stays clear." />
                 </StackPanel>
             </Border>
         </StackPanel>

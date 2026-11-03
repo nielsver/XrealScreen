@@ -131,6 +131,7 @@ public class HudLayoutTests
         Assert.Equal(0, y, precision: 3);
         Assert.Equal(0, HudLayout.NearestPin(0, 18, 0, pins, 0.028f, HudGlance.AimRadius));
         Assert.Equal(-1, HudLayout.NearestPin(0, 0, 0, pins, 0.028f, HudGlance.AimRadius));
+        Assert.Equal(4, HudLayout.NearestPin(0, 32, 0, pins, 0.028f, HudGlance.AimRadius));
     }
 
     [Fact]

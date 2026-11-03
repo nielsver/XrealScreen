@@ -60,7 +60,7 @@ public sealed record HudStyle
     /// <summary>Corner brackets, wings, the heading caret, and the recenter diamond.</summary>
     public bool ShowMarkers { get; init; } = true;
 
-    /// <summary>Look-targets for the clipboard, timer, play, and mute.</summary>
+    /// <summary>Look-targets for the clipboard, timer, play, mute, and screen read.</summary>
     public bool ShowGlance { get; init; } = true;
 
     public string GlanceUp { get; init; } = "CLIP";
@@ -70,6 +70,12 @@ public sealed record HudStyle
     public string GlanceRight { get; init; } = "PLAY";
 
     public string GlanceDown { get; init; } = "MUTE";
+
+    /// <summary>The mark further up. Looking at it reads the main monitor.</summary>
+    public string GlanceRead { get; init; } = "READ";
+
+    /// <summary>The note under the reticle. Null leaves that area clear.</summary>
+    public HudCaptionPicture? Caption { get; init; }
 
     public HudLayoutOptions ToLayout() => new()
     {

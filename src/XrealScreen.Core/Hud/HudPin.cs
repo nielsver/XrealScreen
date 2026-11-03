@@ -13,12 +13,13 @@ public static class HudGlance
 
     public static readonly TimeSpan Hold = TimeSpan.FromMilliseconds(700);
 
-    public static HudPin[] Create(string up, string left, string right, string down) =>
+    public static HudPin[] Create(string up, string left, string right, string down, string read = "READ") =>
     [
         new(0, up, 0f, 18f, 0f),
         new(1, left, 22f, 0f, 0f),
         new(2, right, -22f, 0f, 0f),
         new(3, down, 0f, -16f, 0f),
+        new(4, read, 0f, 32f, 0f),
     ];
 }
 

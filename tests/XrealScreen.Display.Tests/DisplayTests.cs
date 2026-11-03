@@ -60,6 +60,29 @@ public class DisplayTests
     public void Locator_UnknownXrealProduct_FallsBackToManufacturer() =>
         Assert.Equal(GlassesModel.Unknown, GlassesDisplayLocator.Identify(Monitor("MRG", 0x9999, @"\\.\DISPLAY9")));
 
+    [Fact]
+    public void ReadingMonitor_UsesTheDeskAndSkipsTheGlasses()
+    {
+        DisplayMonitor desk = Screen("BNQ", 0x1234, @"\\.\DISPLAY2", primary: true, 3840, 2160);
+        DisplayMonitor glasses = Screen("MRG", 0x4101, @"\\.\DISPLAY3", primary: false, 3840, 1080);
+        DisplayMonitor phantom = Screen("CHY", 0x0001, @"\\.\DISPLAY9", primary: false, 1920, 1080);
+
+        Assert.Equal(@"\\.\DISPLAY2", ReadingMonitor.Choose([desk, glasses, phantom])?.GdiDeviceName);
+    }
+
+    [Fact]
+    public void ReadingMonitor_SkipsTheGlassesWhenTheyArePrimary()
+    {
+        DisplayMonitor glasses = Screen("MRG", 0x4101, @"\\.\DISPLAY3", primary: true, 3840, 1080);
+        DisplayMonitor laptop = Screen("LGD", 0x0001, @"\\.\DISPLAY1", primary: false, 1920, 1200);
+
+        Assert.Equal(@"\\.\DISPLAY1", ReadingMonitor.Choose([glasses, laptop])?.GdiDeviceName);
+        Assert.Null(ReadingMonitor.Choose([glasses]));
+    }
+
+    private static DisplayMonitor Screen(string manufacturer, int product, string gdi, bool primary, int width, int height) =>
+        new(gdi, "x", manufacturer, product, "path-" + gdi, new Resolution(width, height), 0, 0, 60, primary, "DisplayPort", 1, 1);
+
     private static DisplayMonitor Monitor(string manufacturer, int product, string gdi) =>
         new(gdi, "x", manufacturer, product, "path", new Resolution(1920, 1080), 0, 0, 60, true, "DisplayPort", 1, 1);
 }

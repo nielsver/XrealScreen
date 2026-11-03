@@ -28,8 +28,8 @@ public static partial class ScreenCapture
         await memory.AsStreamForRead().CopyToAsync(file, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Top-down BGRA pixels of the screen area, fully opaque.</summary>
-    private static unsafe byte[] CaptureBgra(Rectangle bounds)
+    /// <summary>Top-down BGRA pixels of the screen area, fully opaque. Coordinates are physical pixels.</summary>
+    public static unsafe byte[] CaptureBgra(Rectangle bounds)
     {
         if (bounds.Width <= 0 || bounds.Height <= 0)
         {

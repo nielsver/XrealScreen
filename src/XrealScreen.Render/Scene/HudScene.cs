@@ -26,6 +26,15 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         float4 PS(PsIn i) : SV_Target { return i.col; }
         """;
 
+    private const string CaptionShader = """
+        struct VsIn { float2 pos : POSITION; float2 uv : TEXCOORD0; };
+        struct PsIn { float4 pos : SV_Position; float2 uv : TEXCOORD0; };
+        PsIn VS(VsIn i) { PsIn o; o.pos = float4(i.pos, 0, 1); o.uv = i.uv; return o; }
+        Texture2D Card : register(t0);
+        SamplerState Samp : register(s0);
+        float4 PS(PsIn i) : SV_Target { return Card.Sample(Samp, i.uv); }
+        """;
+
     private readonly GraphicsDevice _gd;
     private readonly Func<HudStyle> _style;
     private readonly Func<string?> _clock;
@@ -36,6 +45,16 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
     private readonly ID3D11RasterizerState _rasterizer;
     private readonly HudVertex[] _cpu = new HudVertex[MaxVertices];
     private readonly HudAim _aim = new();
+    private readonly ID3D11VertexShader _captionVs;
+    private readonly ID3D11PixelShader _captionPs;
+    private readonly ID3D11InputLayout _captionLayout;
+    private readonly ID3D11Buffer _captionVertices;
+    private readonly ID3D11SamplerState _captionSampler;
+    private ID3D11Texture2D? _captionTexture;
+    private ID3D11ShaderResourceView? _captionView;
+    private int _captionRevision = -1;
+    private int _captionWidth;
+    private int _captionHeight;
     private float _yaw;
     private float _pitch;
     private float _roll;
@@ -60,6 +79,17 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ], vsCode.Span);
         _vertices = graphics.Device.CreateBuffer(new BufferDescription((uint)(MaxVertices * Marshal.SizeOf<HudVertex>()), BindFlags.VertexBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
         _rasterizer = graphics.Device.CreateRasterizerState(RasterizerDescription.CullNone);
+        ReadOnlyMemory<byte> captionVs = Compiler.Compile(CaptionShader, "VS", "hud-card.hlsl", "vs_5_0");
+        ReadOnlyMemory<byte> captionPs = Compiler.Compile(CaptionShader, "PS", "hud-card.hlsl", "ps_5_0");
+        _captionVs = graphics.Device.CreateVertexShader(captionVs.Span);
+        _captionPs = graphics.Device.CreatePixelShader(captionPs.Span);
+        _captionLayout = graphics.Device.CreateInputLayout(
+        [
+            new InputElementDescription("POSITION", 0, Format.R32G32_Float, 0, 0),
+            new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 8, 0),
+        ], captionVs.Span);
+        _captionVertices = graphics.Device.CreateBuffer(new BufferDescription(6 * 16, BindFlags.VertexBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
+        _captionSampler = graphics.Device.CreateSamplerState(SamplerDescription.LinearClamp);
     }
 
     public void SetPose(HeadView pose)
@@ -84,10 +114,19 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ctx.ClearRenderTargetView(target, new Color4(0f, 0f, 0f, 1f));
         ctx.RSSetViewport(new Viewport(width, height));
         ctx.RSSetState(_rasterizer);
-        if (count == 0)
+        if (count > 0)
         {
-            return;
+            DrawLines(ctx, count);
         }
+
+        if (style.Caption is { } caption)
+        {
+            DrawCaption(ctx, caption, width, height);
+        }
+    }
+
+    private void DrawLines(ID3D11DeviceContext ctx, int count)
+    {
 
         var mapped = ctx.Map(_vertices, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
         try
@@ -110,8 +149,120 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ctx.Draw((uint)count, 0);
     }
 
+    private void DrawCaption(ID3D11DeviceContext ctx, HudCaptionPicture picture, int frameWidth, int frameHeight)
+    {
+        if (picture.Revision != _captionRevision || _captionTexture is null || _captionWidth != picture.Width || _captionHeight != picture.Height)
+        {
+            UploadCaption(picture);
+        }
+
+        if (_captionView is not { } view)
+        {
+            return;
+        }
+
+        float halfW = picture.Width / (float)Math.Max(frameWidth, 1);
+        float halfH = picture.Height / (float)Math.Max(frameHeight, 1);
+        float centerY = -0.42f;
+        if (centerY - halfH < -0.92f)
+        {
+            centerY = -0.92f + halfH;
+        }
+
+        float left = -halfW;
+        float right = halfW;
+        float top = centerY + halfH;
+        float bottom = centerY - halfH;
+        Span<float> vertices = stackalloc float[24];
+        WriteCaptionVertex(vertices, 0, left, top, 0f, 0f);
+        WriteCaptionVertex(vertices, 4, right, top, 1f, 0f);
+        WriteCaptionVertex(vertices, 8, right, bottom, 1f, 1f);
+        WriteCaptionVertex(vertices, 12, left, top, 0f, 0f);
+        WriteCaptionVertex(vertices, 16, right, bottom, 1f, 1f);
+        WriteCaptionVertex(vertices, 20, left, bottom, 0f, 1f);
+
+        var mapped = ctx.Map(_captionVertices, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            unsafe
+            {
+                vertices.CopyTo(new Span<float>(mapped.DataPointer.ToPointer(), 24));
+            }
+        }
+        finally
+        {
+            ctx.Unmap(_captionVertices, 0);
+        }
+
+        ctx.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+        ctx.IASetInputLayout(_captionLayout);
+        ctx.IASetVertexBuffer(0, _captionVertices, 16);
+        ctx.VSSetShader(_captionVs);
+        ctx.PSSetShader(_captionPs);
+        ctx.PSSetShaderResource(0, view);
+        ctx.PSSetSampler(0, _captionSampler);
+        ctx.Draw(6, 0);
+    }
+
+    private void UploadCaption(HudCaptionPicture picture)
+    {
+        if (_captionTexture is null || _captionWidth != picture.Width || _captionHeight != picture.Height)
+        {
+            _captionView?.Dispose();
+            _captionTexture?.Dispose();
+            _captionTexture = _gd.Device.CreateTexture2D(new Texture2DDescription(
+                Format.B8G8R8A8_UNorm,
+                (uint)picture.Width,
+                (uint)picture.Height,
+                1,
+                1,
+                BindFlags.ShaderResource,
+                ResourceUsage.Dynamic,
+                CpuAccessFlags.Write));
+            _captionView = _gd.Device.CreateShaderResourceView(_captionTexture);
+            _captionWidth = picture.Width;
+            _captionHeight = picture.Height;
+        }
+
+        var mapped = _gd.Context.Map(_captionTexture, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            unsafe
+            {
+                byte* destination = (byte*)mapped.DataPointer;
+                int rowBytes = picture.Width * 4;
+                int pitch = checked((int)mapped.RowPitch);
+                for (int y = 0; y < picture.Height; y++)
+                {
+                    Marshal.Copy(picture.Bgra, y * rowBytes, (nint)(destination + (y * pitch)), rowBytes);
+                }
+            }
+        }
+        finally
+        {
+            _gd.Context.Unmap(_captionTexture, 0);
+        }
+
+        _captionRevision = picture.Revision;
+    }
+
+    private static void WriteCaptionVertex(Span<float> vertices, int index, float x, float y, float u, float v)
+    {
+        vertices[index] = x;
+        vertices[index + 1] = y;
+        vertices[index + 2] = u;
+        vertices[index + 3] = v;
+    }
+
     public void Dispose()
     {
+        _captionView?.Dispose();
+        _captionTexture?.Dispose();
+        _captionSampler.Dispose();
+        _captionVertices.Dispose();
+        _captionLayout.Dispose();
+        _captionPs.Dispose();
+        _captionVs.Dispose();
         _rasterizer.Dispose();
         _vertices.Dispose();
         _layout.Dispose();
@@ -127,7 +278,7 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
             return null;
         }
 
-        HudPin[] pins = HudGlance.Create(style.GlanceUp, style.GlanceLeft, style.GlanceRight, style.GlanceDown);
+        HudPin[] pins = HudGlance.Create(style.GlanceUp, style.GlanceLeft, style.GlanceRight, style.GlanceDown, style.GlanceRead);
         float scale = style.ToLayout().DegreesToNdc;
         int aimed = HudLayout.NearestPin(_yaw, _pitch, _roll, pins, scale, HudGlance.AimRadius);
         long now = Stopwatch.GetTimestamp();

@@ -25,6 +25,10 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     private DateTime _clipboardReadAt;
     private bool _clipboardPending;
     private string _clipboard = "CLIP";
+    private HudCaptionPicture? _caption;
+    private DateTime _captionUntil;
+    private int _captionRevision;
+    private int _readGeneration;
 
     public HudViewModel(DispatcherQueue dispatcher)
     {
@@ -143,7 +147,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         }
 
         IsRunning = true;
-        Status = "Look at a mark and hold still. Up is what you copied, left is a 25 minute timer, right plays or pauses, down mutes.";
+        Status = "Look at a mark and hold still. Up is what you copied, left is a 25 minute timer, right plays or pauses, down mutes. Further up reads your main screen.";
         RefreshStatus();
         _statusTimer.Start();
     }
@@ -157,6 +161,8 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
             await StopEngineAsync(engine).ConfigureAwait(true);
         }
 
+        _readGeneration++;
+        _caption = null;
         IsRunning = false;
         Status = "Stopped. The glasses show your desktop again.";
         Pose = string.Empty;
@@ -170,6 +176,8 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     {
         _statusTimer.Stop();
         _saveTimer.Stop();
+        _readGeneration++;
+        _caption = null;
         if (_engine is { } engine)
         {
             _engine = null;
@@ -198,6 +206,8 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         GlanceLeft = TimerLabel(),
         GlanceRight = "PLAY",
         GlanceDown = "MUTE",
+        GlanceRead = "READ",
+        Caption = DateTime.UtcNow < _captionUntil ? _caption : null,
     };
 
     private async Task StopEngineAsync(ArHudEngine engine)
@@ -252,6 +262,11 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
             RequestClipboard();
         }
 
+        if (_caption is not null && DateTime.UtcNow >= _captionUntil)
+        {
+            _caption = null;
+        }
+
         engine.UpdateStyle(CurrentStyle());
     }
 
@@ -273,8 +288,53 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
             case 3:
                 GlanceInput.Tap(GlanceInput.VolumeMute);
                 break;
+            case 4:
+                StartScreenRead();
+                break;
         }
 
+        _engine?.UpdateStyle(CurrentStyle());
+    }
+
+    private void StartScreenRead()
+    {
+        int generation = ++_readGeneration;
+        ShowCaption(CaptionRaster.Draw("Reading the screen", ++_captionRevision), TimeSpan.FromSeconds(30));
+        _ = FinishScreenReadAsync(generation);
+    }
+
+    private async Task FinishScreenReadAsync(int generation)
+    {
+        string note;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+            note = await ScreenRead.ReadAsync(timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            note = "TOO SLOW";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            note = "NO SCREEN";
+        }
+
+        _dispatcher.TryEnqueue(() =>
+        {
+            if (generation != _readGeneration || _engine is null)
+            {
+                return;
+            }
+
+            ShowCaption(CaptionRaster.Draw(note, ++_captionRevision), TimeSpan.FromSeconds(15));
+        });
+    }
+
+    private void ShowCaption(HudCaptionPicture picture, TimeSpan visibleFor)
+    {
+        _caption = picture;
+        _captionUntil = DateTime.UtcNow + visibleFor;
         _engine?.UpdateStyle(CurrentStyle());
     }
 

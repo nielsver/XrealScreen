@@ -14,13 +14,14 @@ public sealed class HudSceneTests : IDisposable
 
     private readonly GraphicsDevice _gd = GraphicsDevice.Create(warp: true);
     private readonly HudScene _scene;
+    private HudStyle _style = new() { Brightness = 1f, ShowClock = false };
     private readonly ID3D11Texture2D _target;
     private readonly ID3D11RenderTargetView _rtv;
     private readonly ID3D11Texture2D _staging;
 
     public HudSceneTests()
     {
-        _scene = new HudScene(_gd, () => new HudStyle { Brightness = 1f, ShowClock = false });
+        _scene = new HudScene(_gd, () => _style);
         _target = _gd.Device.CreateTexture2D(new Texture2DDescription(Format.B8G8R8A8_UNorm, W, H, 1, 1, BindFlags.RenderTarget));
         _rtv = _gd.Device.CreateRenderTargetView(_target);
         _staging = _gd.Device.CreateTexture2D(new Texture2DDescription(Format.B8G8R8A8_UNorm, W, H, 1, 1, BindFlags.None, ResourceUsage.Staging, CpuAccessFlags.Read));
@@ -34,6 +35,27 @@ public sealed class HudSceneTests : IDisposable
 
         Assert.Equal(0xFF000000, pixels[1 * W + 1]);
         Assert.True(LitNear(pixels, NdcToX(-0.04f), NdcToY(0f)));
+    }
+
+    [Fact]
+    public void Caption_PaintsACardUnderTheReticleAndLeavesTheCornerBlack()
+    {
+        var bgra = new byte[40 * 20 * 4];
+        for (int i = 0; i < bgra.Length; i += 4)
+        {
+            bgra[i] = 16;
+            bgra[i + 1] = 200;
+            bgra[i + 2] = 220;
+            bgra[i + 3] = 255;
+        }
+
+        _style = _style with { Caption = new HudCaptionPicture(1, 40, 20, bgra) };
+        _scene.SetPose(new HeadView(Quaternion.Identity, Vector3.Zero));
+        uint[] pixels = Render();
+
+        Assert.Equal(0xFF000000, pixels[1 * W + 1]);
+        uint card = pixels[(NdcToY(-0.42f) * W) + NdcToX(0f)];
+        Assert.True((byte)(card >> 8) > 100, "The card should be visible under the reticle.");
     }
 
     public void Dispose()
