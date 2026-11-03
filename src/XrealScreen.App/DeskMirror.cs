@@ -4,47 +4,78 @@ using XrealScreen.Display;
 
 namespace XrealScreen.App;
 
-/// <summary>One frame of the main monitor, never the glasses.</summary>
+/// <summary>Live frames of the main monitor, never the glasses. One <see cref="LiveScreenCopy"/> stays on the calling thread.</summary>
 internal static class DeskMirror
 {
     private static readonly object Gate = new();
-    private static DisplayMonitor? _monitor;
+    private static DisplayMonitor? _desk;
+    private static DisplayMonitor? _glasses;
     private static long _chosenAt;
 
-    public readonly record struct Pixels(byte[] Bgra, int Width, int Height);
+    public readonly record struct Frame(
+        byte[] Bgra,
+        int Width,
+        int Height,
+        int DeskX,
+        int DeskY,
+        int DeskWidth,
+        int DeskHeight,
+        int GlassesX,
+        int GlassesY,
+        int GlassesWidth,
+        int GlassesHeight);
 
-    public static async Task<Pixels?> CaptureAsync(int maxWidth, CancellationToken cancellationToken)
+    public static Frame? Capture(LiveScreenCopy copy, int maxWidth)
     {
-        DisplayMonitor? monitor = await Task.Run(Choose, cancellationToken).ConfigureAwait(false);
-        if (monitor is null)
+        ArgumentNullException.ThrowIfNull(copy);
+        (DisplayMonitor? desk, DisplayMonitor? glasses) = Choose();
+        if (desk is null)
         {
             return null;
         }
 
-        var bounds = new Rectangle(monitor.X, monitor.Y, monitor.Resolution.Width, monitor.Resolution.Height);
-        byte[] pixels = await Task.Run(() => ScreenCapture.CaptureBgra(bounds), cancellationToken).ConfigureAwait(false);
-        (byte[] shrunk, int width, int height) = ScreenCapture.Shrink(pixels, bounds.Width, bounds.Height, maxWidth);
-        return new Pixels(shrunk, width, height);
+        var bounds = new Rectangle(desk.X, desk.Y, desk.Resolution.Width, desk.Resolution.Height);
+        LiveScreenCopy.Frame? pixels = copy.Copy(bounds, maxWidth);
+        if (pixels is not { } frame)
+        {
+            return null;
+        }
+
+        return new Frame(
+            frame.Pixels,
+            frame.Width,
+            frame.Height,
+            desk.X,
+            desk.Y,
+            desk.Resolution.Width,
+            desk.Resolution.Height,
+            glasses?.X ?? 0,
+            glasses?.Y ?? 0,
+            glasses?.Resolution.Width ?? 0,
+            glasses?.Resolution.Height ?? 0);
     }
 
-    private static DisplayMonitor? Choose()
+    private static (DisplayMonitor? Desk, DisplayMonitor? Glasses) Choose()
     {
         long now = Environment.TickCount64;
         lock (Gate)
         {
-            if (_monitor is not null && now - _chosenAt < 2000)
+            if (_chosenAt != 0 && now - _chosenAt < 2000)
             {
-                return _monitor;
+                return (_desk, _glasses);
             }
         }
 
-        DisplayMonitor? chosen = ReadingMonitor.Choose(new CcdDisplayTopology().GetActiveMonitors());
+        IReadOnlyList<DisplayMonitor> monitors = new CcdDisplayTopology().GetActiveMonitors();
+        DisplayMonitor? desk = ReadingMonitor.Choose(monitors);
+        DisplayMonitor? glasses = GlassesDisplayLocator.FindGlasses(monitors);
         lock (Gate)
         {
-            _monitor = chosen;
+            _desk = desk;
+            _glasses = glasses;
             _chosenAt = Environment.TickCount64;
         }
 
-        return chosen;
+        return (desk, glasses);
     }
 }

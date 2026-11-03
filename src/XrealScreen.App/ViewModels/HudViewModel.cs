@@ -35,6 +35,12 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     private int _suggestGeneration;
     private int _suggestNow;
     private readonly object _suggestGate = new();
+    private readonly object _frameGate = new();
+    private byte[]? _pendingFrame;
+    private int _pendingWidth;
+    private int _pendingHeight;
+    private int _framePosted;
+    private int _mirroring;
 
     public HudViewModel(DispatcherQueue dispatcher)
     {
@@ -153,7 +159,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         }
 
         IsRunning = true;
-        Status = "Your main monitor is on the glasses. Grok looks at it and puts a suggestion on the screen. Look further up and hold still to ask again.";
+        Status = "Your main monitor is live on the glasses. The mouse stays on that monitor. Grok looks at it and puts a suggestion on the screen. Look further up and hold still to ask again.";
         BeginLive();
         RefreshStatus();
         _statusTimer.Start();
@@ -307,6 +313,8 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         StopLive();
         _live = new CancellationTokenSource();
         CancellationToken token = _live.Token;
+        Volatile.Write(ref _mirroring, 1);
+        DeskMouseRelay.Start();
         ShowCaption(CaptionRaster.Draw("Looking at the screen", ++_captionRevision));
         _ = MirrorAsync(token);
         _ = SuggestAsync(token);
@@ -314,6 +322,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
 
     private void StopLive()
     {
+        Volatile.Write(ref _mirroring, 0);
         Volatile.Write(ref _suggestGeneration, _suggestGeneration + 1);
         lock (_suggestGate)
         {
@@ -323,6 +332,13 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         _live?.Cancel();
         _live?.Dispose();
         _live = null;
+        DeskMouseRelay.Stop();
+        lock (_frameGate)
+        {
+            _pendingFrame = null;
+        }
+
+        Interlocked.Exchange(ref _framePosted, 0);
         Volatile.Write(ref _screen, null);
         _caption = null;
     }
@@ -338,52 +354,59 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
 
     private async Task MirrorAsync(CancellationToken token)
     {
+        try
+        {
+            await Task.Run(() => MirrorLoop(token), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)
+        {
+        }
+    }
+
+    private void MirrorLoop(CancellationToken token)
+    {
+        using var copy = new XrealScreen.Display.LiveScreenCopy();
         int misses = 0;
-        while (!token.IsCancellationRequested)
+        while (Volatile.Read(ref _mirroring) != 0)
         {
             long started = Environment.TickCount64;
             try
             {
-                DeskMirror.Pixels? frame = await DeskMirror.CaptureAsync(1280, token).ConfigureAwait(false);
-                if (frame is { } pixels)
+                DeskMirror.Frame? frame = DeskMirror.Capture(copy, 1280);
+                if (frame is { } shot)
                 {
                     misses = 0;
-                    byte[] bgra = pixels.Bgra;
-                    int width = pixels.Width;
-                    int height = pixels.Height;
-                    _dispatcher.TryEnqueue(() =>
-                    {
-                        if (token.IsCancellationRequested || _engine is null)
-                        {
-                            return;
-                        }
-
-                        Volatile.Write(ref _screen, new HudCaptionPicture(++_screenRevision, width, height, bgra));
-                        _engine.UpdateStyle(CurrentStyle());
-                    });
+                    DeskMouseRelay.SetTarget(new DeskMouseRelay.Target(
+                        shot.GlassesX, shot.GlassesY, shot.GlassesWidth, shot.GlassesHeight,
+                        shot.DeskX, shot.DeskY, shot.DeskWidth, shot.DeskHeight));
+                    OfferFrame(shot.Bgra, shot.Width, shot.Height);
                 }
                 else
                 {
-                    NoteMissingScreen(++misses, token);
+                    DeskMouseRelay.SetTarget(null);
+                    NoteMissingScreen(++misses);
                 }
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)
             {
                 break;
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
             {
-                NoteMissingScreen(++misses, token);
+                NoteMissingScreen(++misses);
             }
 
-            int wait = 250 - (int)(Environment.TickCount64 - started);
+            int wait = 33 - (int)(Environment.TickCount64 - started);
             if (wait > 0)
             {
                 try
                 {
-                    await Task.Delay(wait, token).ConfigureAwait(false);
+                    if (token.WaitHandle.WaitOne(wait))
+                    {
+                        break;
+                    }
                 }
-                catch (OperationCanceledException)
+                catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)
                 {
                     break;
                 }
@@ -391,16 +414,68 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void NoteMissingScreen(int misses, CancellationToken token)
+    private void OfferFrame(byte[] bgra, int width, int height)
     {
-        if (misses != 8)
+        if (Volatile.Read(ref _mirroring) == 0)
+        {
+            return;
+        }
+
+        lock (_frameGate)
+        {
+            _pendingFrame = bgra;
+            _pendingWidth = width;
+            _pendingHeight = height;
+        }
+
+        if (Interlocked.CompareExchange(ref _framePosted, 1, 0) == 0)
+        {
+            _dispatcher.TryEnqueue(PublishFrame);
+        }
+    }
+
+    private void PublishFrame()
+    {
+        byte[]? bgra;
+        int width;
+        int height;
+        lock (_frameGate)
+        {
+            bgra = _pendingFrame;
+            width = _pendingWidth;
+            height = _pendingHeight;
+            _pendingFrame = null;
+        }
+
+        Interlocked.Exchange(ref _framePosted, 0);
+        if (bgra is not null && Volatile.Read(ref _mirroring) != 0 && _engine is not null)
+        {
+            Volatile.Write(ref _screen, new HudCaptionPicture(++_screenRevision, width, height, bgra));
+            _engine.UpdateStyle(CurrentStyle());
+        }
+
+        bool more;
+        lock (_frameGate)
+        {
+            more = _pendingFrame is not null;
+        }
+
+        if (more && Volatile.Read(ref _mirroring) != 0 && Interlocked.CompareExchange(ref _framePosted, 1, 0) == 0)
+        {
+            _dispatcher.TryEnqueue(PublishFrame);
+        }
+    }
+
+    private void NoteMissingScreen(int misses)
+    {
+        if (misses != 30)
         {
             return;
         }
 
         _dispatcher.TryEnqueue(() =>
         {
-            if (!token.IsCancellationRequested && _engine is not null)
+            if (Volatile.Read(ref _mirroring) != 0 && _engine is not null)
             {
                 ShowCaption(CaptionRaster.Draw("NO SCREEN", ++_captionRevision));
             }
