@@ -1,0 +1,101 @@
+using System.Numerics;
+using Vortice.Direct3D11;
+using Vortice.DXGI;
+using XrealScreen.Core.Hud;
+using XrealScreen.Render.Scene;
+
+namespace XrealScreen.Render.Tests;
+
+/// <summary>The clear HUD draws strokes on black and leaves the rest of the frame empty.</summary>
+public sealed class HudSceneTests : IDisposable
+{
+    private const int W = 160;
+    private const int H = 100;
+
+    private readonly GraphicsDevice _gd = GraphicsDevice.Create(warp: true);
+    private readonly HudScene _scene;
+    private readonly ID3D11Texture2D _target;
+    private readonly ID3D11RenderTargetView _rtv;
+    private readonly ID3D11Texture2D _staging;
+
+    public HudSceneTests()
+    {
+        _scene = new HudScene(_gd, () => new HudStyle { Brightness = 1f, ShowClock = false });
+        _target = _gd.Device.CreateTexture2D(new Texture2DDescription(Format.B8G8R8A8_UNorm, W, H, 1, 1, BindFlags.RenderTarget));
+        _rtv = _gd.Device.CreateRenderTargetView(_target);
+        _staging = _gd.Device.CreateTexture2D(new Texture2DDescription(Format.B8G8R8A8_UNorm, W, H, 1, 1, BindFlags.None, ResourceUsage.Staging, CpuAccessFlags.Read));
+    }
+
+    [Fact]
+    public void LevelPose_PaintsTheReticleAndLeavesTheCornerBlack()
+    {
+        _scene.SetPose(new HeadView(Quaternion.Identity, Vector3.Zero));
+        uint[] pixels = Render();
+
+        Assert.Equal(0xFF000000, pixels[1 * W + 1]);
+        Assert.True(LitNear(pixels, NdcToX(-0.04f), NdcToY(0f)));
+    }
+
+    public void Dispose()
+    {
+        _rtv.Dispose();
+        _target.Dispose();
+        _staging.Dispose();
+        _scene.Dispose();
+        _gd.Dispose();
+    }
+
+    private uint[] Render()
+    {
+        _scene.Render(_rtv, W, H, Matrix4x4.Identity);
+        _gd.Context.CopyResource(_staging, _target);
+        var map = _gd.Context.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            var pixels = new uint[W * H];
+            unsafe
+            {
+                for (int y = 0; y < H; y++)
+                {
+                    new ReadOnlySpan<uint>((byte*)map.DataPointer + (y * map.RowPitch), W).CopyTo(pixels.AsSpan(y * W, W));
+                }
+            }
+
+            return pixels;
+        }
+        finally
+        {
+            _gd.Context.Unmap(_staging, 0);
+        }
+    }
+
+    private static int NdcToX(float ndcX) => (int)((ndcX * 0.5f + 0.5f) * W);
+
+    private static int NdcToY(float ndcY) => (int)((0.5f - (ndcY * 0.5f)) * H);
+
+    private static bool LitNear(uint[] pixels, int x, int y)
+    {
+        for (int dy = -2; dy <= 2; dy++)
+        {
+            for (int dx = -2; dx <= 2; dx++)
+            {
+                int px = x + dx;
+                int py = y + dy;
+                if ((uint)px >= W || (uint)py >= H)
+                {
+                    continue;
+                }
+
+                uint pixel = pixels[(py * W) + px];
+                byte b = (byte)pixel;
+                byte g = (byte)(pixel >> 8);
+                if (g > 80 && b > 80)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+}

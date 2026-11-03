@@ -57,6 +57,11 @@ Deliverables: HDR tone-map, DPI, hybrid GPU, One/One Pro regression, accessibili
 - [ ] Accessibility pass
 - [ ] v1.0 tagged
 
+## AR HUD (ADR-0015) — in progress
+Clear glasses view with a flight-style overlay. No camera, no recognition, no scanning.
+- [x] Layout math and a simulated session that does not touch the display
+- [ ] Wear test on an XREAL One: Follow, Stabilizer off, UltraWide Off. The room is visible, the horizon tilts with the head, the tape scrolls when you turn, Recenter sets heading zero, Stop leaves the desktop as it was.
+
 ## Later
 - Own IddCx driver (WDK + EV cert + attestation signing)
 - Air-series HID support

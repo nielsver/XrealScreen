@@ -27,6 +27,9 @@ public enum TrayCommand
 
     /// <summary>Ctrl+Alt+0: put the cursor on the main virtual screen.</summary>
     FindCursor = 11,
+
+    /// <summary>Ctrl+Alt+U: start or stop the clear HUD.</summary>
+    ToggleHud = 15,
 }
 
 /// <summary>
@@ -46,6 +49,7 @@ public sealed unsafe partial class TrayIcon : IDisposable
     private const int HotkeyScreen4 = 7;
     private const int HotkeyScreen5 = 8;
     private const int HotkeyScreen6 = 9;
+    private const int HotkeyHud = 10;
     private static TrayIcon? s_current;
 
     private readonly uint _taskbarCreated;
@@ -80,6 +84,7 @@ public sealed unsafe partial class TrayIcon : IDisposable
         RegisterHotKey(_hwnd, HotkeyScreen5, 0x0002 | 0x0001 | 0x4000, 0x35 /* 5 */);
         RegisterHotKey(_hwnd, HotkeyScreen6, 0x0002 | 0x0001 | 0x4000, 0x36 /* 6 */);
         RegisterHotKey(_hwnd, HotkeyFindCursor, 0x0002 | 0x0001 | 0x4000, 0x30 /* 0 */);
+        HudHotkeyAvailable = RegisterHotKey(_hwnd, HotkeyHud, 0x0002 | 0x0001 | 0x4000, 0x55 /* U */);
         Tooltip = tooltip;
         Add();
     }
@@ -93,8 +98,14 @@ public sealed unsafe partial class TrayIcon : IDisposable
     /// <summary>False when Ctrl+Alt+P is already taken by another program.</summary>
     public bool ScreenshotHotkeyAvailable { get; }
 
+    /// <summary>False when Ctrl+Alt+U is already taken by another program.</summary>
+    public bool HudHotkeyAvailable { get; }
+
     /// <summary>Workspace state for the menu (Start vs Stop enabled).</summary>
     public bool WorkspaceRunning { get; set; }
+
+    /// <summary>Clear HUD state for the menu.</summary>
+    public bool HudRunning { get; set; }
 
     public string Tooltip { get; private set; }
 
@@ -157,6 +168,9 @@ public sealed unsafe partial class TrayIcon : IDisposable
         AppendMenu(menu, WorkspaceRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.StopWorkspace, "Stop workspace\tCtrl+Alt+W");
         AppendMenu(menu, WorkspaceRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.Recenter, "Recenter");
         AppendMenu(menu, WorkspaceRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.Screenshot, "Screenshot of the glasses\tCtrl+Alt+P");
+        AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
+        AppendMenu(menu, HudRunning ? MF_GRAYED : MF_STRING, (IntPtr)TrayCommand.ToggleHud, HudRunning ? "HUD is on" : "Start clear HUD\tCtrl+Alt+U");
+        AppendMenu(menu, HudRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.ToggleHud, "Stop clear HUD\tCtrl+Alt+U");
         AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
         uint send = WorkspaceRunning ? MF_STRING : MF_GRAYED;
         AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen1, "Send window to screen 1\tCtrl+Alt+1");
@@ -253,6 +267,12 @@ public sealed unsafe partial class TrayIcon : IDisposable
             if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyFindCursor)
             {
                 self.CommandInvoked?.Invoke(TrayCommand.FindCursor);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyHud)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.ToggleHud);
                 return 0;
             }
 

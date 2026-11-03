@@ -44,6 +44,8 @@ public partial class App : Application
 
     public static HeadLookViewModel HeadLook { get; private set; } = null!;
 
+    public static HudViewModel Hud { get; private set; } = null!;
+
     public static MainWindow MainWindow { get; private set; } = null!;
 
     public static AppPreferences Preferences { get; private set; } = null!;
@@ -59,6 +61,7 @@ public partial class App : Application
         Device = new DeviceViewModel();
         Session = new SessionViewModel(dispatcher, Workspace, Tracking);
         HeadLook = new HeadLookViewModel(dispatcher);
+        Hud = new HudViewModel(dispatcher);
 
         MainWindow = new MainWindow();
         MainWindow.SetTheme(ThemeFromIndex(Preferences.Theme));
@@ -71,11 +74,16 @@ public partial class App : Application
         Session.Notification += (_, n) => _tray?.ShowNotification(n.Title, n.Message);
         Session.PropertyChanged += (_, e) =>
         {
-            // The tray is gone once the app is exiting, but stopping the session still raises State changes.
-            if (e.PropertyName == nameof(SessionViewModel.State) && _tray is { } tray)
+            if (e.PropertyName == nameof(SessionViewModel.State))
             {
-                tray.WorkspaceRunning = Session.IsRunning;
-                tray.SetTooltip(Session.IsRunning ? "XrealScreen — workspace running" : "XrealScreen — workspace stopped");
+                RefreshTray();
+            }
+        };
+        Hud.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(HudViewModel.IsRunning))
+            {
+                RefreshTray();
             }
         };
 
@@ -219,10 +227,37 @@ public partial class App : Application
                 }
 
                 break;
+            case TrayCommand.ToggleHud:
+                if (Hud.IsRunning)
+                {
+                    Hud.StopCommand.Execute(null);
+                }
+                else
+                {
+                    Hud.StartCommand.Execute(null);
+                }
+
+                break;
             case TrayCommand.Exit:
                 ExitApp();
                 break;
         }
+    }
+
+    private void RefreshTray()
+    {
+        if (_tray is not { } tray)
+        {
+            return;
+        }
+
+        tray.WorkspaceRunning = Session.IsRunning;
+        tray.HudRunning = Hud.IsRunning;
+        tray.SetTooltip(Hud.IsRunning
+            ? "XrealScreen — clear HUD"
+            : Session.IsRunning
+                ? "XrealScreen — workspace running"
+                : "XrealScreen — workspace stopped");
     }
 
     private bool _shutDown;
@@ -244,6 +279,7 @@ public partial class App : Application
             _apiHandler?.Dispose();
         }
 
+        Hud.Dispose();
         HeadLook.Dispose();
         Session.Dispose();
         Tracking.Dispose();

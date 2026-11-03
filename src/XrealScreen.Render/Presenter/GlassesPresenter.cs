@@ -31,7 +31,7 @@ public sealed unsafe class GlassesPresenter : IDisposable
     private static GlassesPresenter? s_current;
 
     private readonly GraphicsDevice _gd;
-    private readonly WorkspaceScene _scene;
+    private readonly IGlassesScene _scene;
     private readonly GlassesOptics _optics;
     private readonly Func<HeadView> _latchPose;
     private readonly int _x, _y, _width, _height;
@@ -51,7 +51,7 @@ public sealed unsafe class GlassesPresenter : IDisposable
     private double _seconds;
     private Exception? _renderError;
 
-    public GlassesPresenter(GraphicsDevice graphics, WorkspaceScene scene, GlassesOptics optics, Func<HeadView> latchPose, int x, int y, int width, int height)
+    public GlassesPresenter(GraphicsDevice graphics, IGlassesScene scene, GlassesOptics optics, Func<HeadView> latchPose, int x, int y, int width, int height)
     {
         _gd = graphics;
         _scene = scene;
@@ -314,7 +314,13 @@ public sealed unsafe class GlassesPresenter : IDisposable
                 }
 
                 long latch = Stopwatch.GetTimestamp();
-                var viewProjection = Flat ? Matrix4x4.Identity : ViewMath.ViewProjection(_latchPose(), _optics); // late latch
+                HeadView head = _latchPose(); // late latch
+                if (_scene is IHudPoseSink sink)
+                {
+                    sink.SetPose(head);
+                }
+
+                var viewProjection = Flat ? Matrix4x4.Identity : ViewMath.ViewProjection(head, _optics);
                 _scene.Render(rtv, _width, _height, viewProjection);
                 swapChain.Present(0, PresentFlags.None);
                 long now = Stopwatch.GetTimestamp();

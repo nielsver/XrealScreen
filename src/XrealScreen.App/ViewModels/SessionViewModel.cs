@@ -410,6 +410,15 @@ public sealed partial class SessionViewModel : ObservableObject, IDisposable
 
     private async Task StartCoreAsync()
     {
+        if (App.Hud.IsRunning)
+        {
+            StatusTitle = "Stop the clear HUD first";
+            StatusMessage = "The workspace and the clear HUD both use the glasses display.";
+            Severity = InfoBarSeverity.Warning;
+            AddLog("not started: the clear HUD is using the glasses");
+            return;
+        }
+
         if (GlassesModeProblem() is { } problem)
         {
             // Glasses anchor with UltraWide Off: wait; CheckGlassesConnection starts once the mode is switched.

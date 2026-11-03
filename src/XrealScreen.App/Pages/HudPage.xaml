@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="XrealScreen.App.Pages.HudPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <StackPanel Padding="24,16,24,24" Spacing="16" MaxWidth="1100">
+            <TextBlock Style="{StaticResource PageTitleStyle}" Text="HUD" />
+
+            <InfoBar
+                IsClosable="True"
+                IsOpen="True"
+                Severity="Informational"
+                Title="Clear view"
+                Message="The glasses stay transparent and a small instrument overlay follows your head. On the glasses: UltraWide Off, screen mode Follow, Stabilizer off. Anchor or Stabilizer on makes the overlay swim. A workspace cannot run at the same time." />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Command="{x:Bind Hud.StartCommand}" Content="Start HUD" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Command="{x:Bind Hud.StopCommand}" Content="Stop" />
+                        <Button Command="{x:Bind Hud.RecenterCommand}" Content="Recenter" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Hud.Status, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock Text="{x:Bind Hud.Pose, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="{x:Bind Hud.HeadLookNote, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
+                        Heading zero is where you last recentered, not magnetic north. Ctrl+Alt+U starts or stops. Ctrl+Alt+R recenters. Ctrl+Alt+Q stops.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Overlay" />
+                    <Slider
+                        Header="Brightness"
+                        Maximum="1"
+                        Minimum="0.15"
+                        StepFrequency="0.05"
+                        Value="{x:Bind Hud.Brightness, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Horizon" IsOn="{x:Bind Hud.ShowHorizon, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Pitch ladder" IsOn="{x:Bind Hud.ShowLadder, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Heading tape" IsOn="{x:Bind Hud.ShowTape, Mode=TwoWay}" />
+                    <ToggleSwitch Header="Clock" IsOn="{x:Bind Hud.ShowClock, Mode=TwoWay}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

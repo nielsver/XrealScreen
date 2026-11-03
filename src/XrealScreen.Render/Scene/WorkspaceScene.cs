@@ -12,7 +12,7 @@ namespace XrealScreen.Render.Scene;
 /// Draws the workspace (one curved textured panel per virtual monitor) into any render target.
 /// Window-independent so it can be tested offscreen on WARP.
 /// </summary>
-public sealed class WorkspaceScene : IDisposable
+public sealed class WorkspaceScene : IDisposable, IGlassesScene
 {
     private const int VertexStride = 5 * sizeof(float);
 
