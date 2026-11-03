@@ -4,7 +4,13 @@
     <AssemblyName>xrs</AssemblyName>
     <RootNamespace>XrealScreen.Cli</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- WinForms for the hand preview window (xrs hands live, window option); its global usings are removed below -->
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
@@ -16,5 +22,6 @@
     <ProjectReference Include="..\..\src\XrealScreen.Render\XrealScreen.Render.csproj" />
     <ProjectReference Include="..\..\src\XrealScreen.Host\XrealScreen.Host.csproj" />
     <ProjectReference Include="..\..\src\XrealScreen.Sdk\XrealScreen.Sdk.csproj" />
+    <ProjectReference Include="..\..\src\XrealScreen.Vision\XrealScreen.Vision.csproj" />
   </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ using XrealScreen.Host.Hud;
 namespace XrealScreen.App.ViewModels;
 
 /// <summary>
-/// HUD page: a clear glasses view with a flight-style instrument overlay (ADR-0015).
+/// HUD page: a clear glasses view with a flight-style instrument overlay (ADR-0017).
 /// Refuses to start while a workspace is using the glasses display.
 /// </summary>
 public sealed partial class HudViewModel : ObservableObject, IDisposable

@@ -10,6 +10,9 @@ var root = new RootCommand("xrs — XrealScreen developer/hardware tool (see doc
 root.Subcommands.Add(DeviceCommands.CreateDevices());
 root.Subcommands.Add(DeviceCommands.CreateProbe());
 root.Subcommands.Add(DeviceCommands.CreateLink());
+root.Subcommands.Add(DeviceCommands.CreateDevice());
+root.Subcommands.Add(CameraCommands.Create());
+root.Subcommands.Add(HandsCommands.Create());
 root.Subcommands.Add(ImuCommands.Create());
 root.Subcommands.Add(DisplayCommands.Create());
 root.Subcommands.Add(VddCommands.Create());

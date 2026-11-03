@@ -45,7 +45,7 @@ public sealed class AppPreferences
     /// <summary>Navigation pane open (icons and text) or collapsed to icons.</summary>
     public bool NavPaneOpen { get; set; } = true;
 
-    /// <summary>Clear HUD line brightness, 0.15–1 (ADR-0015).</summary>
+    /// <summary>Clear HUD line brightness, 0.15–1 (ADR-0017).</summary>
     public double HudBrightness { get; set; } = 0.75;
 
     public bool HudShowHorizon { get; set; } = true;

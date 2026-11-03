@@ -1,0 +1,62 @@
+name: Website
+
+# Checks web/ on every pull request that touches it, and uploads it to the web host
+# (xrealscreen.timeonline.se, Linux LiteSpeed) over FTPS when main changes. ADR-0015.
+# Secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_DIR (remote folder, e.g. /public_html).
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', 'tools/check-website.py', '.github/workflows/website.yml']
+  pull_request:
+    paths: ['web/**', 'tools/check-website.py', '.github/workflows/website.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check pages and links
+        run: python3 tools/check-website.py web
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: website
+      url: https://xrealscreen.timeonline.se/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+      - name: Upload over FTPS
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_DIR }}
+        run: |
+          if [ -z "$FTP_SERVER" ] || [ -z "$FTP_USERNAME" ] || [ -z "$LFTP_PASSWORD" ]; then
+            echo "FTP secrets are not set; skipping upload (web/README.md)."
+            exit 0
+          fi
+          # Uploads every file (the site is small) and never deletes files on the server.
+          # --env-password reads LFTP_PASSWORD, so the password is not on the command line.
+          lftp --env-password -u "$FTP_USERNAME" "$FTP_SERVER" <<EOF
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate true
+          set net:max-retries 3
+          set net:timeout 30
+          mirror --reverse --verbose --parallel=4 --exclude-glob README.md web/ "${FTP_DIR:-/}"
+          bye
+          EOF

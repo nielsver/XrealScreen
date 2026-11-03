@@ -1,6 +1,6 @@
 # XrealScreen — agent guide
 
-Windows 11 app (.NET 10, WinUI 3) that turns XREAL 1S / One / One Pro glasses into a head-tracked multi-monitor workspace (multiple screens, ultrawide Off/21:9/32:9/16:18, auto center).
+Windows 11 app (.NET 10, WinUI 3) that turns XREAL 1S / One / One Pro glasses into a head-tracked multi-monitor workspace (multiple screens, ultrawide Off/21:9/32:9/16:18, auto center), plus a clear HUD (ADR-0017) and optional XREAL Eye hand control (ADR-0016).
 
 ## Start here (every session)
 1. Read `docs/STATUS.md` — current milestone, next steps, blockers.
@@ -16,8 +16,9 @@ dotnet run --project src/XrealScreen.App -p:Platform=x64   # `dotnet run -p:Plat
 .\installer\Build-Msi.ps1                            # MSI (FalkForge, ADR-0013): app + xrs + driver page -> artifacts\msi\ (copy only the .msi)
 .\installer\Build-Package.ps1                        # signed self-contained MSIX + install scripts -> artifacts\installer\
 .\installer\Build-StorePackage.ps1                   # unsigned Store .msixbundle (x64+ARM64) -> artifacts\store\ (installer\store\README.md)
+.\tools\Convert-HandModels.ps1                       # MediaPipe hand models -> ONNX in artifacts\models\hands (needs Python)
 .\tools\Pack-Sdk.ps1                                 # SDK NuGet packages -> artifacts\nuget\ (docs/sdk)
-dotnet run --project tools/XrealScreen.Cli -- --help       # xrs: devices | probe | imu … | display … | vdd … | capture test | render
+dotnet run --project tools/XrealScreen.Cli -- --help       # xrs: devices | probe | link | device info | imu … | camera … | hands … | display … | vdd … | capture test | render
 ```
 WinUI templates: `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates`.
 
@@ -25,17 +26,19 @@ WinUI templates: `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templa
 | Path | What |
 |------|------|
 | `src/XrealScreen.Core` | Tracking math (Madgwick, bias, auto-center, prediction), workspace/ultrawide model, abstractions, `.xrimu` |
-| `src/XrealScreen.Device.XrealOne` | One-series USB-network transport (IMU stream framer, NCM probe, `.xrcap`) |
+| `src/XrealScreen.Device.XrealOne` | One-series USB-network transport (IMU stream framer, NCM probe, `.xrcap`, control port, Eye camera, `.xrcam`) |
 | `src/XrealScreen.Device.Simulated` | Synthetic / replayed IMU |
 | `src/XrealScreen.Display` | CCD topology, glasses EDID detection, layout snapshot/restore, virtual-display-rs provider (ADR-0008) |
-| `src/XrealScreen.Render` | D3D11 (Vortice): WGC capture, workspace scene, glasses presenter (ADR-0009) |
-| `src/XrealScreen.Host` | `WorkspaceEngine` — one workspace session end to end; settings store |
-| `src/XrealScreen.App` | WinUI 3 packaged app (MVVM with CommunityToolkit.Mvvm); Home starts/stops the workspace; Games = head look; serves the local API; four looks in `Looks/` (ADR-0014) |
+| `src/XrealScreen.Render` | D3D11 (Vortice): WGC capture, workspace scene, clear HUD scene, glasses presenter (ADR-0009, ADR-0017) |
+| `src/XrealScreen.Vision` | Hand tracking on the Eye grayscale feed: MediaPipe hand models on ONNX Runtime, pinch detection (ADR-0016, M9 E2); models from `tools/Convert-HandModels.ps1` → `artifacts/models/hands` |
+| `src/XrealScreen.Host` | `WorkspaceEngine`, `ArHudEngine` (ADR-0017), `HandControlEngine` (ADR-0016); settings store |
+| `src/XrealScreen.App` | WinUI 3 packaged app (MVVM with CommunityToolkit.Mvvm); Home starts/stops the workspace; HUD page; Games = head look; serves the local API; four looks in `Looks/` (ADR-0014) |
 | `src/XrealScreen.Sdk` | Public .NET SDK (NuGet): `XrealGlasses`, `HeadLookEngine`, `GlassesDisplay` (ADR-0011/0012) |
 | `src/XrealScreen.Contracts`, `src/XrealScreen.Sdk.Client` | Local API protocol (JSON-RPC over `\\.\pipe\XrealScreen.Api`) and its .NET client (ADR-0012) |
 | `samples/` | SDK and local API samples (.NET, Python, PowerShell) |
 | `tools/XrealScreen.Cli` | `xrs` hardware/dev tool |
-| `tests/` | `XrealScreen.Core.Tests`, `.Device.Tests`, `.Display.Tests`, `.Host.Tests`, `.Render.Tests`, `.Sdk.Tests`, `.Api.Tests`, `fixtures/` |
+| `web/` | Website xrealscreen.timeonline.se: static HTML/CSS/JS, English + `/sv/`, deployed over FTPS by `.github/workflows/website.yml` (ADR-0015, `web/README.md`) |
+| `tests/` | `XrealScreen.Core.Tests`, `.Device.Tests`, `.Display.Tests`, `.Host.Tests`, `.Render.Tests`, `.Sdk.Tests`, `.Api.Tests`, `.Vision.Tests`, `fixtures/` |
 | `docs/` | STATUS, ROADMAP, ARCHITECTURE, `decisions/` (ADRs), `findings/`, `legal/SOURCES.md`, `testing/`, `sdk/` (developer docs) |
 | `.claude/agents/` | Role subagents (architect, winui-dev, device-protocol, graphics-engineer, display-driver-engineer, qa-engineer, tech-writer, legal-security-reviewer) |
 | `.claude/skills/` | winui-app, csharp-async, csharp-developer, csharp-xunit, docs-handoff, git-branch-pr, xreal-protocol, windows-display-ccd, d3d11-vortice, msix-packaging |

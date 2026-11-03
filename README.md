@@ -1,10 +1,12 @@
 # XrealScreen
 
+**Website:** https://xrealscreen.timeonline.se ([svenska](https://xrealscreen.timeonline.se/sv/))
+
 ![Two virtual screens in the glasses — Visual Studio on the left, a console on the right](images/glasses-workspace.png)
 
 *A glasses-anchor workspace. Black areas are see-through in the glasses.*
 
-Turn XREAL One, One Pro, and 1S glasses into a Windows 11 multi-monitor workspace. The glasses can hold up to six virtual screens still, or the app can move curved screens with your head. They are real Windows monitors. Stopping the app, or recovering after a crash, puts your previous monitors and refresh rates back.
+Turn XREAL One, One Pro, and 1S glasses into a Windows 11 multi-monitor workspace. The glasses can hold up to six virtual screens still, or the app can move curved screens with your head. They are real Windows monitors. Stopping the app, or recovering after a crash, puts your previous monitors and refresh rates back. A clear HUD leaves the lenses open and draws a flight-style overlay from the head tracker. With an XREAL Eye attached, `xrs` reads the grayscale camera and can move the pointer from a pinch.
 
 ## Set up
 

@@ -17,7 +17,7 @@ public enum ArHudState
 }
 
 /// <summary>
-/// Clear-view HUD session (ADR-0015): IMU → head tracker → instrument overlay on a black glasses frame.
+/// Clear-view HUD session (ADR-0017): IMU → head tracker → instrument overlay on a black glasses frame.
 /// No virtual monitors, no desktop capture, no topology changes. One session at a time.
 /// </summary>
 public sealed class ArHudEngine : IAsyncDisposable

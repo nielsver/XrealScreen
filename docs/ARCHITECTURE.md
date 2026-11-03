@@ -11,7 +11,7 @@ XrealScreen turns XREAL 1S (also One / One Pro) glasses into a head-tracked mult
 |------|--------------------|----------------|--------------------|
 | **Native** | Glasses (X1 chip) | Nothing; Windows drives the glasses as a monitor. We set mode via CCD and send recenter/control. | On |
 | **Virtual workspace** | Us (IMU → fusion) | N virtual monitors composited in 3D, fullscreen on the glasses output | **Off** (avoid double correction) |
-| **Clear HUD** (ADR-0015) | Us (IMU → fusion) | Instrument overlay on black. Black is optically clear. No virtual monitors. | **Off** (Follow, stabilizer off) |
+| **Clear HUD** (ADR-0017) | Us (IMU → fusion) | Instrument overlay on black. Black is optically clear. No virtual monitors. | **Off** (Follow, stabilizer off) |
 
 ## Components (projects)
 Projects are created when their milestone starts (no empty shells).
@@ -19,13 +19,14 @@ Projects are created when their milestone starts (no empty shells).
 | Project | Status | Responsibility |
 |---------|--------|----------------|
 | `src/XrealScreen.Core` | **exists** | Madgwick fusion (ADR-0007), gyro bias, `HeadTracker` + prediction, `AutoCenter` (`RecenterPolicy`), `UltrawideMode`, `WorkspaceLayout`, `GlassesCatalog`, `.xrimu` format, interfaces `IImuSource`, `IVirtualDisplayProvider` |
-| `src/XrealScreen.Device.XrealOne` | **exists** | NCM adapter discovery, TCP IMU client, stream framer, axis mapping, raw `.xrcap` capture |
+| `src/XrealScreen.Device.XrealOne` | **exists** | NCM adapter discovery, TCP IMU client, stream framer, axis mapping, raw `.xrcap` capture, read-only control client (port 52999), Eye grayscale camera and `.xrcam` (ADR-0016) |
 | `src/XrealScreen.Device.Simulated` | **exists** | Synthetic motion, `.xrimu` replay |
 | `src/XrealScreen.App` | **exists** | WinUI 3 (packaged, Mica, NavigationView). Home: Start/Stop/Recenter workspace + log (`SessionViewModel` → `WorkspaceEngine`); Screens: count/ultrawide/layout; Tracking: stabilizer, auto center, preview; Device; Settings |
 | `tools/XrealScreen.Cli` (`xrs`) | **exists** | `devices`, `probe`, `imu record/decode/live/replay/synth`. `imu record` is also the raw-traffic sniffer (`.xrcap`). |
 | `src/XrealScreen.Display` | **exists** | CCD topology read (`CcdDisplayTopology`), EDID glasses detection (`GlassesDisplayLocator`), `VirtualDisplayRsProvider` (ADR-0008); topology snapshot/restore next |
 | `src/XrealScreen.Render` | **exists** (capture done; render M3) | `GraphicsDevice`, `MonitorCapture` (WGC); next: D3D11 flip-model swapchain, compositor, late pose latch, stats |
-| `src/XrealScreen.Host` | **exists** | `WorkspaceEngine` (one session: virtual monitors → desktop order → refresh sync → capture → tracking → presenter; always restores the desktop), `ArHudEngine` (ADR-0015: IMU → tracker → `HudLayout` → `HudScene` on the same presenter, no virtual monitors), `WorkspaceOptions`, `WorkspaceSettingsStore` (%LOCALAPPDATA%\XrealScreen\settings.json), `WorkspaceLibrary` (named workspaces in `workspaces\`, export/import bundle). Used by the app and `xrs render`. |
+| `src/XrealScreen.Vision` | **exists** | Hand tracking on the Eye grayscale feed: MediaPipe models on ONNX Runtime (ADR-0016). Models come from `tools/Convert-HandModels.ps1` and are not in git. |
+| `src/XrealScreen.Host` | **exists** | `WorkspaceEngine` (one session: virtual monitors → desktop order → refresh sync → capture → tracking → presenter; always restores the desktop), `ArHudEngine` (ADR-0017: IMU → tracker → `HudLayout` → `HudScene` on the same presenter, no virtual monitors), `HandControlEngine` (ADR-0016, CLI), `WorkspaceOptions`, `WorkspaceSettingsStore` (%LOCALAPPDATA%\XrealScreen\settings.json), `WorkspaceLibrary` (named workspaces in `workspaces\`, export/import bundle). Used by the app and `xrs`. |
 | `src/XrealScreen.Host` (`Api/`) | **exists** | `LocalApiServer`: local API (JSON-RPC 2.0 over `\\.\pipe\XrealScreen.Api`, ADR-0012); the app implements `ILocalApiHandler` (`App/Api/AppApiHandler`) |
 | `src/XrealScreen.Sdk` | **exists** (NuGet) | Public .NET SDK (ADR-0012): `XrealGlasses` pose stream, `HeadLookEngine` + `MouseInjector` (ADR-0011), `GlassesDisplay`. Used by the app and `xrs`. Docs: `docs/sdk/dotnet-sdk.md` |
 | `src/XrealScreen.Contracts` | **exists** (NuGet, net10.0) | Local API methods, error codes, DTOs, line framing (`JsonLineChannel`), System.Text.Json source-gen. Docs: `docs/sdk/local-api.md` |

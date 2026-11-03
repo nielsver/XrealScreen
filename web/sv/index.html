@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XrealScreen — virtuella skärmar i dina XREAL-glasögon</title>
+  <meta name="description" content="XrealScreen är en gratis app för Windows 11 som gör XREAL 1S till en arbetsyta med flera skärmar: upp till sex virtuella skärmar, förankrade eller huvudstyrda.">
+  <link rel="canonical" href="https://xrealscreen.timeonline.se/sv/">
+  <link rel="alternate" hreflang="en" href="https://xrealscreen.timeonline.se/">
+  <link rel="alternate" hreflang="sv" href="https://xrealscreen.timeonline.se/sv/">
+  <link rel="alternate" hreflang="x-default" href="https://xrealscreen.timeonline.se/">
+  <meta name="theme-color" content="#0a0f17">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="XrealScreen">
+  <meta property="og:title" content="XrealScreen — virtuella skärmar i dina XREAL-glasögon">
+  <meta property="og:description" content="XrealScreen är en gratis app för Windows 11 som gör XREAL 1S till en arbetsyta med flera skärmar: upp till sex virtuella skärmar, förankrade eller huvudstyrda.">
+  <meta property="og:url" content="https://xrealscreen.timeonline.se/sv/">
+  <meta property="og:image" content="https://xrealscreen.timeonline.se/assets/img/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="sv_SE">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/assets/img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/img/icon-180.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/site.css">
+  <script src="/assets/js/theme.js"></script>
+  <script src="/assets/js/site.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "XrealScreen",
+    "operatingSystem": "Windows 11",
+    "applicationCategory": "UtilitiesApplication",
+    "description": "XrealScreen är en gratis app för Windows 11 som gör XREAL 1S till en arbetsyta med flera skärmar: upp till sex virtuella skärmar, förankrade eller huvudstyrda.",
+    "url": "https://xrealscreen.timeonline.se/sv/",
+    "downloadUrl": "https://github.com/nikryden/Screen-XREAL-1S/releases/latest",
+    "softwareVersion": "0.1 preview",
+    "license": "https://opensource.org/licenses/MIT",
+    "inLanguage": "sv",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "screenshot": "https://xrealscreen.timeonline.se/assets/img/hero-1920.webp"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Hoppa till innehållet</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/sv/" aria-label="XrealScreen startsida">
+        <img src="/assets/img/icon.svg" alt="" width="30" height="30">
+        XrealScreen <span class="tag">Förhandsversion</span>
+      </a>
+      <nav class="nav" id="site-nav" aria-label="Huvudmeny">
+        <a href="/sv/#features">Funktioner</a>
+        <a href="/sv/download.html">Ladda ner</a>
+        <a href="/sv/developers.html">Utvecklare</a>
+        <a href="/sv/faq.html">Frågor</a>
+      </nav>
+      <div class="header-tools">
+        <a class="icon-btn" href="https://github.com/nikryden/Screen-XREAL-1S" aria-label="XrealScreen på GitHub">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        </a>
+        <a class="icon-btn" href="/" hreflang="en" lang="en" aria-label="English">EN</a>
+        <button class="icon-btn theme-btn" type="button" aria-label="Byt mellan ljust och mörkt tema">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        </button>
+        <button class="icon-btn menu-btn" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Meny">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <div class="hero-text">
+          <span class="eyebrow"><span class="dot"></span>Gratis och öppen källkod · Windows 11</span>
+          <h1>Dina XREAL-glasögon <span class="accent">som ett skrivbord med flera skärmar</span></h1>
+          <p class="lead">XrealScreen gör XREAL 1S till extra skärmar i Windows. Dra fönster till dem som vanligt. Låt skärmarna stå still i rummet eller följa ditt huvud.</p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href="/sv/download.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+              Ladda ner
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/nikryden/Screen-XREAL-1S">
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+              Visa på GitHub
+            </a>
+          </div>
+          <p class="hero-meta">MIT-licens · Inget konto · Ingen telemetri</p>
+        </div>
+        <div class="hero-shot">
+          <figure>
+            <img src="/assets/img/hero-1920.webp"
+                 srcset="/assets/img/hero-1000.webp 1000w, /assets/img/hero-1920.webp 1920w, /assets/img/hero-3840.webp 3840w"
+                 sizes="(max-width: 1400px) 100vw, 1400px"
+                 width="1920" height="540" fetchpriority="high"
+                 alt="Två virtuella skärmar bredvid varandra i glasögonen: Visual Studio till vänster, ett spel med ett konsolfönster till höger">
+            <figcaption>Det här visar glasögonen: två virtuella skärmar i arbetsytan Glasses anchor (32:9). Svart är genomskinligt i glasögonen.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" aria-labelledby="how-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">Så fungerar det</span>
+          <h2 id="how-title">Koppla in, starta, jobba</h2>
+          <p>Ingen extra hårdvara. Glasögonen ansluts med en USB-C-kabel, och XrealScreen sköter resten.</p>
+        </div>
+        <div class="steps">
+          <div class="card step">
+            <h3>Anslut glasögonen</h3>
+            <p>Bilden kommer som en vanlig skärm i Windows. Huvudrörelserna kommer via glasögonens USB-nätverkslänk.</p>
+          </div>
+          <div class="card step">
+            <h3>Windows får riktiga skärmar</h3>
+            <p>XrealScreen lägger till virtuella skärmar med en drivrutin med öppen källkod. Windows behandlar dem som vilken skärm som helst.</p>
+          </div>
+          <div class="card step">
+            <h3>Se dem i glasögonen</h3>
+            <p>Skärmarna ritas i glasögonen med Direct3D 11: uppdelade pixelexakt eller placerade i 3D runt dig.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workspaces" aria-labelledby="types-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">Två typer av arbetsyta</span>
+          <h2 id="types-title">Stenstilla eller runt omkring dig</h2>
+          <p>Välj den typ som passar ditt arbete. Byt när du vill på sidan Screens.</p>
+        </div>
+        <div class="grid grid-2">
+          <article class="card type-card">
+            <img src="/assets/img/glasses-anchor.webp" width="3840" height="1080" loading="lazy" alt="Arbetsytan Glasses anchor: tre skärmar bredvid varandra över glasögonens 32:9-bild">
+            <div class="body">
+              <span class="badge">Stabilast</span>
+              <h3>Glasses anchor</h3>
+              <p>Glasögonen håller själva sin UltraWide-bild still i rummet. XrealScreen delar upp den i 1–3 pixelexakta skärmar.</p>
+              <ul class="check-list">
+                <li>UltraWide 32:9, 21:9 eller 16:18</li>
+                <li>Justerbart mellanrum och skärmformat</li>
+                <li>Startar om av sig själv när du byter UltraWide</li>
+              </ul>
+            </div>
+          </article>
+          <article class="card type-card">
+            <img src="/assets/img/look-stage.webp" width="1200" height="820" loading="lazy" alt="Utseendet Stage med tre böjda skärmar i en båge">
+            <div class="body">
+              <span class="badge">Upp till 6 skärmar</span>
+              <h3>App head tracking</h3>
+              <p>Upp till sex böjda skärmar i en båge eller ett rutnät, som appen styr med glasögonens rörelsesensorer.</p>
+              <ul class="check-list">
+                <li>Förinställningar för stabilisering och rörelseaxlar</li>
+                <li>Nackmodell och automatisk centrering med dödzon</li>
+                <li>Justerbart avstånd (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>+</kbd>/<kbd>−</kbd>)</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">Funktioner</span>
+          <h2 id="features-title">Byggd för riktigt arbete</h2>
+        </div>
+        <div class="grid grid-3">
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="9" height="7" rx="1"/><rect x="13" y="4" width="9" height="7" rx="1"/><path d="M6 15h12M9 19h6"/></svg></span>
+            <h3>Riktiga virtuella skärmar</h3>
+            <p>Windows ser extra skärmar, så alla program fungerar. Din skärmlayout och uppdateringsfrekvens kommer tillbaka när du stoppar, även efter en krasch.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></span>
+            <h3>Sparade arbetsytor</h3>
+            <p>Spara, ladda, importera och exportera dina uppsättningar. Alla inställningar sparas automatiskt.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>
+            <h3>Automatisk start</h3>
+            <p>Starta en vald arbetsyta när XrealScreen startar eller så fort du kopplar in glasögonen.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg></span>
+            <h3>Skärmbilder av glasögonen</h3>
+            <p>Spara exakt det glasögonen visar med <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd>.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15 11.5h.01M18 13.5h.01"/></svg></span>
+            <h3>Huvudstyrning i spel</h3>
+            <p>Styr spel med huvudet: huvudrörelser blir musrörelser, utan drivrutin. Testat i Skyrim.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></span>
+            <h3>För utvecklare</h3>
+            <p>En .NET-SDK för huvudrörelser och ett lokalt API som låter alla språk styra appen.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>
+            <h3>Huvudskärm</h3>
+            <p>Gör valfri virtuell skärm till huvudskärm i Windows medan arbetsytan körs.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="15" width="18" height="6" rx="1"/><path d="M7 18h.01M11 18h6M12 3v8M8 7l4 4 4-4"/></svg></span>
+            <h3>Aktivitetsfält och kortkommandon</h3>
+            <p>Körs diskret i meddelandefältet. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>W</kbd> startar och stoppar arbetsytan.</p>
+          </div>
+          <div class="card card-feature">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></span>
+            <h3>Fyra utseenden</h3>
+            <p>Stage, Lens, Instrument eller Classic. Byt när du vill under Settings → Look.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="looks" aria-labelledby="looks-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">Fyra utseenden</span>
+          <h2 id="looks-title">Gör den till din</h2>
+          <p>Varje utseende har en egen startsida. Välj under Settings → Look.</p>
+        </div>
+        <div class="tabs" data-tabs>
+          <div class="tablist" role="tablist" aria-label="Appens utseenden">
+            <button class="tab" type="button" role="tab" id="tab-stage" aria-controls="panel-stage" aria-selected="true">Stage</button>
+            <button class="tab" type="button" role="tab" id="tab-lens" aria-controls="panel-lens" aria-selected="false" tabindex="-1">Lens</button>
+            <button class="tab" type="button" role="tab" id="tab-instrument" aria-controls="panel-instrument" aria-selected="false" tabindex="-1">Instrument</button>
+            <button class="tab" type="button" role="tab" id="tab-classic" aria-controls="panel-classic" aria-selected="false" tabindex="-1">Classic</button>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="panel-stage" aria-labelledby="tab-stage">
+            <img src="/assets/img/look-stage.webp" width="1200" height="820" loading="lazy" alt="Utseendet Stage: skärmarna i ett mörkt rum i sina verkliga vinklar, med en panel för Start, Recenter, typ av arbetsyta och antal skärmar">
+            <div><h3>Stage <small>(standard)</small></h3><p>Dina skärmar i ett mörkt rum i sina verkliga vinklar, med alla åtgärder samlade i en panel.</p></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="panel-lens" aria-labelledby="tab-lens">
+            <img src="/assets/img/look-lens.webp" width="1200" height="820" loading="lazy" alt="Utseendet Lens: rund startknapp, live-värden för yaw, pitch och roll, layout och sparade arbetsytor">
+            <div><h3>Lens</h3><p>En rund startknapp med live-värden för huvudets riktning.</p></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="panel-instrument" aria-labelledby="tab-instrument">
+            <img src="/assets/img/look-instrument.webp" width="1200" height="820" loading="lazy" alt="Utseendet Instrument: statusrad, synfältskarta med gradskala, startpanel och tabell med förinställningar">
+            <div><h3>Instrument</h3><p>Ett ljust, precist utseende med en synfältskarta på en gradskala.</p></div>
+          </div>
+          <div class="tabpanel" role="tabpanel" id="panel-classic" aria-labelledby="tab-classic">
+            <img src="/assets/img/home.webp" width="1186" height="1393" loading="lazy" alt="Utseendet Classic: startsidan med start och stopp, sparade arbetsytor och förhandsvisning av layouten">
+            <div><h3>Classic</h3><p>Det vanliga Windows-utseendet: Fluent, Mica, ljust eller mörkt.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="screenshots" aria-labelledby="shots-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">Skärmbilder</span>
+          <h2 id="shots-title">En rundtur i appen</h2>
+          <p>Sidorna visas i utseendet Classic. Välj en bild för att förstora den.</p>
+        </div>
+        <div class="gallery">
+          <figure><a href="/assets/img/home.webp" data-lightbox data-caption="Home: start och stopp, sparade arbetsytor, förhandsvisning av layouten"><img src="/assets/img/home.webp" width="1186" height="1393" loading="lazy" alt="Sidan Home: start och stopp, sparade arbetsytor, förhandsvisning av layouten"></a><figcaption>Home</figcaption></figure>
+          <figure><a href="/assets/img/screens.webp" data-lightbox data-caption="Screens: typ av arbetsyta, förhandsvisning av skärmarna, huvudskärm"><img src="/assets/img/screens.webp" width="1186" height="1393" loading="lazy" alt="Sidan Screens: typ av arbetsyta, förhandsvisning av skärmarna, huvudskärm"></a><figcaption>Screens</figcaption></figure>
+          <figure><a href="/assets/img/tracking.webp" data-lightbox data-caption="Tracking: axlar, stabilisering, nackmodell, automatisk centrering"><img src="/assets/img/tracking.webp" width="1186" height="1393" loading="lazy" alt="Sidan Tracking: axlar, stabilisering, nackmodell, automatisk centrering"></a><figcaption>Tracking</figcaption></figure>
+          <figure><a href="/assets/img/games.webp" data-lightbox data-caption="Games: huvudstyrning i lägena Look eller Joystick, känslighet"><img src="/assets/img/games.webp" width="1172" height="1386" loading="lazy" alt="Sidan Games: starta och stoppa huvudstyrning, glasögonen som huvudskärm, läget Look eller Joystick, känslighet"></a><figcaption>Games</figcaption></figure>
+          <figure><a href="/assets/img/settings.webp" data-lightbox data-caption="Settings: automatisk start, meddelandefältet, utseende och tema"><img src="/assets/img/settings.webp" width="1186" height="1393" loading="lazy" alt="Sidan Settings: automatisk start, meddelandefältet, tema"></a><figcaption>Settings</figcaption></figure>
+          <figure><a href="/assets/img/device.webp" data-lightbox data-caption="Device: kontrollera anslutningen till glasögonen"><img src="/assets/img/device.webp" width="1186" height="1393" loading="lazy" alt="Sidan Device: kontroll av anslutningen till glasögonen"></a><figcaption>Device</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cta" aria-labelledby="cta-title">
+      <div class="wrap">
+        <div class="card">
+          <h2 id="cta-title">Redo att testa?</h2>
+          <p>XrealScreen är gratis och har öppen källkod. Följ guiden så har du din första arbetsyta igång på några minuter.</p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href="/sv/download.html">Ladda ner och kom igång</a>
+            <a class="btn btn-ghost" href="/sv/faq.html">Läs vanliga frågor</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="/sv/"><img src="/assets/img/icon.svg" alt="" width="30" height="30"> XrealScreen</a>
+          <p>Virtuella skärmar för XREAL-glasögon i Windows 11.</p>
+        </div>
+        <div>
+          <h2>Produkt</h2>
+          <ul>
+            <li><a href="/sv/#features">Funktioner</a></li>
+            <li><a href="/sv/download.html">Ladda ner</a></li>
+            <li><a href="/sv/download.html#setup">Kom igång</a></li>
+            <li><a href="/sv/faq.html">Frågor</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Utvecklare</h2>
+          <ul>
+            <li><a href="/sv/developers.html">SDK och lokalt API</a></li>
+            <li><a href="https://github.com/nikryden/Screen-XREAL-1S">Källkod</a></li>
+            <li><a href="https://github.com/nikryden/Screen-XREAL-1S/issues">Rapportera ett problem</a></li>
+            <li><a href="https://github.com/nikryden/Screen-XREAL-1S/releases">Versioner</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Om</h2>
+          <ul>
+            <li><a href="/sv/privacy.html">Integritetspolicy</a></li>
+            <li><a href="https://github.com/nikryden/Screen-XREAL-1S/blob/main/LICENSE">MIT-licens</a></li>
+            <li><a href="mailto:xrealscreen@timeonline.se">xrealscreen@timeonline.se</a></li>
+            <li><a href="/" hreflang="en" lang="en">English</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-legal">
+        <p>© 2026 XrealScreens bidragsgivare. MIT-licens.</p>
+        <p>Inofficiellt projekt, inte knutet till eller godkänt av XREAL. XREAL är ett varumärke som tillhör sin ägare.</p>
+      </div>
+    </div>
+  </footer>
+
+  <dialog class="lightbox" id="lightbox" aria-label="Skärmbild">
+    <button class="close" type="button" aria-label="Stäng">×</button>
+    <img alt="">
+    <p></p>
+  </dialog>
+</body>
+</html>
