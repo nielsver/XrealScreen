@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -34,9 +35,14 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
     private readonly ID3D11Buffer _vertices;
     private readonly ID3D11RasterizerState _rasterizer;
     private readonly HudVertex[] _cpu = new HudVertex[MaxVertices];
+    private readonly HudAim _aim = new();
     private float _yaw;
     private float _pitch;
     private float _roll;
+    private long _lastTicks;
+
+    /// <summary>Raised on the render thread when a glance pin has been looked at long enough.</summary>
+    public event Action<int>? PinSelected;
 
     public HudScene(GraphicsDevice graphics, Func<HudStyle>? style = null, Func<string?>? clock = null)
     {
@@ -70,7 +76,7 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         _ = viewProjection;
         HudStyle style = _style();
         float brightness = Math.Clamp(style.Brightness, 0f, 1f);
-        HudFrame frame = HudLayout.Build(_yaw, _pitch, _roll, _clock(), style.ToLayout());
+        HudFrame frame = HudLayout.Build(_yaw, _pitch, _roll, _clock(), style.ToLayout(), GlancePins(style));
         int count = Fill(frame, width, height, brightness);
 
         var ctx = _gd.Context;
@@ -111,6 +117,36 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         _layout.Dispose();
         _ps.Dispose();
         _vs.Dispose();
+    }
+
+    private HudPin[]? GlancePins(HudStyle style)
+    {
+        if (!style.ShowGlance)
+        {
+            _lastTicks = 0;
+            return null;
+        }
+
+        HudPin[] pins = HudGlance.Create(style.GlanceUp, style.GlanceLeft, style.GlanceRight, style.GlanceDown);
+        float scale = style.ToLayout().DegreesToNdc;
+        int aimed = HudLayout.NearestPin(_yaw, _pitch, _roll, pins, scale, HudGlance.AimRadius);
+        long now = Stopwatch.GetTimestamp();
+        TimeSpan step = _lastTicks == 0
+            ? TimeSpan.Zero
+            : TimeSpan.FromSeconds((now - _lastTicks) / (double)Stopwatch.Frequency);
+        _lastTicks = now;
+        int fired = _aim.Advance(aimed, step, HudGlance.Hold);
+        if (fired >= 0)
+        {
+            PinSelected?.Invoke(fired);
+        }
+
+        for (int i = 0; i < pins.Length; i++)
+        {
+            pins[i] = pins[i] with { Dwell = _aim.Dwell(pins[i].Id, HudGlance.Hold) };
+        }
+
+        return pins;
     }
 
     private int Fill(HudFrame frame, int width, int height, float brightness)

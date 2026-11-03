@@ -33,6 +33,10 @@ public class ArHudEngineTests
 
         Assert.True(engine.ImuSamples > 0);
         output.RaiseRecenter();
+        int? selected = null;
+        engine.PinSelected += id => selected = id;
+        output.RaisePin(2);
+        Assert.Equal(2, selected);
 
         await engine.StopAsync();
 
@@ -52,6 +56,8 @@ public class ArHudEngineTests
 
         public event Action? RecenterRequested;
 
+        public event Action<int>? PinSelected;
+
         public void Start(Func<HeadView> latchPose)
         {
             ArgumentNullException.ThrowIfNull(latchPose);
@@ -65,6 +71,8 @@ public class ArHudEngineTests
         }
 
         public void RaiseRecenter() => RecenterRequested?.Invoke();
+
+        public void RaisePin(int id) => PinSelected?.Invoke(id);
 
         public void Dispose() => RequestStop();
     }

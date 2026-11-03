@@ -59,6 +59,9 @@ public sealed class AppPreferences
     /// <summary>Sparse HUD drawings: corners, wings, heading caret, recenter diamond (ADR-0017).</summary>
     public bool HudShowMarkers { get; set; } = true;
 
+    /// <summary>Look at a pin to read the clipboard, run a timer, play or pause, or mute.</summary>
+    public bool HudShowGlance { get; set; } = true;
+
     /// <summary>Hand click mode: 0 pinch, 1 hold still, 2 either (ADR-0016).</summary>
     public int HandClick { get; set; } = 2;
 

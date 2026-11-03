@@ -21,6 +21,8 @@ public sealed class GlassesHudOutput : IHudOutput
 
     public event Action? RecenterRequested;
 
+    public event Action<int>? PinSelected;
+
     public void Start(Func<HeadView> latchPose)
     {
         ArgumentNullException.ThrowIfNull(latchPose);
@@ -29,6 +31,7 @@ public sealed class GlassesHudOutput : IHudOutput
 
         _device = GraphicsDevice.CreateForMonitor(MonitorCapture.MonitorAt(glasses.X, glasses.Y));
         _scene = new HudScene(_device, _style);
+        _scene.PinSelected += OnPin;
         _presenter = new GlassesPresenter(_device, _scene, GlassesOptics.Xreal1S, latchPose, glasses.X, glasses.Y, glasses.Resolution.Width, glasses.Resolution.Height)
         {
             LatchLeadMs = 20,
@@ -41,6 +44,11 @@ public sealed class GlassesHudOutput : IHudOutput
 
     public void Dispose()
     {
+        if (_scene is not null)
+        {
+            _scene.PinSelected -= OnPin;
+        }
+
         if (_presenter is not null)
         {
             _presenter.RecenterRequested -= OnRecenter;
@@ -56,4 +64,6 @@ public sealed class GlassesHudOutput : IHudOutput
     }
 
     private void OnRecenter() => RecenterRequested?.Invoke();
+
+    private void OnPin(int id) => PinSelected?.Invoke(id);
 }

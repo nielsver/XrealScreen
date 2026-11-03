@@ -37,6 +37,9 @@ public sealed record HudLayoutOptions
     /// <summary>Corner brackets, wings, the heading caret, and the recenter diamond. Still only strokes.</summary>
     public bool ShowMarkers { get; init; } = true;
 
+    /// <summary>Look-targets for the clipboard, timer, play, and mute.</summary>
+    public bool ShowGlance { get; init; } = true;
+
     /// <summary>Normalized-device units per degree. 0.028 puts a ±20° ladder inside the frame.</summary>
     public float DegreesToNdc { get; init; } = 0.028f;
 }
@@ -57,6 +60,17 @@ public sealed record HudStyle
     /// <summary>Corner brackets, wings, the heading caret, and the recenter diamond.</summary>
     public bool ShowMarkers { get; init; } = true;
 
+    /// <summary>Look-targets for the clipboard, timer, play, and mute.</summary>
+    public bool ShowGlance { get; init; } = true;
+
+    public string GlanceUp { get; init; } = "CLIP";
+
+    public string GlanceLeft { get; init; } = "25:00";
+
+    public string GlanceRight { get; init; } = "PLAY";
+
+    public string GlanceDown { get; init; } = "MUTE";
+
     public HudLayoutOptions ToLayout() => new()
     {
         ShowHorizon = ShowHorizon,
@@ -64,6 +78,7 @@ public sealed record HudStyle
         ShowTape = ShowTape,
         ShowClock = ShowClock,
         ShowMarkers = ShowMarkers,
+        ShowGlance = ShowGlance,
     };
 }
 
@@ -77,7 +92,7 @@ public static class HudLayout
 {
     private static readonly int[] LadderMarks = [-20, -15, -10, -5, 5, 10, 15, 20];
 
-    public static HudFrame Build(float yawDegrees, float pitchDegrees, float rollDegrees, string? clock, HudLayoutOptions? options = null)
+    public static HudFrame Build(float yawDegrees, float pitchDegrees, float rollDegrees, string? clock, HudLayoutOptions? options = null, IReadOnlyList<HudPin>? pins = null)
     {
         options ??= new HudLayoutOptions();
         float scale = options.DegreesToNdc;
@@ -138,7 +153,64 @@ public static class HudLayout
             labels.Add(new HudText(clock, -0.78f, -0.82f));
         }
 
+        if (options.ShowGlance && pins is not null)
+        {
+            foreach (HudPin pin in pins)
+            {
+                (float x, float y) = PinScreen(yawDegrees, pitchDegrees, rollDegrees, pin.YawDegrees, pin.PitchDegrees, scale);
+                if (MathF.Abs(x) > 1.05f || MathF.Abs(y) > 1.05f)
+                {
+                    continue;
+                }
+
+                AddCorner(lines, x - 0.045f, y + 0.045f, 0.03f, -0.03f);
+                AddCorner(lines, x + 0.045f, y + 0.045f, -0.03f, 0.03f);
+                AddCorner(lines, x - 0.045f, y - 0.045f, 0.03f, 0.03f);
+                AddCorner(lines, x + 0.045f, y - 0.045f, -0.03f, -0.03f);
+                if (pin.Dwell > 0f)
+                {
+                    float half = 0.06f * Math.Clamp(pin.Dwell, 0f, 1f);
+                    lines.Add(new HudSegment(HudPart.Marker, x - half, y - 0.07f, x + half, y - 0.07f));
+                }
+
+                if (!string.IsNullOrEmpty(pin.Label))
+                {
+                    labels.Add(new HudText(pin.Label, x, y - 0.12f));
+                }
+            }
+        }
+
         return new HudFrame(lines, labels);
+    }
+
+    /// <summary>Where a world-fixed pin sits on the glasses. The same mapping as the horizon and the heading tape.</summary>
+    public static (float X, float Y) PinScreen(float yawDegrees, float pitchDegrees, float rollDegrees, float pinYaw, float pinPitch, float scale)
+    {
+        float x = (yawDegrees - pinYaw) * scale;
+        float y = (pinPitch - pitchDegrees) * scale;
+        float radians = rollDegrees * MathF.PI / 180f;
+        float cosine = MathF.Cos(radians);
+        float sine = MathF.Sin(radians);
+        return ((x * cosine) - (y * sine), (x * sine) + (y * cosine));
+    }
+
+    /// <summary>Index of the pin closest to the reticle, or -1 when none is inside <paramref name="radius"/>.</summary>
+    public static int NearestPin(float yawDegrees, float pitchDegrees, float rollDegrees, IReadOnlyList<HudPin> pins, float scale, float radius)
+    {
+        int best = -1;
+        float bestDistance = radius;
+        for (int i = 0; i < pins.Count; i++)
+        {
+            (float x, float y) = PinScreen(yawDegrees, pitchDegrees, rollDegrees, pins[i].YawDegrees, pins[i].PitchDegrees, scale);
+            float distance = MathF.Sqrt((x * x) + (y * y));
+            if (distance <= bestDistance)
+            {
+                bestDistance = distance;
+                best = pins[i].Id;
+            }
+        }
+
+        return best;
     }
 
     /// <summary>Wraps a degree value to 0–359.</summary>

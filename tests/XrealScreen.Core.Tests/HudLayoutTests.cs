@@ -120,5 +120,43 @@ public class HudLayoutTests
         Assert.DoesNotContain(hidden.Labels, label => label.Text == "21:05");
     }
 
+    [Fact]
+    public void LookUp_PutsTheClipboardPinOnTheReticle()
+    {
+        HudPin[] pins = HudGlance.Create("CLIP", "25:00", "PLAY", "MUTE");
+
+        (float x, float y) = HudLayout.PinScreen(0, 18, 0, pins[0].YawDegrees, pins[0].PitchDegrees, 0.028f);
+
+        Assert.Equal(0, x, precision: 3);
+        Assert.Equal(0, y, precision: 3);
+        Assert.Equal(0, HudLayout.NearestPin(0, 18, 0, pins, 0.028f, HudGlance.AimRadius));
+        Assert.Equal(-1, HudLayout.NearestPin(0, 0, 0, pins, 0.028f, HudGlance.AimRadius));
+    }
+
+    [Fact]
+    public void Glance_ShowsTheClipboardAboveCenterUntilYouLookAwayFromTheOption()
+    {
+        HudPin[] pins = HudGlance.Create("HELLO", "25:00", "PLAY", "MUTE");
+        var shown = HudLayout.Build(0, 0, 0, clock: null, pins: pins);
+        var hidden = HudLayout.Build(0, 0, 0, clock: null, new HudLayoutOptions { ShowGlance = false }, pins);
+
+        HudText clip = Assert.Single(shown.Labels, label => label.Text == "HELLO");
+        Assert.True(clip.Y > 0.2f);
+        Assert.DoesNotContain(hidden.Labels, label => label.Text == "HELLO");
+    }
+
+    [Fact]
+    public void Aim_FiresOnceAfterTheHold_ThenWaitsUntilYouLookAway()
+    {
+        var aim = new HudAim();
+
+        Assert.Equal(-1, aim.Advance(0, TimeSpan.FromMilliseconds(400), HudGlance.Hold));
+        Assert.InRange(aim.Dwell(0, HudGlance.Hold), 0.4f, 0.7f);
+        Assert.Equal(0, aim.Advance(0, TimeSpan.FromMilliseconds(400), HudGlance.Hold));
+        Assert.Equal(-1, aim.Advance(0, TimeSpan.FromSeconds(1), HudGlance.Hold));
+        Assert.Equal(-1, aim.Advance(-1, TimeSpan.FromMilliseconds(20), HudGlance.Hold));
+        Assert.Equal(2, aim.Advance(2, HudGlance.Hold, HudGlance.Hold));
+    }
+
     private static bool Near(float value, float expected) => MathF.Abs(value - expected) < 0.001f;
 }

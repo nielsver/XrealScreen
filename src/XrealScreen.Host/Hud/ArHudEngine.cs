@@ -44,6 +44,9 @@ public sealed class ArHudEngine : IAsyncDisposable
 
     public event EventHandler<string>? Log;
 
+    /// <summary>A glance pin was looked at long enough.</summary>
+    public event Action<int>? PinSelected;
+
     public ArHudState State => _state;
 
     public Exception? LastError { get; private set; }
@@ -115,6 +118,7 @@ public sealed class ArHudEngine : IAsyncDisposable
         Task? trackingTask = null;
         using var stopTracking = CancellationTokenSource.CreateLinkedTokenSource(stop);
         Action? onRecenter = null;
+        Action<int>? onPin = null;
         try
         {
             _tracker = new HeadTracker();
@@ -148,7 +152,9 @@ public sealed class ArHudEngine : IAsyncDisposable
             output = _injected ?? new GlassesHudOutput(() => Style);
             owned = _injected is null;
             onRecenter = Recenter;
+            onPin = id => PinSelected?.Invoke(id);
             output.RecenterRequested += onRecenter;
+            output.PinSelected += onPin;
             output.Start(Latch);
             Info("running: clear HUD — Ctrl+Alt+R recenter, Ctrl+Alt+Q or Ctrl+Alt+U stops");
             SetState(ArHudState.Running);
@@ -173,6 +179,11 @@ public sealed class ArHudEngine : IAsyncDisposable
             if (output is not null && onRecenter is not null)
             {
                 output.RecenterRequested -= onRecenter;
+            }
+
+            if (output is not null && onPin is not null)
+            {
+                output.PinSelected -= onPin;
             }
 
             await stopTracking.CancelAsync().ConfigureAwait(false);

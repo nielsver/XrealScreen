@@ -45,7 +45,8 @@
                     <ToggleSwitch Header="Heading tape" IsOn="{x:Bind Hud.ShowTape, Mode=TwoWay}" />
                     <ToggleSwitch Header="Clock" IsOn="{x:Bind Hud.ShowClock, Mode=TwoWay}" />
                     <ToggleSwitch Header="Drawings" IsOn="{x:Bind Hud.ShowMarkers, Mode=TwoWay}" />
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Drawings are thin strokes only: corner brackets, wings, a caret on the heading, and a diamond on the direction you last recentered. Nothing fills the view." />
+                    <ToggleSwitch Header="Look actions" IsOn="{x:Bind Hud.ShowGlance, Mode=TwoWay}" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Look at a mark and hold still until the line fills. Up shows what you copied. Left starts a 25 minute timer. Right plays or pauses. Down mutes. The marks stay in the room when you turn your head. The view stays clear." />
                 </StackPanel>
             </Border>
         </StackPanel>

@@ -12,4 +12,7 @@ public interface IHudOutput : IDisposable
     Task Completion { get; }
 
     event Action? RecenterRequested;
+
+    /// <summary>A glance pin was looked at long enough. The argument is the pin id.</summary>
+    event Action<int>? PinSelected;
 }
