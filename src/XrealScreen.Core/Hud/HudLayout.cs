@@ -80,6 +80,9 @@ public sealed record HudStyle
     /// <summary>The note drawn on top of the monitor. Null leaves that area as the screen.</summary>
     public HudCaptionPicture? Caption { get; init; }
 
+    /// <summary>Images the wearer placed on the glasses picture, back to front.</summary>
+    public IReadOnlyList<HudPlacedPicture> Pictures { get; init; } = [];
+
     public HudLayoutOptions ToLayout() => new()
     {
         ShowHorizon = ShowHorizon,

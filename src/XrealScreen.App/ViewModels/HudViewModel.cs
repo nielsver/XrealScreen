@@ -41,6 +41,27 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     private int _pendingHeight;
     private int _framePosted;
     private int _mirroring;
+    private readonly List<HudImageItem> _images = [];
+    private int _nextImageId = 1;
+    private int _nextImageRevision = 1;
+    private int _selectedImageId = -1;
+    private bool _applyingSize;
+
+    private static readonly (float X, float Y)[] ImageSpots =
+    [
+        (0f, 0.15f),
+        (-0.42f, 0.38f),
+        (0.42f, 0.38f),
+        (-0.42f, -0.32f),
+        (0.42f, -0.32f),
+        (0f, -0.55f),
+        (-0.72f, 0.05f),
+        (0.72f, 0.05f),
+        (0f, 0.55f),
+        (-0.2f, -0.05f),
+        (0.2f, -0.05f),
+        (0f, -0.15f),
+    ];
 
     public HudViewModel(DispatcherQueue dispatcher)
     {
@@ -61,8 +82,16 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         ShowClock = App.Preferences.HudShowClock;
         ShowMarkers = App.Preferences.HudShowMarkers;
         ShowGlance = App.Preferences.HudShowGlance;
+        LoadSavedImages();
         _loading = false;
     }
+
+    /// <summary>Raised on the UI thread when the placed images change.</summary>
+    internal event EventHandler? ImagesChanged;
+
+    internal IReadOnlyList<HudImageItem> Images => _images;
+
+    internal int SelectedImageId => _selectedImageId;
 
     [ObservableProperty]
     public partial double Brightness { get; set; }
@@ -84,6 +113,12 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     public partial bool ShowGlance { get; set; }
+
+    [ObservableProperty]
+    public partial double SelectedImageSize { get; set; } = 0.4;
+
+    [ObservableProperty]
+    public partial string ImageNote { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsStopped))]
@@ -220,7 +255,245 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         GlanceRead = "READ",
         Screen = Volatile.Read(ref _screen),
         Caption = DateTime.UtcNow < _captionUntil ? _caption : null,
+        Pictures = SnapshotPictures(),
     };
+
+    partial void OnSelectedImageSizeChanged(double value)
+    {
+        if (_applyingSize || _loading)
+        {
+            return;
+        }
+
+        HudImageItem? item = FindImage(_selectedImageId);
+        if (item is null)
+        {
+            return;
+        }
+
+        item.Size = (float)Math.Clamp(value, 0.15, 1.6);
+        RememberImages();
+        ImagesChanged?.Invoke(this, EventArgs.Empty);
+        _engine?.UpdateStyle(CurrentStyle());
+    }
+
+    internal void AddImageFiles(IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        int failed = 0;
+        int added = 0;
+        foreach (string path in paths)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            if (_images.Count >= HudImageFile.MaxCount)
+            {
+                ImageNote = "12 images is the limit. Remove one to add another.";
+                break;
+            }
+
+            (float x, float y) = ImageSpots[_images.Count % ImageSpots.Length];
+            HudImageItem? item = HudImageFile.Load(path, _nextImageId++, _nextImageRevision++, x, y, 0.4f);
+            if (item is null)
+            {
+                failed++;
+                continue;
+            }
+
+            _images.Add(item);
+            _selectedImageId = item.Id;
+            added++;
+        }
+
+        if (added == 0)
+        {
+            if (failed > 0 && string.IsNullOrEmpty(ImageNote))
+            {
+                ImageNote = "Could not open that image.";
+            }
+
+            return;
+        }
+
+        ApplySelectedSize();
+        ImageNote = failed == 0 ? string.Empty : "Some images could not be opened.";
+        RememberImages();
+        ImagesChanged?.Invoke(this, EventArgs.Empty);
+        _engine?.UpdateStyle(CurrentStyle());
+    }
+
+    internal void RemoveSelectedImage()
+    {
+        int index = IndexOfImage(_selectedImageId);
+        if (index < 0)
+        {
+            return;
+        }
+
+        _images.RemoveAt(index);
+        _selectedImageId = _images.Count == 0 ? -1 : _images[Math.Min(index, _images.Count - 1)].Id;
+        ApplySelectedSize();
+        ImageNote = string.Empty;
+        RememberImages();
+        ImagesChanged?.Invoke(this, EventArgs.Empty);
+        _engine?.UpdateStyle(CurrentStyle());
+    }
+
+    internal void SelectImage(int id)
+    {
+        int index = IndexOfImage(id);
+        if (index < 0)
+        {
+            return;
+        }
+
+        HudImageItem item = _images[index];
+        _images.RemoveAt(index);
+        _images.Add(item);
+        _selectedImageId = id;
+        ApplySelectedSize();
+        ImagesChanged?.Invoke(this, EventArgs.Empty);
+        _engine?.UpdateStyle(CurrentStyle());
+    }
+
+    internal void MoveImage(int id, float centerX, float centerY, bool save)
+    {
+        HudImageItem? item = FindImage(id);
+        if (item is null)
+        {
+            return;
+        }
+
+        item.CenterX = Math.Clamp(centerX, -1f, 1f);
+        item.CenterY = Math.Clamp(centerY, -1f, 1f);
+        _engine?.UpdateStyle(CurrentStyle());
+        if (save)
+        {
+            RememberImages();
+        }
+    }
+
+    internal void NudgeSelectedSize(float delta)
+    {
+        HudImageItem? item = FindImage(_selectedImageId);
+        if (item is null)
+        {
+            return;
+        }
+
+        _applyingSize = true;
+        SelectedImageSize = Math.Clamp(item.Size + delta, 0.15, 1.6);
+        _applyingSize = false;
+        item.Size = (float)SelectedImageSize;
+        RememberImages();
+        ImagesChanged?.Invoke(this, EventArgs.Empty);
+        _engine?.UpdateStyle(CurrentStyle());
+    }
+
+    private void LoadSavedImages()
+    {
+        foreach (HudImagePreference saved in App.Preferences.HudImages)
+        {
+            if (_images.Count >= HudImageFile.MaxCount || string.IsNullOrWhiteSpace(saved.Path))
+            {
+                continue;
+            }
+
+            HudImageItem? item = HudImageFile.Load(
+                saved.Path,
+                _nextImageId++,
+                _nextImageRevision++,
+                (float)saved.CenterX,
+                (float)saved.CenterY,
+                (float)Math.Clamp(saved.Height, 0.15, 1.6));
+            if (item is null)
+            {
+                continue;
+            }
+
+            item.CenterX = Math.Clamp(item.CenterX, -1f, 1f);
+            item.CenterY = Math.Clamp(item.CenterY, -1f, 1f);
+            _images.Add(item);
+        }
+
+        if (_images.Count > 0)
+        {
+            _selectedImageId = _images[^1].Id;
+            _applyingSize = true;
+            SelectedImageSize = _images[^1].Size;
+            _applyingSize = false;
+        }
+    }
+
+    private void ApplySelectedSize()
+    {
+        _applyingSize = true;
+        SelectedImageSize = FindImage(_selectedImageId)?.Size ?? 0.4f;
+        _applyingSize = false;
+    }
+
+    private void RememberImages()
+    {
+        var saved = new List<HudImagePreference>(_images.Count);
+        foreach (HudImageItem item in _images)
+        {
+            saved.Add(new HudImagePreference
+            {
+                Path = item.Path,
+                CenterX = item.CenterX,
+                CenterY = item.CenterY,
+                Height = item.Size,
+            });
+        }
+
+        App.Preferences.HudImages = saved;
+        _saveTimer.Stop();
+        _saveTimer.Start();
+    }
+
+    private HudPlacedPicture[] SnapshotPictures()
+    {
+        if (_images.Count == 0)
+        {
+            return [];
+        }
+
+        var pictures = new HudPlacedPicture[_images.Count];
+        for (int i = 0; i < _images.Count; i++)
+        {
+            HudImageItem item = _images[i];
+            pictures[i] = new HudPlacedPicture(
+                item.Id,
+                new HudCaptionPicture(item.Revision, item.Width, item.Height, item.Bgra),
+                item.CenterX,
+                item.CenterY,
+                item.Size);
+        }
+
+        return pictures;
+    }
+
+    private HudImageItem? FindImage(int id)
+    {
+        int index = IndexOfImage(id);
+        return index < 0 ? null : _images[index];
+    }
+
+    private int IndexOfImage(int id)
+    {
+        for (int i = 0; i < _images.Count; i++)
+        {
+            if (_images[i].Id == id)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 
     private async Task StopEngineAsync(ArHudEngine engine)
     {

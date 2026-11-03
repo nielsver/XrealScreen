@@ -1,6 +1,6 @@
 # ADR-0019: The HUD shows the main monitor and asks Grok
 
-- **Status:** Accepted. The picture is live, and a pointer that moves onto the glasses is sent back to that monitor. The "about four times a second" sentence below is out of date.
+- **Status:** Accepted. The picture is live, and a pointer that moves onto the glasses is sent back to that monitor. Chosen images are drawn on that picture where the wearer places them. The "about four times a second" sentence below is out of date.
 - **Date:** 2026-11-03
 
 ## Context

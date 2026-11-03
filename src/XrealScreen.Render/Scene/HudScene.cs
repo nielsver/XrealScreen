@@ -52,6 +52,10 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
     private readonly ID3D11SamplerState _captionSampler;
     private readonly PictureSlot _screenPicture = new();
     private readonly PictureSlot _captionPicture = new();
+    private readonly Dictionary<int, PictureSlot> _placed = [];
+    private readonly HashSet<int> _placedIds = [];
+    private readonly List<int> _stalePlaced = [];
+    private readonly ID3D11BlendState _imageBlend;
     private float _yaw;
     private float _pitch;
     private float _roll;
@@ -76,6 +80,19 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ], vsCode.Span);
         _vertices = graphics.Device.CreateBuffer(new BufferDescription((uint)(MaxVertices * Marshal.SizeOf<HudVertex>()), BindFlags.VertexBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
         _rasterizer = graphics.Device.CreateRasterizerState(RasterizerDescription.CullNone);
+        var blend = new BlendDescription();
+        blend.RenderTarget[0] = new RenderTargetBlendDescription
+        {
+            BlendEnable = true,
+            SourceBlend = Blend.SourceAlpha,
+            DestinationBlend = Blend.InverseSourceAlpha,
+            BlendOperation = BlendOperation.Add,
+            SourceBlendAlpha = Blend.One,
+            DestinationBlendAlpha = Blend.InverseSourceAlpha,
+            BlendOperationAlpha = BlendOperation.Add,
+            RenderTargetWriteMask = ColorWriteEnable.All,
+        };
+        _imageBlend = graphics.Device.CreateBlendState(blend);
         ReadOnlyMemory<byte> captionVs = Compiler.Compile(CaptionShader, "VS", "hud-card.hlsl", "vs_5_0");
         ReadOnlyMemory<byte> captionPs = Compiler.Compile(CaptionShader, "PS", "hud-card.hlsl", "ps_5_0");
         _captionVs = graphics.Device.CreateVertexShader(captionVs.Span);
@@ -121,6 +138,8 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
             DrawLines(ctx, count);
         }
 
+        DrawPlaced(ctx, style.Pictures, width, height);
+
         if (style.Caption is { } caption)
         {
             DrawCaption(ctx, caption, width, height);
@@ -158,6 +177,59 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         Span<float> vertices = stackalloc float[24];
         WriteQuad(vertices, left, right, top, bottom);
         DrawTextured(ctx, picture, _screenPicture, vertices);
+    }
+
+    private void DrawPlaced(ID3D11DeviceContext ctx, IReadOnlyList<HudPlacedPicture>? pictures, int frameWidth, int frameHeight)
+    {
+        _placedIds.Clear();
+        if (pictures is { Count: > 0 })
+        {
+            ctx.OMSetBlendState(_imageBlend);
+            Span<float> vertices = stackalloc float[24];
+            int drawn = 0;
+            foreach (HudPlacedPicture picture in pictures)
+            {
+                if (drawn == 12)
+                {
+                    break;
+                }
+
+                (float left, float right, float top, float bottom) = HudPicturePlacement.Place(
+                    picture.Image.Width, picture.Image.Height, frameWidth, frameHeight, picture.CenterX, picture.CenterY, picture.Size);
+                if (right <= left || top <= bottom)
+                {
+                    continue;
+                }
+
+                if (!_placed.TryGetValue(picture.Id, out PictureSlot? slot))
+                {
+                    slot = new PictureSlot();
+                    _placed[picture.Id] = slot;
+                }
+
+                WriteQuad(vertices, left, right, top, bottom);
+                DrawTextured(ctx, picture.Image, slot, vertices);
+                _placedIds.Add(picture.Id);
+                drawn++;
+            }
+
+            ctx.OMSetBlendState(null);
+        }
+
+        _stalePlaced.Clear();
+        foreach (int id in _placed.Keys)
+        {
+            if (!_placedIds.Contains(id))
+            {
+                _stalePlaced.Add(id);
+            }
+        }
+
+        foreach (int id in _stalePlaced)
+        {
+            _placed[id].Dispose();
+            _placed.Remove(id);
+        }
     }
 
     private void DrawCaption(ID3D11DeviceContext ctx, HudCaptionPicture picture, int frameWidth, int frameHeight)
@@ -279,6 +351,13 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
     {
         _screenPicture.Dispose();
         _captionPicture.Dispose();
+        foreach (PictureSlot slot in _placed.Values)
+        {
+            slot.Dispose();
+        }
+
+        _placed.Clear();
+        _imageBlend.Dispose();
         _captionSampler.Dispose();
         _captionVertices.Dispose();
         _captionLayout.Dispose();

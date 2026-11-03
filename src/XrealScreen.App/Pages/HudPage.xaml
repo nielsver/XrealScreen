@@ -49,6 +49,47 @@
                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="The main monitor is live in the glasses, and the mouse keeps working on that monitor. Grok looks at that picture and puts a short suggestion on it. The suggestion stays until the next one. Look at READ and hold still to ask again now. Up shows what you copied. Left starts a 25 minute timer. Right plays or pauses. Down mutes. The marks stay in the room when you turn your head." />
                 </StackPanel>
             </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Images" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Click="AddImages_Click" Content="Add images" Style="{StaticResource AccentButtonStyle}" />
+                        <Button Click="RemoveImage_Click" Content="Remove" />
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Pick pictures and drag them on the frame. They show in the glasses at that spot, on top of the monitor. The mouse wheel changes the size of the selected image. Your monitor mouse keeps working." />
+                    <TextBlock Foreground="{ThemeResource SystemFillColorCriticalBrush}" Text="{x:Bind Hud.ImageNote, Mode=OneWay}" TextWrapping="Wrap" />
+                    <Border
+                        x:Name="ImageBoard"
+                        Height="220"
+                        HorizontalAlignment="Stretch"
+                        Background="#FF061016"
+                        CornerRadius="6"
+                        PointerCanceled="Board_Released"
+                        PointerCaptureLost="Board_Released"
+                        PointerMoved="Board_Moved"
+                        PointerPressed="Board_Pressed"
+                        PointerReleased="Board_Released"
+                        PointerWheelChanged="Board_Wheel">
+                        <Grid>
+                            <TextBlock
+                                x:Name="ImageBoardEmpty"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                IsHitTestVisible="False"
+                                Text="No images yet." />
+                            <Canvas x:Name="ImageCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" />
+                        </Grid>
+                    </Border>
+                    <Slider
+                        Header="Size of the selected image"
+                        Maximum="1.6"
+                        Minimum="0.15"
+                        StepFrequency="0.02"
+                        Value="{x:Bind Hud.SelectedImageSize, Mode=TwoWay}" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>

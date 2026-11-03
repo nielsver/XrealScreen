@@ -94,6 +94,33 @@ public sealed class HudSceneTests : IDisposable
         Assert.True((byte)(note >> 8) > 100, "The suggestion card should stay on top of the monitor.");
     }
 
+    [Fact]
+    public void PlacedImage_SitsWhereItWasAskedAndLeavesTheCornerBlack()
+    {
+        var bgra = new byte[20 * 20 * 4];
+        for (int i = 0; i < bgra.Length; i += 4)
+        {
+            bgra[i] = 220;
+            bgra[i + 1] = 30;
+            bgra[i + 2] = 30;
+            bgra[i + 3] = 255;
+        }
+
+        _style = _style with
+        {
+            Pictures =
+            [
+                new HudPlacedPicture(1, new HudCaptionPicture(1, 20, 20, bgra), 0.5f, 0f, 0.4f),
+            ],
+        };
+        _scene.SetPose(new HeadView(Quaternion.Identity, Vector3.Zero));
+        uint[] pixels = Render();
+
+        Assert.Equal(0xFF000000, pixels[1 * W + 1]);
+        uint placed = pixels[(NdcToY(0f) * W) + NdcToX(0.5f)];
+        Assert.True((byte)placed > 150, "The image should sit to the right of center.");
+    }
+
     public void Dispose()
     {
         _rtv.Dispose();

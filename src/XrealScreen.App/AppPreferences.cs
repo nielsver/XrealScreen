@@ -62,6 +62,9 @@ public sealed class AppPreferences
     /// <summary>Look at a pin to read the clipboard, run a timer, play or pause, or mute.</summary>
     public bool HudShowGlance { get; set; } = true;
 
+    /// <summary>Images placed on the HUD. Paths stay on this PC. At most 12.</summary>
+    public List<HudImagePreference> HudImages { get; set; } = [];
+
     /// <summary>Hand click mode: 0 pinch, 1 hold still, 2 either (ADR-0016).</summary>
     public int HandClick { get; set; } = 2;
 
@@ -99,6 +102,19 @@ public sealed class AppPreferences
     }
 }
 
+/// <summary>Where one chosen image sits on the glasses picture. Coordinates are normalized, Y up.</summary>
+public sealed class HudImagePreference
+{
+    public string Path { get; set; } = string.Empty;
+
+    public double CenterX { get; set; }
+
+    public double CenterY { get; set; }
+
+    public double Height { get; set; } = 0.4;
+}
+
 [JsonSerializable(typeof(AppPreferences))]
+[JsonSerializable(typeof(HudImagePreference))]
 [JsonSourceGenerationOptions(WriteIndented = true)]
 internal sealed partial class AppPreferencesJsonContext : JsonSerializerContext;
