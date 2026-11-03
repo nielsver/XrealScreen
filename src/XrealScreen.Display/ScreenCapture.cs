@@ -92,6 +92,65 @@ public static partial class ScreenCapture
         }
     }
 
+    /// <summary>Box-average shrink so the width is at most <paramref name="maxWidth"/>.</summary>
+    public static (byte[] Pixels, int Width, int Height) Shrink(byte[] pixels, int width, int height, int maxWidth)
+    {
+        ArgumentNullException.ThrowIfNull(pixels);
+        if (width <= 0 || height <= 0 || maxWidth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width), "The frame has no size.");
+        }
+
+        if (pixels.Length < (long)width * height * 4)
+        {
+            throw new ArgumentException("The pixel buffer is shorter than the frame.", nameof(pixels));
+        }
+
+        int factor = Math.Max(1, (width + maxWidth - 1) / maxWidth);
+        if (factor == 1)
+        {
+            return (pixels, width, height);
+        }
+
+        int newWidth = width / factor;
+        int newHeight = height / factor;
+        if (newWidth <= 0 || newHeight <= 0)
+        {
+            return (pixels, width, height);
+        }
+
+        var destination = new byte[newWidth * newHeight * 4];
+        int sample = factor * factor;
+        for (int y = 0; y < newHeight; y++)
+        {
+            for (int x = 0; x < newWidth; x++)
+            {
+                int blue = 0;
+                int green = 0;
+                int red = 0;
+                for (int oy = 0; oy < factor; oy++)
+                {
+                    int sourceY = (y * factor) + oy;
+                    for (int ox = 0; ox < factor; ox++)
+                    {
+                        int source = (((sourceY * width) + (x * factor) + ox) * 4);
+                        blue += pixels[source];
+                        green += pixels[source + 1];
+                        red += pixels[source + 2];
+                    }
+                }
+
+                int target = ((y * newWidth) + x) * 4;
+                destination[target] = (byte)(blue / sample);
+                destination[target + 1] = (byte)(green / sample);
+                destination[target + 2] = (byte)(red / sample);
+                destination[target + 3] = 255;
+            }
+        }
+
+        return (destination, newWidth, newHeight);
+    }
+
     private static readonly nint DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
     private const uint SRCCOPY = 0x00CC0020;
     private const uint CAPTUREBLT = 0x40000000;

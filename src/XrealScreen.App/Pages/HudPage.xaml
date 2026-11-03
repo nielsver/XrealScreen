@@ -12,8 +12,8 @@
                 IsClosable="True"
                 IsOpen="True"
                 Severity="Informational"
-                Title="Clear view"
-                Message="The glasses stay transparent and a small instrument overlay follows your head. On the glasses: UltraWide Off, screen mode Follow, Stabilizer off. Anchor or Stabilizer on makes the overlay swim. A workspace cannot run at the same time." />
+                Title="Main monitor"
+                Message="The glasses show your main monitor, with the flight marks and a Grok suggestion on top. On the glasses: UltraWide Off, screen mode Follow, Stabilizer off. A workspace cannot run at the same time." />
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="12">
@@ -46,7 +46,7 @@
                     <ToggleSwitch Header="Clock" IsOn="{x:Bind Hud.ShowClock, Mode=TwoWay}" />
                     <ToggleSwitch Header="Drawings" IsOn="{x:Bind Hud.ShowMarkers, Mode=TwoWay}" />
                     <ToggleSwitch Header="Look actions" IsOn="{x:Bind Hud.ShowGlance, Mode=TwoWay}" />
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="Look at a mark and hold still until the line fills. Up shows what you copied. Left starts a 25 minute timer. Right plays or pauses. Down mutes. Further up, READ, reads the text on your main monitor and shows a short note. Set XAI_API_KEY for an AI summary; without it you get the recognized text. The note stays for 15 seconds. The marks stay in the room when you turn your head. The view stays clear." />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Text="The main monitor fills the glasses. Grok looks at that picture and puts a short suggestion on it. The suggestion stays until the next one. Look at READ and hold still to ask again now. Up shows what you copied. Left starts a 25 minute timer. Right plays or pauses. Down mutes. The marks stay in the room when you turn your head." />
                 </StackPanel>
             </Border>
         </StackPanel>

@@ -58,6 +58,42 @@ public sealed class HudSceneTests : IDisposable
         Assert.True((byte)(card >> 8) > 100, "The card should be visible under the reticle.");
     }
 
+    [Fact]
+    public void Screen_FillsAMatchingFrameAndTheCaptionStaysOnTop()
+    {
+        var screen = new byte[W * H * 4];
+        for (int i = 0; i < screen.Length; i += 4)
+        {
+            screen[i] = 10;
+            screen[i + 1] = 40;
+            screen[i + 2] = 200;
+            screen[i + 3] = 255;
+        }
+
+        var card = new byte[40 * 20 * 4];
+        for (int i = 0; i < card.Length; i += 4)
+        {
+            card[i] = 16;
+            card[i + 1] = 200;
+            card[i + 2] = 220;
+            card[i + 3] = 255;
+        }
+
+        _style = _style with
+        {
+            Screen = new HudCaptionPicture(1, W, H, screen),
+            Caption = new HudCaptionPicture(1, 40, 20, card),
+        };
+        _scene.SetPose(new HeadView(Quaternion.Identity, Vector3.Zero));
+        uint[] pixels = Render();
+
+        uint corner = pixels[1 * W + 1];
+        Assert.True((byte)(corner >> 16) > 150, "The monitor frame should reach the corner.");
+        Assert.True((byte)(corner >> 8) < 80, "The corner should be the monitor, not the card.");
+        uint note = pixels[(NdcToY(-0.42f) * W) + NdcToX(0f)];
+        Assert.True((byte)(note >> 8) > 100, "The suggestion card should stay on top of the monitor.");
+    }
+
     public void Dispose()
     {
         _rtv.Dispose();

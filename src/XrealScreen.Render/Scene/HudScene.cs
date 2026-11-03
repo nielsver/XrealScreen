@@ -12,8 +12,8 @@ using XrealScreen.Core.Tracking;
 namespace XrealScreen.Render.Scene;
 
 /// <summary>
-/// Clears the glasses to black (optically clear on the micro-OLED) and strokes a <see cref="HudLayout"/> frame.
-/// Head-locked: the pose is baked into the layout, so the view matrix is ignored.
+/// Draws the main monitor, then a head-locked <see cref="HudLayout"/> frame and an optional note.
+/// Black pixels stay optically clear. Head-locked: the pose is baked into the layout, so the view matrix is ignored.
 /// </summary>
 public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
 {
@@ -50,11 +50,8 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
     private readonly ID3D11InputLayout _captionLayout;
     private readonly ID3D11Buffer _captionVertices;
     private readonly ID3D11SamplerState _captionSampler;
-    private ID3D11Texture2D? _captionTexture;
-    private ID3D11ShaderResourceView? _captionView;
-    private int _captionRevision = -1;
-    private int _captionWidth;
-    private int _captionHeight;
+    private readonly PictureSlot _screenPicture = new();
+    private readonly PictureSlot _captionPicture = new();
     private float _yaw;
     private float _pitch;
     private float _roll;
@@ -114,6 +111,11 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ctx.ClearRenderTargetView(target, new Color4(0f, 0f, 0f, 1f));
         ctx.RSSetViewport(new Viewport(width, height));
         ctx.RSSetState(_rasterizer);
+        if (style.Screen is { } screen)
+        {
+            DrawScreen(ctx, screen, width, height);
+        }
+
         if (count > 0)
         {
             DrawLines(ctx, count);
@@ -149,18 +151,17 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ctx.Draw((uint)count, 0);
     }
 
+    private void DrawScreen(ID3D11DeviceContext ctx, HudCaptionPicture picture, int frameWidth, int frameHeight)
+    {
+        (float left, float right, float top, float bottom) = HudPicturePlacement.Contain(
+            picture.Width, picture.Height, frameWidth, frameHeight);
+        Span<float> vertices = stackalloc float[24];
+        WriteQuad(vertices, left, right, top, bottom);
+        DrawTextured(ctx, picture, _screenPicture, vertices);
+    }
+
     private void DrawCaption(ID3D11DeviceContext ctx, HudCaptionPicture picture, int frameWidth, int frameHeight)
     {
-        if (picture.Revision != _captionRevision || _captionTexture is null || _captionWidth != picture.Width || _captionHeight != picture.Height)
-        {
-            UploadCaption(picture);
-        }
-
-        if (_captionView is not { } view)
-        {
-            return;
-        }
-
         float halfW = picture.Width / (float)Math.Max(frameWidth, 1);
         float halfH = picture.Height / (float)Math.Max(frameHeight, 1);
         float centerY = -0.42f;
@@ -169,17 +170,22 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
             centerY = -0.92f + halfH;
         }
 
-        float left = -halfW;
-        float right = halfW;
-        float top = centerY + halfH;
-        float bottom = centerY - halfH;
         Span<float> vertices = stackalloc float[24];
-        WriteCaptionVertex(vertices, 0, left, top, 0f, 0f);
-        WriteCaptionVertex(vertices, 4, right, top, 1f, 0f);
-        WriteCaptionVertex(vertices, 8, right, bottom, 1f, 1f);
-        WriteCaptionVertex(vertices, 12, left, top, 0f, 0f);
-        WriteCaptionVertex(vertices, 16, right, bottom, 1f, 1f);
-        WriteCaptionVertex(vertices, 20, left, bottom, 0f, 1f);
+        WriteQuad(vertices, -halfW, halfW, centerY + halfH, centerY - halfH);
+        DrawTextured(ctx, picture, _captionPicture, vertices);
+    }
+
+    private void DrawTextured(ID3D11DeviceContext ctx, HudCaptionPicture picture, PictureSlot slot, ReadOnlySpan<float> vertices)
+    {
+        if (picture.Revision != slot.Revision || slot.Texture is null || slot.Width != picture.Width || slot.Height != picture.Height)
+        {
+            Upload(slot, picture);
+        }
+
+        if (slot.View is not { } view)
+        {
+            return;
+        }
 
         var mapped = ctx.Map(_captionVertices, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
         try
@@ -204,13 +210,13 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         ctx.Draw(6, 0);
     }
 
-    private void UploadCaption(HudCaptionPicture picture)
+    private void Upload(PictureSlot slot, HudCaptionPicture picture)
     {
-        if (_captionTexture is null || _captionWidth != picture.Width || _captionHeight != picture.Height)
+        if (slot.Texture is null || slot.Width != picture.Width || slot.Height != picture.Height)
         {
-            _captionView?.Dispose();
-            _captionTexture?.Dispose();
-            _captionTexture = _gd.Device.CreateTexture2D(new Texture2DDescription(
+            slot.View?.Dispose();
+            slot.Texture?.Dispose();
+            slot.Texture = _gd.Device.CreateTexture2D(new Texture2DDescription(
                 Format.B8G8R8A8_UNorm,
                 (uint)picture.Width,
                 (uint)picture.Height,
@@ -219,12 +225,17 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
                 BindFlags.ShaderResource,
                 ResourceUsage.Dynamic,
                 CpuAccessFlags.Write));
-            _captionView = _gd.Device.CreateShaderResourceView(_captionTexture);
-            _captionWidth = picture.Width;
-            _captionHeight = picture.Height;
+            slot.View = _gd.Device.CreateShaderResourceView(slot.Texture);
+            slot.Width = picture.Width;
+            slot.Height = picture.Height;
         }
 
-        var mapped = _gd.Context.Map(_captionTexture, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
+        if (slot.Texture is not { } texture)
+        {
+            return;
+        }
+
+        var mapped = _gd.Context.Map(texture, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
         try
         {
             unsafe
@@ -240,10 +251,20 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         }
         finally
         {
-            _gd.Context.Unmap(_captionTexture, 0);
+            _gd.Context.Unmap(texture, 0);
         }
 
-        _captionRevision = picture.Revision;
+        slot.Revision = picture.Revision;
+    }
+
+    private static void WriteQuad(Span<float> vertices, float left, float right, float top, float bottom)
+    {
+        WriteCaptionVertex(vertices, 0, left, top, 0f, 0f);
+        WriteCaptionVertex(vertices, 4, right, top, 1f, 0f);
+        WriteCaptionVertex(vertices, 8, right, bottom, 1f, 1f);
+        WriteCaptionVertex(vertices, 12, left, top, 0f, 0f);
+        WriteCaptionVertex(vertices, 16, right, bottom, 1f, 1f);
+        WriteCaptionVertex(vertices, 20, left, bottom, 0f, 1f);
     }
 
     private static void WriteCaptionVertex(Span<float> vertices, int index, float x, float y, float u, float v)
@@ -256,8 +277,8 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
 
     public void Dispose()
     {
-        _captionView?.Dispose();
-        _captionTexture?.Dispose();
+        _screenPicture.Dispose();
+        _captionPicture.Dispose();
         _captionSampler.Dispose();
         _captionVertices.Dispose();
         _captionLayout.Dispose();
@@ -383,6 +404,23 @@ public sealed class HudScene : IDisposable, IGlassesScene, IHudPoseSink
         B = color.B,
         A = color.A,
     };
+
+    private sealed class PictureSlot : IDisposable
+    {
+        public ID3D11Texture2D? Texture;
+        public ID3D11ShaderResourceView? View;
+        public int Revision = -1;
+        public int Width;
+        public int Height;
+
+        public void Dispose()
+        {
+            View?.Dispose();
+            Texture?.Dispose();
+            View = null;
+            Texture = null;
+        }
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct HudVertex

@@ -1,6 +1,6 @@
 # ADR-0017: Clear AR HUD
 
-- **Status:** Accepted. The "does not capture the desktop" sentence is amended by ADR-0018.
+- **Status:** Accepted. The "does not capture the desktop" sentence is superseded by ADR-0019.
 - **Date:** 2026-11-03
 
 ## Context

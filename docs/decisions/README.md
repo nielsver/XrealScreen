@@ -20,8 +20,9 @@ One file per decision: `ADR-NNNN-short-title.md`. Never rewrite an accepted ADR'
 | [0014](ADR-0014-app-looks.md) | Selectable app looks (Classic, Lens, Instrument, Stage) | Accepted |
 | [0015](ADR-0015-website.md) | Static website on a Linux LiteSpeed host (FTPS deploy) | Accepted |
 | [0016](ADR-0016-eye-camera-hand-control.md) | XREAL Eye camera feed and hand control (MediaPipe on ONNX Runtime, pinch to click) | Accepted |
-| [0017](ADR-0017-ar-hud.md) | Clear AR HUD: black frame, instrument overlay, no virtual monitors | Accepted, capture rule amended by 0018 |
-| [0018](ADR-0018-hud-screen-note.md) | Clear HUD reads the main monitor once per glance | Accepted |
+| [0017](ADR-0017-ar-hud.md) | Clear AR HUD: black frame, instrument overlay, no virtual monitors | Accepted, capture rule superseded by 0019 |
+| [0018](ADR-0018-hud-screen-note.md) | Clear HUD reads the main monitor once per glance | Superseded by 0019 |
+| [0019](ADR-0019-hud-screen-mirror.md) | HUD shows the main monitor and asks the Grok CLI | Accepted |
 
 ## Template
 ```markdown

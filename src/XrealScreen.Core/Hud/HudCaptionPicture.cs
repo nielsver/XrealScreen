@@ -1,6 +1,6 @@
 namespace XrealScreen.Core.Hud;
 
-/// <summary>A small text card, BGRA top-down, drawn under the reticle. The rest of the frame stays clear.</summary>
+/// <summary>BGRA top-down pixels. A monitor frame fills the glasses; a caption is a small card on top.</summary>
 public sealed class HudCaptionPicture
 {
     public HudCaptionPicture(int revision, int width, int height, byte[] bgra)

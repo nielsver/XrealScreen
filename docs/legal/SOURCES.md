@@ -29,6 +29,7 @@ Every external source consulted. **How used:** `facts` (IDs/constants/behaviour 
 | XREAL ultrawide mode tutorial | https://tutorials.xreal.com/docs/glasses/one-series/osd/ultrawide-mode/ | web page | facts | 2026-09-26 |
 | Madgwick 2010, "An efficient orientation filter for inertial and inertial/magnetic sensor arrays" | https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/ | paper | algorithm (own implementation) | 2026-09-26 |
 | xAI Responses API (grok-4.7) | https://docs.x.ai/developers/model-capabilities/text/generate-text | service | reference (request shape for the HUD screen note, ADR-0018; no SDK, `store: false`) | 2026-11-03 |
+| Grok CLI headless mode | https://docs.x.ai | service | reference (ADR-0019 runs the installed `grok.exe`; the prompt names one PNG of the main monitor) | 2026-11-03 |
 | github/awesome-copilot `skills/csharp-xunit` | https://github.com/github/awesome-copilot/tree/main/skills/csharp-xunit | MIT | imported → `.claude/skills/csharp-xunit/SKILL.md` | 2026-09-26 |
 | `csharp-async` skill | likely github/awesome-copilot `skills/csharp-async` (same name/format) | MIT (verify origin) | imported | 2026-09-26 |
 | `csharp-developer` skill | https://github.com/Jeffallan (per SKILL.md metadata) | MIT (per frontmatter) | imported | 2026-09-26 |

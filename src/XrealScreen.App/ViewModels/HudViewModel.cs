@@ -8,7 +8,7 @@ using XrealScreen.Host.Hud;
 namespace XrealScreen.App.ViewModels;
 
 /// <summary>
-/// HUD page: a clear glasses view with a flight-style instrument overlay (ADR-0017).
+/// HUD page: the main monitor on the glasses, with a flight overlay and a live Grok suggestion (ADR-0019).
 /// Refuses to start while a workspace is using the glasses display.
 /// </summary>
 public sealed partial class HudViewModel : ObservableObject, IDisposable
@@ -25,10 +25,16 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     private DateTime _clipboardReadAt;
     private bool _clipboardPending;
     private string _clipboard = "CLIP";
+    private HudCaptionPicture? _screen;
+    private int _screenRevision;
     private HudCaptionPicture? _caption;
     private DateTime _captionUntil;
     private int _captionRevision;
-    private int _readGeneration;
+    private CancellationTokenSource? _live;
+    private CancellationTokenSource? _suggestDelay;
+    private int _suggestGeneration;
+    private int _suggestNow;
+    private readonly object _suggestGate = new();
 
     public HudViewModel(DispatcherQueue dispatcher)
     {
@@ -147,7 +153,8 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         }
 
         IsRunning = true;
-        Status = "Look at a mark and hold still. Up is what you copied, left is a 25 minute timer, right plays or pauses, down mutes. Further up reads your main screen.";
+        Status = "Your main monitor is on the glasses. Grok looks at it and puts a suggestion on the screen. Look further up and hold still to ask again.";
+        BeginLive();
         RefreshStatus();
         _statusTimer.Start();
     }
@@ -156,13 +163,12 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     private async Task StopAsync()
     {
         _statusTimer.Stop();
+        StopLive();
         if (_engine is { } engine)
         {
             await StopEngineAsync(engine).ConfigureAwait(true);
         }
 
-        _readGeneration++;
-        _caption = null;
         IsRunning = false;
         Status = "Stopped. The glasses show your desktop again.";
         Pose = string.Empty;
@@ -176,8 +182,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
     {
         _statusTimer.Stop();
         _saveTimer.Stop();
-        _readGeneration++;
-        _caption = null;
+        StopLive();
         if (_engine is { } engine)
         {
             _engine = null;
@@ -207,6 +212,7 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
         GlanceRight = "PLAY",
         GlanceDown = "MUTE",
         GlanceRead = "READ",
+        Screen = Volatile.Read(ref _screen),
         Caption = DateTime.UtcNow < _captionUntil ? _caption : null,
     };
 
@@ -289,52 +295,189 @@ public sealed partial class HudViewModel : ObservableObject, IDisposable
                 GlanceInput.Tap(GlanceInput.VolumeMute);
                 break;
             case 4:
-                StartScreenRead();
+                RequestSuggestion();
                 break;
         }
 
         _engine?.UpdateStyle(CurrentStyle());
     }
 
-    private void StartScreenRead()
+    private void BeginLive()
     {
-        int generation = ++_readGeneration;
-        ShowCaption(CaptionRaster.Draw("Reading the screen", ++_captionRevision), TimeSpan.FromSeconds(30));
-        _ = FinishScreenReadAsync(generation);
+        StopLive();
+        _live = new CancellationTokenSource();
+        CancellationToken token = _live.Token;
+        ShowCaption(CaptionRaster.Draw("Looking at the screen", ++_captionRevision));
+        _ = MirrorAsync(token);
+        _ = SuggestAsync(token);
     }
 
-    private async Task FinishScreenReadAsync(int generation)
+    private void StopLive()
     {
-        string note;
-        try
+        Volatile.Write(ref _suggestGeneration, _suggestGeneration + 1);
+        lock (_suggestGate)
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
-            note = await ScreenRead.ReadAsync(timeout.Token).ConfigureAwait(false);
+            _suggestDelay?.Cancel();
         }
-        catch (OperationCanceledException)
+
+        _live?.Cancel();
+        _live?.Dispose();
+        _live = null;
+        Volatile.Write(ref _screen, null);
+        _caption = null;
+    }
+
+    private void RequestSuggestion()
+    {
+        Interlocked.Exchange(ref _suggestNow, 1);
+        lock (_suggestGate)
         {
-            note = "TOO SLOW";
+            _suggestDelay?.Cancel();
         }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+    }
+
+    private async Task MirrorAsync(CancellationToken token)
+    {
+        int misses = 0;
+        while (!token.IsCancellationRequested)
         {
-            note = "NO SCREEN";
+            long started = Environment.TickCount64;
+            try
+            {
+                DeskMirror.Pixels? frame = await DeskMirror.CaptureAsync(1280, token).ConfigureAwait(false);
+                if (frame is { } pixels)
+                {
+                    misses = 0;
+                    byte[] bgra = pixels.Bgra;
+                    int width = pixels.Width;
+                    int height = pixels.Height;
+                    _dispatcher.TryEnqueue(() =>
+                    {
+                        if (token.IsCancellationRequested || _engine is null)
+                        {
+                            return;
+                        }
+
+                        Volatile.Write(ref _screen, new HudCaptionPicture(++_screenRevision, width, height, bgra));
+                        _engine.UpdateStyle(CurrentStyle());
+                    });
+                }
+                else
+                {
+                    NoteMissingScreen(++misses, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+            {
+                NoteMissingScreen(++misses, token);
+            }
+
+            int wait = 250 - (int)(Environment.TickCount64 - started);
+            if (wait > 0)
+            {
+                try
+                {
+                    await Task.Delay(wait, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    private void NoteMissingScreen(int misses, CancellationToken token)
+    {
+        if (misses != 8)
+        {
+            return;
         }
 
         _dispatcher.TryEnqueue(() =>
         {
-            if (generation != _readGeneration || _engine is null)
+            if (!token.IsCancellationRequested && _engine is not null)
             {
-                return;
+                ShowCaption(CaptionRaster.Draw("NO SCREEN", ++_captionRevision));
             }
-
-            ShowCaption(CaptionRaster.Draw(note, ++_captionRevision), TimeSpan.FromSeconds(15));
         });
     }
 
-    private void ShowCaption(HudCaptionPicture picture, TimeSpan visibleFor)
+    private async Task SuggestAsync(CancellationToken token)
+    {
+        int generation = _suggestGeneration;
+        while (!token.IsCancellationRequested && generation == Volatile.Read(ref _suggestGeneration))
+        {
+            HudCaptionPicture? frame = Volatile.Read(ref _screen);
+            if (frame is null)
+            {
+                try
+                {
+                    await Task.Delay(200, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            string note;
+            try
+            {
+                note = await GrokScreen.SuggestAsync(frame.Bgra, frame.Width, frame.Height, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
+            _dispatcher.TryEnqueue(() =>
+            {
+                if (generation != _suggestGeneration || _engine is null)
+                {
+                    return;
+                }
+
+                ShowCaption(CaptionRaster.Draw(note, ++_captionRevision));
+            });
+
+            if (Interlocked.Exchange(ref _suggestNow, 0) == 1)
+            {
+                continue;
+            }
+
+            CancellationTokenSource delay;
+            lock (_suggestGate)
+            {
+                _suggestDelay?.Dispose();
+                _suggestDelay = CancellationTokenSource.CreateLinkedTokenSource(token);
+                delay = _suggestDelay;
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10), delay.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!token.IsCancellationRequested)
+            {
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private void ShowCaption(HudCaptionPicture picture)
     {
         _caption = picture;
-        _captionUntil = DateTime.UtcNow + visibleFor;
+        _captionUntil = DateTime.MaxValue;
         _engine?.UpdateStyle(CurrentStyle());
     }
 

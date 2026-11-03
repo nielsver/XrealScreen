@@ -74,7 +74,10 @@ public sealed record HudStyle
     /// <summary>The mark further up. Looking at it reads the main monitor.</summary>
     public string GlanceRead { get; init; } = "READ";
 
-    /// <summary>The note under the reticle. Null leaves that area clear.</summary>
+    /// <summary>The main monitor, contained in the glasses frame. Null leaves the frame black.</summary>
+    public HudCaptionPicture? Screen { get; init; }
+
+    /// <summary>The note drawn on top of the monitor. Null leaves that area as the screen.</summary>
     public HudCaptionPicture? Caption { get; init; }
 
     public HudLayoutOptions ToLayout() => new()
