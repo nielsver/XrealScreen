@@ -32,7 +32,7 @@ WinUI templates: `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templa
 | `src/XrealScreen.Render` | D3D11 (Vortice): WGC capture, workspace scene, clear HUD scene, glasses presenter (ADR-0009, ADR-0017) |
 | `src/XrealScreen.Vision` | Hand tracking on the Eye grayscale feed: MediaPipe hand models on ONNX Runtime, pinch detection (ADR-0016, M9 E2); models from `tools/Convert-HandModels.ps1` → `artifacts/models/hands` |
 | `src/XrealScreen.Host` | `WorkspaceEngine`, `ArHudEngine` (ADR-0017), `HandControlEngine` (ADR-0016); settings store |
-| `src/XrealScreen.App` | WinUI 3 packaged app (MVVM with CommunityToolkit.Mvvm); Home starts/stops the workspace; HUD page; Games = head look; serves the local API; four looks in `Looks/` (ADR-0014) |
+| `src/XrealScreen.App` | WinUI 3 packaged app (MVVM with CommunityToolkit.Mvvm); Home starts/stops the workspace; HUD page; Hands page (Eye pointer, Ctrl+Alt+J); Games = head look; serves the local API; four looks in `Looks/` (ADR-0014) |
 | `src/XrealScreen.Sdk` | Public .NET SDK (NuGet): `XrealGlasses`, `HeadLookEngine`, `GlassesDisplay` (ADR-0011/0012) |
 | `src/XrealScreen.Contracts`, `src/XrealScreen.Sdk.Client` | Local API protocol (JSON-RPC over `\\.\pipe\XrealScreen.Api`) and its .NET client (ADR-0012) |
 | `samples/` | SDK and local API samples (.NET, Python, PowerShell) |

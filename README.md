@@ -6,7 +6,7 @@
 
 *A glasses-anchor workspace. Black areas are see-through in the glasses.*
 
-Turn XREAL One, One Pro, and 1S glasses into a Windows 11 multi-monitor workspace. The glasses can hold up to six virtual screens still, or the app can move curved screens with your head. They are real Windows monitors. Stopping the app, or recovering after a crash, puts your previous monitors and refresh rates back. A clear HUD leaves the lenses open and draws a flight-style overlay from the head tracker. With an XREAL Eye attached, `xrs` reads the grayscale camera and can move the pointer from a pinch.
+Turn XREAL One, One Pro, and 1S glasses into a Windows 11 multi-monitor workspace. The glasses can hold up to six virtual screens still, or the app can move curved screens with your head. They are real Windows monitors. Stopping the app, or recovering after a crash, puts your previous monitors and refresh rates back. A clear HUD leaves the lenses open and draws a flight-style overlay from the head tracker. With an XREAL Eye attached, the Hands page and `xrs hands` read the grayscale camera and can move the pointer from a pinch. A closer fit is saved with `xrs hands targets --calibrate`.
 
 ## Set up
 

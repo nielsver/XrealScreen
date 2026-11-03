@@ -46,6 +46,8 @@ public partial class App : Application
 
     public static HudViewModel Hud { get; private set; } = null!;
 
+    public static HandsViewModel Hands { get; private set; } = null!;
+
     public static MainWindow MainWindow { get; private set; } = null!;
 
     public static AppPreferences Preferences { get; private set; } = null!;
@@ -62,6 +64,7 @@ public partial class App : Application
         Session = new SessionViewModel(dispatcher, Workspace, Tracking);
         HeadLook = new HeadLookViewModel(dispatcher);
         Hud = new HudViewModel(dispatcher);
+        Hands = new HandsViewModel(dispatcher);
 
         MainWindow = new MainWindow();
         MainWindow.SetTheme(ThemeFromIndex(Preferences.Theme));
@@ -82,6 +85,13 @@ public partial class App : Application
         Hud.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(HudViewModel.IsRunning))
+            {
+                RefreshTray();
+            }
+        };
+        Hands.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(HandsViewModel.IsRunning))
             {
                 RefreshTray();
             }
@@ -238,6 +248,17 @@ public partial class App : Application
                 }
 
                 break;
+            case TrayCommand.ToggleHands:
+                if (Hands.IsRunning)
+                {
+                    Hands.StopCommand.Execute(null);
+                }
+                else
+                {
+                    Hands.StartCommand.Execute(null);
+                }
+
+                break;
             case TrayCommand.Exit:
                 ExitApp();
                 break;
@@ -253,11 +274,14 @@ public partial class App : Application
 
         tray.WorkspaceRunning = Session.IsRunning;
         tray.HudRunning = Hud.IsRunning;
-        tray.SetTooltip(Hud.IsRunning
-            ? "XrealScreen — clear HUD"
-            : Session.IsRunning
-                ? "XrealScreen — workspace running"
-                : "XrealScreen — workspace stopped");
+        tray.HandsRunning = Hands.IsRunning;
+        tray.SetTooltip(Hands.IsRunning
+            ? Hud.IsRunning ? "XrealScreen — clear HUD, Eye camera on" : "XrealScreen — hand control, Eye camera on"
+            : Hud.IsRunning
+                ? "XrealScreen — clear HUD"
+                : Session.IsRunning
+                    ? "XrealScreen — workspace running"
+                    : "XrealScreen — workspace stopped");
     }
 
     private bool _shutDown;
@@ -279,6 +303,7 @@ public partial class App : Application
             _apiHandler?.Dispose();
         }
 
+        Hands.Dispose();
         Hud.Dispose();
         HeadLook.Dispose();
         Session.Dispose();

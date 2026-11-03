@@ -32,10 +32,11 @@
 - **M9 E0 camera feed + glasses info (2026-10-29, `feature/eye-camera-e0`):** `XrealEyeCameraSource`/`EyeFrameFramer`/`.xrcam`, `XrealControlClient` + `GlassesInfo` (software/DSP version, serial, camera calibration), `xrs camera snapshot|record|live`, `xrs device info`, Glasses card on the Device page (no update check). [verified-hw] `xrs device info` and `xrs camera snapshot` on the 1S; app card not yet seen by the user.
 - **M9 E3 hand control in `xrs` (2026-11-01, `feature/hand-tracking-e2`):** `xrs hands control | targets` — the hand moves the pointer on the glasses, click by pinch or dwell (1.2 s), 5-point calibration (dwell only, bad fits rejected), precision zone, repeat guard, camera reconnect, target window with camera inset + skeleton. 8 target tests with the user: always 10/10 hit, but 5–27 misses per run (exit criterion ≤ 1 not met). Details + causes: ROADMAP M9 E3.
 - Tests after this merge: 310 passed, 1 skipped. The skipped test needs the hand ONNX models from `tools/Convert-HandModels.ps1` (not in git).
+- **Hands page (2026-11-03, ADR-0016):** app page, tray item, and Ctrl+Alt+J start and stop hand control. The Eye camera socket is open only while it runs. Click mode is pinch, hold still, or either, saved in `app.json`. A saved calibration from `xrs hands targets --calibrate` is used when its error is at most 0.1. Not worn yet. The 40 px target check stays in `xrs`.
 
 ## Next steps
 1. Wear-test the clear HUD on the XREAL One (Follow, Stabilizer off, UltraWide Off): room visible through the black frame, horizon tilts, heading tape scrolls, Recenter sets zero, Stop leaves the desktop alone. Then tick the ROADMAP exit line.
-2. **XREAL Eye (M9, ADR-0016):** open Device → Read glasses info (needs the Eye for the camera card). Retest `xrs hands targets --calibrate --wait-go --log` in daylight. Hands page, tray item, and Ctrl+Alt+J are still to build. 60 fps and the colour camera stay blocked until a legal route is chosen (no blind control-port scans, no SDK code).
+2. **XREAL Eye (M9, ADR-0016):** wear-test the Hands page (Ctrl+Alt+J). It needs the Eye, Gesture Control off, and the ONNX models from `tools\Convert-HandModels.ps1`. Calibrate with `xrs hands targets --calibrate` (the page uses that file). 60 fps and the colour camera stay blocked until a legal route is chosen (no blind control-port scans, no SDK code).
 3. MSI install test (admin), then Store identity and the nuget.org push. Steps are unchanged from 2026-10-11 (`installer\Build-Msi.ps1`, `installer\store\README.md`, `tools\Pack-Sdk.ps1`). Website upload runs only when this repo has the FTP secrets in `web/README.md`; without them the workflow skips the upload.
 
 ## Blockers
@@ -66,3 +67,4 @@
 | 2026-11-01 | Claude | M9 E3: hand control in `xrs` (calibration, pinch/dwell click, target window); ≤ 1 miss not reached yet. |
 | 2026-11-03 | Grok | Clear AR HUD (ADR-0017): black glasses frame, horizon / ladder / heading tape / clock. No camera. Wear test pending. |
 | 2026-11-03 | Grok | Merged nikryden/Screen-XREAL-1S (MIT) into this repo: Eye camera, hand tracking, glasses info, website. HUD and `xrs link` kept. |
+| 2026-11-03 | Grok | Hands page, tray item, and Ctrl+Alt+J. Camera closes on stop. Calibration stays in `xrs hands targets`. Not worn yet. |

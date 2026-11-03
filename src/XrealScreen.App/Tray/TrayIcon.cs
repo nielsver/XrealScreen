@@ -30,6 +30,9 @@ public enum TrayCommand
 
     /// <summary>Ctrl+Alt+U: start or stop the clear HUD.</summary>
     ToggleHud = 15,
+
+    /// <summary>Ctrl+Alt+J: start or stop hand control. The Eye camera stays open only while it runs.</summary>
+    ToggleHands = 16,
 }
 
 /// <summary>
@@ -50,6 +53,7 @@ public sealed unsafe partial class TrayIcon : IDisposable
     private const int HotkeyScreen5 = 8;
     private const int HotkeyScreen6 = 9;
     private const int HotkeyHud = 10;
+    private const int HotkeyHands = 11;
     private static TrayIcon? s_current;
 
     private readonly uint _taskbarCreated;
@@ -85,6 +89,7 @@ public sealed unsafe partial class TrayIcon : IDisposable
         RegisterHotKey(_hwnd, HotkeyScreen6, 0x0002 | 0x0001 | 0x4000, 0x36 /* 6 */);
         RegisterHotKey(_hwnd, HotkeyFindCursor, 0x0002 | 0x0001 | 0x4000, 0x30 /* 0 */);
         HudHotkeyAvailable = RegisterHotKey(_hwnd, HotkeyHud, 0x0002 | 0x0001 | 0x4000, 0x55 /* U */);
+        HandsHotkeyAvailable = RegisterHotKey(_hwnd, HotkeyHands, 0x0002 | 0x0001 | 0x4000, 0x4A /* J */);
         Tooltip = tooltip;
         Add();
     }
@@ -101,11 +106,17 @@ public sealed unsafe partial class TrayIcon : IDisposable
     /// <summary>False when Ctrl+Alt+U is already taken by another program.</summary>
     public bool HudHotkeyAvailable { get; }
 
+    /// <summary>False when Ctrl+Alt+J is already taken by another program.</summary>
+    public bool HandsHotkeyAvailable { get; }
+
     /// <summary>Workspace state for the menu (Start vs Stop enabled).</summary>
     public bool WorkspaceRunning { get; set; }
 
     /// <summary>Clear HUD state for the menu.</summary>
     public bool HudRunning { get; set; }
+
+    /// <summary>Hand control state for the menu. True means the Eye camera is open.</summary>
+    public bool HandsRunning { get; set; }
 
     public string Tooltip { get; private set; }
 
@@ -171,6 +182,8 @@ public sealed unsafe partial class TrayIcon : IDisposable
         AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
         AppendMenu(menu, HudRunning ? MF_GRAYED : MF_STRING, (IntPtr)TrayCommand.ToggleHud, HudRunning ? "HUD is on" : "Start clear HUD\tCtrl+Alt+U");
         AppendMenu(menu, HudRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.ToggleHud, "Stop clear HUD\tCtrl+Alt+U");
+        AppendMenu(menu, HandsRunning ? MF_GRAYED : MF_STRING, (IntPtr)TrayCommand.ToggleHands, HandsRunning ? "Hand control is on" : "Start hand control\tCtrl+Alt+J");
+        AppendMenu(menu, HandsRunning ? MF_STRING : MF_GRAYED, (IntPtr)TrayCommand.ToggleHands, "Stop hand control\tCtrl+Alt+J");
         AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
         uint send = WorkspaceRunning ? MF_STRING : MF_GRAYED;
         AppendMenu(menu, send, (IntPtr)TrayCommand.SendToScreen1, "Send window to screen 1\tCtrl+Alt+1");
@@ -273,6 +286,12 @@ public sealed unsafe partial class TrayIcon : IDisposable
             if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyHud)
             {
                 self.CommandInvoked?.Invoke(TrayCommand.ToggleHud);
+                return 0;
+            }
+
+            if (msg == 0x0312 /* WM_HOTKEY */ && wParam == HotkeyHands)
+            {
+                self.CommandInvoked?.Invoke(TrayCommand.ToggleHands);
                 return 0;
             }
 

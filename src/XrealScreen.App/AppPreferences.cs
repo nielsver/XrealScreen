@@ -56,6 +56,9 @@ public sealed class AppPreferences
 
     public bool HudShowClock { get; set; } = true;
 
+    /// <summary>Hand click mode: 0 pinch, 1 hold still, 2 either (ADR-0016).</summary>
+    public int HandClick { get; set; } = 2;
+
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XrealScreen", "app.json");
 
